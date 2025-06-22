@@ -5,7 +5,10 @@ import { pool } from "../config/db";
 
 const loginRoute = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined in environment variables");
+}
 
 loginRoute.post("/login", async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
@@ -32,7 +35,7 @@ loginRoute.post("/login", async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const token = jwt.sign({ userId: user.userid, username }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ user_id: user.user_id, username }, JWT_SECRET, { expiresIn: "1h" });
 
     res.status(200).json({ message: "Login successful", token });
   } catch (err) {
