@@ -4,10 +4,17 @@ export const API_URL = "http://10.5.50.48:5000";
 
 
 
-interface LoginResponse {
+export interface LoginResponse {
   token: string;
 }
 
+export interface Product {
+  product_id: number;
+  product_name: string;
+  product_description: string;
+  price: number;
+  image: string;
+}
 
 export const RegisterUser = async (
   username :string,
@@ -75,5 +82,32 @@ export const loadUsername = async (token: string): Promise<string> => {
   } catch (error) {
     console.error("Load username error:", error);
     throw error;
+  }
+};
+
+export const loadproduct = async (): Promise<Product[]> => {
+  try {
+    const response = await fetch('http://localhost:5000/api/loadproduct', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+        // ถ้าไม่ใช้ token แล้ว ลบ Authorization ออกได้
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('No products found');
+      }
+      throw new Error('Failed to load products');
+    }
+
+    const data: Product[] = await response.json();
+    console.log("✅ Products fetched:", data);
+    return data;
+
+  } catch (error: any) {
+    console.error('Error fetching products:', error);
+    throw new Error(error.message || 'Something went wrong');
   }
 };

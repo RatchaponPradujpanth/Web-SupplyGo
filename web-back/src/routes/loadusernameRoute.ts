@@ -16,7 +16,7 @@ loadusernameRoute.get("/loadusername",authenticateToken,
       if (result.rows.length === 0) {
         res.status(404).json({ message: 'User not found' });
         return;
-      }
+      }//หา user
 
       const username = result.rows[0].username;
       res.status(200).json({ username });

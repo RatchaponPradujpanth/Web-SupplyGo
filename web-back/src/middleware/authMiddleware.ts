@@ -11,8 +11,10 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'];//ขอ token แนบใน header (Authorization: Bearer <token>) Authorization คือการ ขอ header ชื่อ Authorization
+  const token = authHeader && authHeader.split(' ')[1];// token จะมาเป็นอะไรสักอย่างโค้ดนี้มีไว้สำหรับตัดข้อความที่ได้มาให้อยู่ในส่วนโค้ดทั้ต้องการ  
+  // ได้ผลลัพธ์เป็น ['Bearer', 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'] authHeader && authHeader.splitเอาไว้ตรวจว่ามี token มาไหม
+
 
   if (!token) {
     console.log("❌ No token provided");
@@ -20,30 +22,19 @@ export const authenticateToken = (
     return;
   }
 
-  const decoded = jwt.verify(token, SECRET) as { user_id: number };
-// log ชัดเจน
-console.log("✅ Decoded token payload:", decoded);
-req.user = decoded;
-next()
+  try {
+    const decoded = jwt.verify(token, SECRET) as { user_id: number };
+    console.log("✅ Decoded token payload:", decoded);
+    req.user = decoded;
+    next();//บอกให้ทำ middle ถัดไป ถ้าไม่มีก็ทำ route ถัดไป
+    //เมื่อคุณเรียก next(), Express จะ ส่ง req (และ res) ตัวเดิม ไปยัง middleware หรือ route ถัดไป
+  } catch (error) {
+    console.log("❌ Token verification failed:", error);
+    res.status(403).json({ message: 'Invalid or expired token' });
+  }
 };
 
-// export const authenticateToken = (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   const authHeader = req.headers['authorization'];
-//   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
-
-//   if (!token) {
-//     return res.status(401).json({ message: 'Access token missing' });
-//   }
-
-//   try {
-//     const decoded = jwt.verify(token, SECRET);
-//     req.user = decoded; // ต้องขยาย type ของ Request เพื่อรองรับ .user
-//     next();
-//   } catch (err) {
-//     return res.status(403).json({ message: 'Invalid or expired token' });
-//   }
-// };
+// Authorization เพื่อส่ง token
+// แต่ เนื้อหาของ header นี้ (ค่า) สามารถเปลี่ยนไปตามวิธีพิสูจน์ตัวตน เช่น
+// Basic Auth: Basic <base64encoded>
+// Bearer Token: Bearer <token>
