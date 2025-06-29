@@ -35,6 +35,12 @@ loginRoute.post("/login", async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    //เพิ่มการเช็คว่า user ได้ยืนยันอีเมลหรือยัง
+    if (!user.is_verified) {
+      res.status(403).json({ message: "Please verify your email before logging in." });
+      return;
+    }
+
     const token = jwt.sign({ user_id: user.user_id, username }, JWT_SECRET, { expiresIn: "1h" });
 
     res.status(200).json({ message: "Login successful", token });

@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 
-export const API_URL = "http://10.5.50.48:5000";  
+
+export const API_URL = "http://192.168.1.10:5000";  
 
 
 
@@ -68,7 +69,7 @@ export const loginUser = async (
   }
 };
 
-
+//local
 //ต้องมาอ่านอีกรอบ
 export const loadUsername = async (token: string): Promise<string> => {
   try {

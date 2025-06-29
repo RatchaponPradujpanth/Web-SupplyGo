@@ -20,7 +20,6 @@ productRoute.get("/loadproduct",async (req: Request, res: Response): Promise<voi
       res.status(404).json({ message: 'No products found' }); // ✅ แค่ส่ง ไม่ต้อง return
       return;
     }
-
     res.status(200).json(products); // ✅ ไม่ต้อง return ก็ได้
     console.log('Products from DB:', products);
   } catch (error) {

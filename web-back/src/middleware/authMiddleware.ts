@@ -11,8 +11,10 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ): void => {
-  const authHeader = req.headers['authorization'];//ขอ token แนบใน header (Authorization: Bearer <token>) Authorization คือการ ขอ header ชื่อ Authorization
-  const token = authHeader && authHeader.split(' ')[1];// token จะมาเป็นอะไรสักอย่างโค้ดนี้มีไว้สำหรับตัดข้อความที่ได้มาให้อยู่ในส่วนโค้ดทั้ต้องการ  
+  const authHeader = req.headers['authorization'];
+  //ขอ token แนบใน header (Authorization: Bearer <token>) Authorization คือการ ขอ header ชื่อ Authorization
+  const token = authHeader && authHeader.split(' ')[1];
+  // token จะมาเป็นอะไรสักอย่างโค้ดนี้มีไว้สำหรับตัดข้อความที่ได้มาให้อยู่ในส่วนโค้ดทั้ต้องการ  
   // ได้ผลลัพธ์เป็น ['Bearer', 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'] authHeader && authHeader.splitเอาไว้ตรวจว่ามี token มาไหม
 
 

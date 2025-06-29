@@ -13,7 +13,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use('/images', express.static(path.join(__dirname, 'picture')));
-// ใช้งาน route
 app.use("/api", registerRoute);
 app.use("/api", loginRoute);
 app.use("/api",loadusernameRoute);
