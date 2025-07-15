@@ -1,7 +1,7 @@
 import axios, { AxiosError } from "axios";
 
 
-export const API_URL = "http://192.168.1.10:5000";  
+export const API_URL = "http://192.168.1.133:5000";  
 
 
 
@@ -88,27 +88,85 @@ export const loadUsername = async (token: string): Promise<string> => {
 
 export const loadproduct = async (): Promise<Product[]> => {
   try {
-    const response = await fetch('http://localhost:5000/api/loadproduct', {
-      method: 'GET',
+    const response = await axios.get<Product[]>(`${API_URL}/api/loadproduct`, {
       headers: {
-        'Content-Type': 'application/json'
-        // ถ้าไม่ใช้ token แล้ว ลบ Authorization ออกได้
+        'Content-Type': 'application/json',
+        // ถ้าไม่ใช้ token ก็ไม่ต้องใส่ Authorization
+      },
+    });
+
+    console.log("✅ Products fetched:", response.data);
+    return response.data;
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ message?: string }>;
+    const errorMsg =
+      err.response?.data?.message ||
+      err.message ||
+      "Failed to load products";
+
+    console.error("Error fetching products:", errorMsg);
+    throw new Error(errorMsg);
+  }
+};
+
+export const loadstorename = async (token: string): Promise<{ shopname: string; shop_id: number; stripe_account_id?: string | null  }> => {
+  console.log("📦 loading store with token:", token); // 👈 ตรวจ token
+  const response = await axios.get<{ shopname: string,shop_id: number }>(`${API_URL}/api/loadstorename`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  console.log("✅ ได้ชื่อร้าน:", response.data.shopname); 
+  return response.data;
+};
+
+
+export const regisstripe = async (token: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/api/regisstripe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       }
     });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('No products found');
-      }
-      throw new Error('Failed to load products');
+      throw new Error("เกิดข้อผิดพลาดระหว่างสร้างบัญชี Stripe");
     }
 
-    const data: Product[] = await response.json();
-    console.log("✅ Products fetched:", data);
-    return data;
+    const data = await response.json();
+
+    if (data.url) {
+      console.log("🔗 ไปยัง Stripe:", data.url);
+      window.location.href = data.url; // 👈 เปลี่ยนหน้าไปยังลิงก์ onboarding
+    } else {
+      throw new Error("ไม่ได้รับลิงก์จาก Stripe");
+    }
 
   } catch (error: any) {
-    console.error('Error fetching products:', error);
-    throw new Error(error.message || 'Something went wrong');
+    console.error("❌ Stripe register error:", error.message);
+    throw error;
+  }
+};
+
+export const confirmStripeConnect = async (acct_id: string, shop_id: string): Promise<string> => {
+  try {
+    const response = await fetch(`${API_URL}/api/connect?acct_id=${acct_id}&shop_id=${shop_id}`, {
+      method: "GET",
+    });
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw new Error(text || "เกิดข้อผิดพลาดในการเชื่อมบัญชี Stripe");
+    }
+
+    return text; // เช่น "เชื่อมบัญชี Stripe สำเร็จ"
+  } catch (error: any) {
+    console.error("❌ Stripe connect confirm error:", error.message);
+    throw error;
   }
 };

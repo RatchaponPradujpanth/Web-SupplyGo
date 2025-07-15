@@ -19,8 +19,21 @@ loginRoute.post("/login", async (req: Request, res: Response): Promise<void> => 
   }
 
   try {
-    const query = "SELECT user_id, password FROM users WHERE username = $1";
+    const query = `
+  SELECT 
+  users.user_id AS user_id,
+  users.password,
+  users.role,
+  shops.shop_id
+FROM users
+LEFT JOIN shops ON users.user_id = shops.user_id
+WHERE users.username = $1;
+`;
+    
     const result = await pool.query(query, [username]);
+
+    
+
 
     if (result.rows.length === 0) {
       res.status(401).json({ message: "Invalid username or password" });
@@ -35,15 +48,37 @@ loginRoute.post("/login", async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    //เพิ่มการเช็คว่า user ได้ยืนยันอีเมลหรือยัง
-    if (!user.is_verified) {
-      res.status(403).json({ message: "Please verify your email before logging in." });
-      return;
-    }
 
-    const token = jwt.sign({ user_id: user.user_id, username }, JWT_SECRET, { expiresIn: "1h" });
+      const payload: any = {
+  user_id: user.user_id,
+  username,
+  role: user.role
+};
+  // 🪵 Log ข้อมูลที่ดึงมา (สำหรับตรวจสอบ)
+console.log("🟨 Login User:", {
+  user_id: user.user_id,
+  role: user.role,
+  shop_id: user.shop_id,
+});
 
-    res.status(200).json({ message: "Login successful", token });
+// ถ้าอยากตรวจว่า shop_id มาจาก user นี้จริงไหม
+if (user.role === 'store' && user.shop_id) {
+  console.log(`✅ ร้านค้าของ user ${user.user_id} คือร้าน ${user.shop_id}`);
+} else {
+  console.log(`ℹ️ ผู้ใช้ ${user.user_id} ไม่ใช่ร้านค้า หรือไม่มีร้าน`);
+}
+if (user.role === 'store' && user.shop_id) {
+  payload.shop_id = user.shop_id; // ✅ เปลี่ยนตรงนี้
+}
+
+const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+
+res.status(200).json({ message: "Login successful โทเคนอยู่นี่", token });
+      
+
+    
+
+    
   } catch (err) {
     console.error("Error during login:", err);
     res.status(500).json({ message: "Login failed" });

@@ -5,7 +5,8 @@ declare global {
     interface Request {
       user?: {
         user_id: number;
-        // ถ้ามี field อื่น ๆ ใน token ก็เพิ่มตรงนี้
+        role: string;
+        shop_id:number;
       };
     }
   }
