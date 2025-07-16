@@ -104,29 +104,41 @@ export default function DashboardPage() {
         <p className="text-lg italic">กำลังโหลดข้อมูลผู้ใช้...</p>
       )}
 
-      <div className="w-full max-w-4xl bg-black bg-opacity-10 rounded-lg p-6 shadow-lg mt-4">
-        <h2 className="text-2xl font-semibold mb-4">รายการสินค้า</h2>
-        {products.length > 0 ? (
-          <ul className="space-y-4">
-            {products.map((product) => (
-              <li key={product.product_id} className="p-4 bg-black bg-opacity-20 rounded-lg shadow">
-                <h3 className="text-xl font-bold">{product.product_name}</h3>
-                <p className="text-sm italic">{product.product_description}</p>
-                <p className="font-semibold mt-1">ราคา: ฿{Number(product.price).toFixed(2)}</p>
-                {product.image && (
-                  <img
-                    src={product.image}
-                    alt={product.product_name}
-                    className="mt-2 w-40 rounded"
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="italic">ไม่มีสินค้าที่แสดง</p>
-        )}
+     <div className="w-full max-w-4xl bg-black bg-opacity-10 rounded-lg p-6 shadow-lg mt-4">
+  <h2 className="text-2xl font-semibold mb-4">รายการสินค้า</h2>
+  {products.length > 0 ? (
+    <>
+      <ul className="space-y-4">
+        {products.map((product) => (
+          <li key={product.product_id} className="p-4 bg-black bg-opacity-20 rounded-lg shadow">
+            <h3 className="text-xl font-bold">{product.product_name}</h3>
+            <p className="text-sm italic">{product.product_description}</p>
+            <p className="font-semibold mt-1">ราคา: ฿{Number(product.price).toFixed(2)}</p>
+            {product.image && (
+              <img
+                src={product.image}
+                alt={product.product_name}
+                className="mt-2 w-40 rounded"
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {/* 🔽 ปุ่มดูตะกร้า */}
+      <div className="text-right mt-6">
+        <button
+          onClick={() => router.push('/cart')}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg shadow transition"
+        >
+          🛒 ไปดูตะกร้าสินค้า
+        </button>
       </div>
+    </>
+  ) : (
+    <p className="italic">ไม่มีสินค้าที่แสดง</p>
+  )}
+</div>
 
       <button
         onClick={handleLogout}

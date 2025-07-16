@@ -1,8 +1,30 @@
 import axios, { AxiosError } from "axios";
 
 
+
 export const API_URL = "http://192.168.1.133:5000";  
 
+export type TransferItem = {
+  storeId: number;
+  amount: number;
+};
+
+
+export interface CheckoutItem {
+  cart_item_id: number;
+  product_name: string;
+  shop_name: string;
+  shop_id: number;
+  quantity: number;
+  price_per_unit: number;
+  total_price: number;
+}
+
+export interface CheckoutSummary {
+  cart_id: number;
+  items: CheckoutItem[];
+  totalAmount: number;
+}
 
 
 export interface LoginResponse {
@@ -15,6 +37,21 @@ export interface Product {
   product_description: string;
   price: number;
   image: string;
+}
+
+interface CartItem {
+  cart_item_id: number;
+  quantity: number;
+  price_per_unit: number;
+  total_price: number;
+  product_name: string;
+  image: string;
+  shop_name: string;
+}
+
+interface CartResponse {
+  cart_id: number | null;
+  items: CartItem[];
 }
 
 export const RegisterUser = async (
@@ -169,4 +206,77 @@ export const confirmStripeConnect = async (acct_id: string, shop_id: string): Pr
     console.error("❌ Stripe connect confirm error:", error.message);
     throw error;
   }
+};
+
+export const cartUser = async (token: string): Promise<CartResponse> => {
+  try {
+    const response = await fetch(`${API_URL}/api/cart`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ต้องใส่ token
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('โหลดตะกร้าไม่สำเร็จ');
+    }
+
+    const data: CartResponse = await response.json();
+    return data;
+
+  } catch (error: any) {
+    console.error("❌ โหลดตะกร้าไม่ได้:", error.message);
+    throw error;
+  }
+};
+
+export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
+  try {
+    const response = await fetch(`${API_URL}/api/cartsummary`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ');
+    }
+
+    const data: CheckoutSummary = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
+    throw error;
+  }
+};
+
+
+// service/apis.ts
+export type ShopPaymentIntent = {
+  shop_id: number;
+  client_secret: string;
+};
+
+export const createMultiVendorPayment = async (
+  token: string,
+  cartId: number
+): Promise<{ paymentIntents: ShopPaymentIntent[] }> => {
+  const response = await fetch(`${API_URL}/api/payment-multivendor`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ cartId }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.message || 'ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้');
+  }
+
+  return response.json(); // ได้ { paymentIntents: [...] }
 };

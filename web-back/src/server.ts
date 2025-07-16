@@ -9,6 +9,10 @@ import path from 'path';
 import loadstorename from "./routes/loadstorenameRoute";
 import storeregisstripe from "./stripe/CreateAccountstripe";
 import storeconnect from "./stripe/connectStripe";
+import cartRoute from "./routes/cartRoute";
+import cartSummaryRoute from "./routes/cartSummaryRoute";
+import paymentRoute from "./stripe/paymentRoute";
+
 dotenv.config(); // โหลดค่า .env
 
 const app = express();
@@ -22,6 +26,9 @@ app.use("/api",productRoute);
 app.use('/api',loadstorename)
 app.use("/api",storeregisstripe);
 app.use("/api",storeconnect);
+app.use("/api",cartRoute);
+app.use("/api",cartSummaryRoute);
+app.use("/api",paymentRoute);
 app.use(express.json());
 
 app.listen(5000, () => {
