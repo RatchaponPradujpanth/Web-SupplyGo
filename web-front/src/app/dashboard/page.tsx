@@ -108,44 +108,54 @@ export default function DashboardPage() {
         <p className="text-lg italic">กำลังโหลดข้อมูลผู้ใช้...</p>
       )}
 
-     <div className="w-full max-w-4xl bg-black bg-opacity-10 rounded-lg p-6 shadow-lg mt-4">
+<div className="w-full max-w-4xl bg-black bg-opacity-10 rounded-lg p-6 shadow-lg mt-4">
   <h2 className="text-2xl font-semibold mb-4">รายการสินค้า</h2>
+
   {products.length > 0 ? (
-  <>
-    <ul className="space-y-4">
-      {products.map((product) => (
-        <li key={product.product_id} className="p-4 bg-black bg-opacity-20 rounded-lg shadow">
-          <h3 className="text-xl font-bold">{product.product_name}</h3>
-          <p className="text-sm italic">{product.product_description}</p>
-          <p className="font-semibold mt-1">ราคา: ฿{Number(product.price).toFixed(2)}</p>
-          {product.image && (
-            <img
-              src={product.image}
-              alt={product.product_name}
-              className="mt-2 w-40 rounded"
-            />
-          )}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-4">
+        {products.map((product) => (
+          <li key={product.product_id} className="p-4 bg-black bg-opacity-20 rounded-lg shadow">
+            <h3 className="text-xl font-bold">{product.product_name}</h3>
+            <p className="text-sm italic">{product.product_description}</p>
+            <p className="font-semibold mt-1">ราคา: ฿{Number(product.price).toFixed(2)}</p>
+            {product.image && (
+              <img
+                src={product.image}
+                alt={product.product_name}
+                className="mt-2 w-40 rounded"
+              />
+            )}
+          </li>
+        ))}
+      </ul>
 
-    {/* 🔽 ปุ่มดูตะกร้า */}
-    <div className="text-right mt-6">
-      <button
-        onClick={() => router.push('/cart')}
-        className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg shadow transition"
-      >
-        🛒 ไปดูตะกร้าสินค้า
-      </button>
+      <div className="text-right mt-6">
+        <button
+          onClick={() => router.push('/cart')}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg shadow transition"
+        >
+          🛒 ไปดูตะกร้าสินค้า
+        </button>
+      </div>
+    </>
+  ) : (
+    <div className="text-center py-10">
+      <p className="italic text-yellow-300 font-semibold mb-6">
+        คุณยังไม่มีสินค้า
+      </p>
     </div>
-  </>
-) : (
-  <p className="italic text-yellow-300 font-semibold text-center py-10">
-    คุณยังไม่มีสินค้า
-  </p>
-)}
+  )}
 </div>
-
+{/* ปุ่มเพิ่มสินค้า แสดงตลอด */}
+  <div className="text-center mt-6">
+    <button
+      onClick={() => router.push('/addproduct')}
+      className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg shadow transition"
+    >
+      ➕ เพิ่มสินค้า
+    </button>
+  </div>
       <button
         onClick={handleLogout}
         className="mt-8 px-6 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition"

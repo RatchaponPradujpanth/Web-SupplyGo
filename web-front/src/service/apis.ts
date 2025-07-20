@@ -9,6 +9,11 @@ export type TransferItem = {
   amount: number;
 };
 
+export interface Category {
+  category_id: number;
+  category_name: string;
+}
+
 
 export interface CheckoutItem {
   cart_item_id: number;
@@ -137,13 +142,19 @@ export const loadproduct = async (token: string): Promise<Product[]> => {
     return response.data;
   } catch (error: unknown) {
     const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message ||
-      err.message ||
-      "Failed to load products";
+   const errorMsg =
+  err.response?.data?.message ||
+  err.message ||
+  "Failed to load products";
 
-    console.error("Error fetching products:", errorMsg);
-    throw new Error(errorMsg);
+// ✅ ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
+if (errorMsg === "No products found") {
+  console.warn("⚠️ No products found, returning empty list.");
+  return [];
+}
+
+console.error("Error fetching products:", errorMsg);
+throw new Error(errorMsg);
   }
 };
 
@@ -313,3 +324,43 @@ export async function uploadImages(images: File[]) {
     throw err;
   }
 }
+
+
+export const addproduct = async (
+  token:string,
+  product_name : string,
+  product_description : string , 
+  price : number,
+  category_id : number,
+  imageFile : File
+):Promise<void> =>{
+  try {
+    const formData = new FormData();
+    formData.append('product_name', product_name);
+    formData.append('product_description', product_description);
+    formData.append('price', price.toString());
+    formData.append('category_id', category_id.toString());
+    formData.append('image', imageFile); // ต้องใช้ชื่อ 'image' ตรงกับ backend
+
+
+    const response = await axios.post(`${API_URL}/api/add-product`,formData,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // ถ้าไม่ใช้ token ก็ไม่ต้องใส่ Authorization
+      }, 
+    });
+    console.log("✅ เพิ่มสินค้าสำเร็จ", response.data);
+  } catch (error) {
+    console.error("❌ error ที่ api:");
+}
+}
+
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/api/categories`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ ดึง category ไม่สำเร็จ:', error);
+    return [];
+  }
+};

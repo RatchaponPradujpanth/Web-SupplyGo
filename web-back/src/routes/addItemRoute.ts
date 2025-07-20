@@ -7,6 +7,7 @@ additemRoute.post(
   "/upload",
   upload.array('images', 10),  // ต้องใส่ multer middleware ก่อน handler
   async (req: Request, res: Response) => {
+    const { username, password, email } = req.body;
     const files = req.files as Express.Multer.File[]; // อาจเป็น undefined
 
     if (!files || files.length === 0) {

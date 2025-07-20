@@ -29,11 +29,9 @@ WHERE po.shop_id = $1`;
     const protocol = req.protocol; // ex: "http"
 
     const products = result.rows.map(prod => ({
-      ...prod,
-      image: prod.image
-        ? `${protocol}://${host}/images/${prod.image.replace(/^.*[\\\/]/, '').replace(/"/g, '')}`
-        : null
-    }));
+  ...prod,
+  image: prod.image ? `${protocol}://${host}${prod.image}` : null
+}));
 
     if (result.rows.length === 0) {
       res.status(404).json({ message: 'No products found' });
