@@ -123,11 +123,12 @@ export const loadUsername = async (token: string): Promise<string> => {
   }
 };
 
-export const loadproduct = async (): Promise<Product[]> => {
+export const loadproduct = async (token: string): Promise<Product[]> => {
+  if (!token) throw new Error('No token provided');
   try {
     const response = await axios.get<Product[]>(`${API_URL}/api/loadproduct`, {
       headers: {
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
         // ถ้าไม่ใช้ token ก็ไม่ต้องใส่ Authorization
       },
     });
@@ -280,3 +281,35 @@ export const createMultiVendorPayment = async (
 
   return response.json(); // ได้ { paymentIntents: [...] }
 };
+
+export async function uploadImages(images: File[]) {
+  console.log('🚀 [uploadImages] เริ่มส่งไฟล์จำนวน:', images.length);
+  const formData = new FormData();
+  images.forEach(file => {
+    console.log('  - เตรียมส่งไฟล์:', file.name);
+    formData.append('images', file);
+  });
+
+  try {
+    const res = await fetch(`${API_URL}/api/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    console.log('📡 [uploadImages] Response status:', res.status);
+
+    if (!res.ok) {
+      const error = await res.json();
+      console.error('❌ [uploadImages] Error response:', error);
+      throw new Error(error.message || 'อัปโหลดล้มเหลว');
+    }
+
+    const data = await res.json();
+    console.log('✅ [uploadImages] Response data:', data);
+    return data;
+
+  } catch (err) {
+    console.error('🔥 [uploadImages] Fetch failed:', err);
+    throw err;
+  }
+}

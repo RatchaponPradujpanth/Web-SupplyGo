@@ -12,6 +12,7 @@ import storeconnect from "./stripe/connectStripe";
 import cartRoute from "./routes/cartRoute";
 import cartSummaryRoute from "./routes/cartSummaryRoute";
 import paymentRoute from "./stripe/paymentRoute";
+import additemRoute from "./routes/addItemRoute";
 
 dotenv.config(); // โหลดค่า .env
 
@@ -29,7 +30,8 @@ app.use("/api",storeconnect);
 app.use("/api",cartRoute);
 app.use("/api",cartSummaryRoute);
 app.use("/api",paymentRoute);
-app.use(express.json());
+app.use("/api",additemRoute)
+
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");

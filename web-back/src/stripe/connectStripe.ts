@@ -19,9 +19,6 @@ storeconnect.get("/connect", async (req: Request, res: Response):Promise<void> =
     const query = 'UPDATE shops SET stripe_account_id = $1 WHERE shop_id = $2';
     const result = await pool.query(query,[acct_id,shop_id])
 
-    
-
-
     // ใส่ logic ได้ตรงนี้ เช่น UPDATE database หรืออะไรก็ตาม
     res.send('เชื่อมบัญชี Stripe สำเร็จ');
   } catch (error) {
