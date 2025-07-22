@@ -12,9 +12,14 @@ import storeconnect from "./stripe/connectStripe";
 import cartRoute from "./routes/cartRoute";
 import cartSummaryRoute from "./routes/cartSummaryRoute";
 import paymentRoute from "./stripe/paymentRoute";
-import additemRoute from "./routes/addItemRoute";
 import addproductRoute from "./routes/addproductRoute";
 import categoryRoute from "./routes/categoryRoute";
+import checkroleRoute from "./routes/checkroleRoute";
+import userproductRoute from "./routes/userproductRoute";
+import cartStripe from "./stripe/cartStripe";
+import addressRoute from "./routes/addressRoute";
+import orderRoute from "./routes/orderRoute";
+import loadaddressRoute from "./routes/loadaddressRoute";
 
 dotenv.config(); // โหลดค่า .env
 
@@ -33,9 +38,14 @@ app.use("/api",storeconnect);
 app.use("/api",cartRoute);
 app.use("/api",cartSummaryRoute);
 app.use("/api",paymentRoute);
-app.use("/api",additemRoute)
 app.use("/api",addproductRoute)
 app.use("/api",categoryRoute);
+app.use("/api",checkroleRoute);
+app.use("/api",userproductRoute);
+app.use("/api",cartStripe);
+app.use("/api",addressRoute);
+app.use("/api",orderRoute);
+app.use("/api",loadaddressRoute);
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");

@@ -9,8 +9,29 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import { createMultiVendorPayment, ShopPaymentIntent } from '@/service/apis';
+import {
+  createMultiVendorPayment,
+  submitOrder,
+  loadaddress,
+  cartUser,
+  ShopPaymentIntent,
+} from '@/service/apis';
+
+interface Address {
+  address_id: number;
+  firstname: string;
+  lastname: string;
+  phone_number: string;
+  house_number: string;
+  street: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: string;
+  address_type: string;
+}
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -41,74 +62,86 @@ function PaymentForm() {
 
   const [loading, setLoading] = useState(false);
   const [paymentList, setPaymentList] = useState<ShopPaymentIntent[]>([]);
+  const [cartId, setCartId] = useState<number | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressId, setAddressId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'error' | 'success' | 'info'; text: string } | null>(null);
-
-  const cartId = 1; // TODO: เปลี่ยนเป็น cartId จริงจากระบบหรือ context
+  const [paidSuccess, setPaidSuccess] = useState(false);
 
   useEffect(() => {
-    async function fetchMultiPayment() {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setMessage({ type: 'error', text: 'กรุณาเข้าสู่ระบบเพื่อดำเนินการชำระเงิน' });
-        return;
-      }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
 
+    const loadPaymentFlow = async () => {
       try {
-        const res = await createMultiVendorPayment(token, cartId);
-        setPaymentList(res.paymentIntents);
+        const cartData = await cartUser(token);
+        const addressList = await loadaddress(token);
+
+        if (!cartData.cart_id) {
+          setMessage({ type: 'error', text: 'ไม่พบข้อมูลตะกร้า' });
+          return;
+        }
+        if (!addressList || addressList.length === 0) {
+          setMessage({ type: 'error', text: 'ไม่พบข้อมูลที่อยู่' });
+          return;
+        }
+
+        setCartId(cartData.cart_id);
+        setAddresses(addressList);
+        setAddressId(addressList[0].address_id);
+
+        const paymentRes = await createMultiVendorPayment(token, cartData.cart_id);
+        setPaymentList(paymentRes.paymentIntents);
         setMessage(null);
       } catch (error: any) {
         console.error(error);
-        setMessage({ type: 'error', text: error.message || 'ไม่สามารถสร้างการชำระเงินได้' });
+        setMessage({ type: 'error', text: error.message || 'โหลดข้อมูลการชำระเงินล้มเหลว' });
       }
-    }
+    };
 
-    fetchMultiPayment();
+    loadPaymentFlow();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
-    if (!stripe || !elements) {
-      setMessage({ type: 'error', text: 'ระบบชำระเงินยังไม่พร้อม' });
-      return;
-    }
-
+    if (!stripe || !elements) return;
     const cardElement = elements.getElement(CardElement);
-    if (!cardElement) {
-      setMessage({ type: 'error', text: 'ไม่พบช่องกรอกบัตรเครดิต' });
+    if (!cardElement || !cartId || !addressId) {
+      setMessage({ type: 'error', text: 'ข้อมูลไม่ครบถ้วน' });
       return;
     }
 
     setLoading(true);
 
-    for (const [index, payment] of paymentList.entries()) {
-      setMessage({ type: 'info', text: `💳 จ่ายร้าน ${payment.shop_id} (${index + 1}/${paymentList.length})` });
+    try {
+      for (const [index, payment] of paymentList.entries()) {
+        setMessage({ type: 'info', text: `กำลังจ่ายร้าน ${payment.shop_id} (${index + 1}/${paymentList.length})` });
 
-      const { error, paymentIntent } = await stripe.confirmCardPayment(payment.client_secret, {
-        payment_method: { card: cardElement },
-      });
-
-      if (error) {
-        setMessage({ type: 'error', text: `❌ ร้าน ${payment.shop_id}: ${error.message}` });
-        setLoading(false);
-        return;
-      }
-
-      if (paymentIntent?.status !== 'succeeded') {
-        setMessage({
-          type: 'error',
-          text: `⚠️ ร้าน ${payment.shop_id} จ่ายไม่สำเร็จ (สถานะ: ${paymentIntent?.status})`,
+        const { error, paymentIntent } = await stripe.confirmCardPayment(payment.client_secret, {
+          payment_method: { card: cardElement },
         });
-        setLoading(false);
-        return;
-      }
-    }
 
-    setMessage({ type: 'success', text: '✅ ชำระเงินสำเร็จครบทุกเจ้าร้านแล้ว!' });
-    setTimeout(() => router.push('/thankyou'), 1500);
-    setLoading(false);
+        if (error || paymentIntent?.status !== 'succeeded') {
+          throw new Error(`ร้าน ${payment.shop_id} จ่ายไม่สำเร็จ: ${error?.message || paymentIntent?.status}`);
+        }
+      }
+
+      const token = localStorage.getItem('token')!;
+      const orderRes = await submitOrder(token, cartId, addressId);
+
+      setMessage({ type: 'success', text: '✅ ชำระเงินและบันทึกออเดอร์สำเร็จ!' });
+      setPaidSuccess(true);
+      console.log('📦 Order created:', orderRes);
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะชำระเงิน' });
+      setPaidSuccess(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -129,31 +162,67 @@ function PaymentForm() {
         </div>
       )}
 
+      <AnimatePresence>
+        {paidSuccess && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="mb-6 text-center"
+          >
+            <button
+              onClick={() => router.push('/home')}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-semibold transition"
+            >
+              กลับไปหน้า Home
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {!paymentList.length && !message && (
-        <p className="text-center text-gray-500 animate-pulse">⏳ กำลังเตรียมข้อมูลสำหรับชำระเงิน...</p>
+        <p className="text-center text-gray-500 animate-pulse">⏳ กำลังโหลดข้อมูล...</p>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        <label className="block text-gray-700 font-semibold">
-          ข้อมูลบัตรเครดิต
-          <div className="mt-2 border border-gray-300 rounded-md p-3 focus-within:ring-2 focus-within:ring-indigo-400">
-            <CardElement options={CARD_ELEMENT_OPTIONS} />
+      {!paidSuccess && (
+        <>
+          <div className="mb-6">
+            <label className="block font-semibold mb-2">เลือกที่อยู่จัดส่ง</label>
+            <select
+              value={addressId !== null ? addressId.toString() : ''}
+              onChange={(e) => setAddressId(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-md p-2"
+            >
+              {addresses.map((addr) => (
+                <option key={addr.address_id} value={addr.address_id.toString()}>
+                  {addr.firstname} {addr.lastname} - {addr.house_number} {addr.street}, {addr.district}
+                </option>
+              ))}
+            </select>
           </div>
-        </label>
 
-        <button
-          type="submit"
-          disabled={!stripe || loading || !paymentList.length}
-          className={`w-full py-3 rounded-md text-white font-semibold transition-colors duration-300
-            ${
-              !stripe || loading || !paymentList.length
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500'
-            }`}
-        >
-          {loading ? 'กำลังดำเนินการ...' : 'ชำระเงินทั้งหมด'}
-        </button>
-      </form>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <label className="block text-gray-700 font-semibold">
+              ข้อมูลบัตร
+              <div className="mt-2 border border-gray-300 rounded-md p-3">
+                <CardElement options={CARD_ELEMENT_OPTIONS} />
+              </div>
+            </label>
+
+            <button
+              type="submit"
+              disabled={!stripe || loading || !paymentList.length}
+              className={`w-full py-3 rounded-md text-white font-semibold ${
+                !stripe || loading || !paymentList.length
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {loading ? 'กำลังชำระเงิน...' : 'ชำระเงินทั้งหมด'}
+            </button>
+          </form>
+        </>
+      )}
     </div>
   );
 }

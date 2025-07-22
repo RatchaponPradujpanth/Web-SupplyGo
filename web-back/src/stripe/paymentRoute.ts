@@ -5,81 +5,73 @@ import dotenv from 'dotenv';
 import { authenticateToken } from '../middleware/authMiddleware';
 
 dotenv.config();
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {});
 
+// สร้าง PaymentIntent หลายร้าน
 const paymentRoute = Router();
 
 paymentRoute.post('/payment-multivendor', authenticateToken, async (req: Request, res: Response) => {
   const { cartId } = req.body;
+  const user = req.user as { user_id: number };
 
   try {
-    // 1. ดึงสินค้าในตะกร้า พร้อมร้านค้า ยอด และ user_id จาก cart
+    // ดึงสินค้าและร้านค้าในตะกร้า
     const result = await pool.query(
-      `
-      SELECT 
-        ci.shop_id, 
-        s.stripe_account_id, 
-        SUM(ci.quantity * ci.price_per_unit) AS amount,
-        c.user_id
-      FROM cart_items ci
-      JOIN shops s ON ci.shop_id = s.shop_id
-      JOIN cart c ON ci.cart_id = c.cart_id
-      WHERE ci.cart_id = $1
-      GROUP BY ci.shop_id, s.stripe_account_id, c.user_id
-      `,
+      `SELECT ci.*, p.product_name, s.shop_id, s.shop_name, s.stripe_account_id
+FROM cart_items ci
+JOIN products p ON ci.product_id = p.product_id
+JOIN shops s ON ci.shop_id = s.shop_id
+WHERE ci.cart_id = $1`,
       [cartId]
     );
 
-    const shopPayments = result.rows;
+    if (result.rows.length === 0) {
+      res.status(400).json({ message: 'ไม่พบสินค้าในตะกร้า' });
+      return
+    }
 
-    const paymentIntents: { shop_id: number; client_secret: string }[] = [];
+    // แยกสินค้าแต่ละร้าน
+    const groupedByShop = new Map<number, any[]>();
+    for (const item of result.rows) {
+      if (!groupedByShop.has(item.shop_id)) groupedByShop.set(item.shop_id, []);
+      groupedByShop.get(item.shop_id)!.push(item);
+    }
 
-    // 2. สร้าง PaymentIntent ต่อร้าน
-    for (const shop of shopPayments) {
-      if (!shop.stripe_account_id) {
-        console.warn(`⚠️ ร้าน ${shop.shop_id} ยังไม่มี Stripe Account`);
-        continue;
+    const paymentIntents = [];
+
+    for (const [shopId, items] of groupedByShop.entries()) {
+      const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.price_per_unit, 0);
+      const stripeAccountId = items[0].stripe_account_id;
+
+      if (!stripeAccountId) {
+        res.status(400).json({ message: `ร้าน ${items[0].shop_name} ยังไม่ได้เชื่อม Stripe` });
+        return
       }
 
-      if (!shop.shop_id || !shop.user_id || !cartId) {
-        console.warn('⚠️ ข้อมูล metadata บางอย่างว่าง:', {
-          shop_id: shop.shop_id,
-          user_id: shop.user_id,
-          cart_id: cartId,
-        });
-        continue;
-      }
-
-      const amountToCharge = Math.round(shop.amount * 100);
-      const intent = await stripe.paymentIntents.create({
-        amount: amountToCharge, // ปัดเศษยอดเงิน
-        currency: 'thb',
-        payment_method_types: ['card'],
-        application_fee_amount: 0, // ถ้าจะเก็บ platform fee กำหนดตรงนี้
-        transfer_data: {
-          destination: shop.stripe_account_id,
-        },
-        metadata: {
-          shop_id: shop.shop_id.toString(),
-          user_id: shop.user_id.toString(),
-          cart_id: cartId.toString(),
-        },
-      });
+      // สร้าง PaymentIntent บน connected account
+      const paymentIntent = await stripe.paymentIntents.create({
+  amount: Math.round(totalAmount * 100),
+  currency: 'thb',
+  description: `ชำระเงินให้ร้าน ${items[0].shop_name}`,
+  automatic_payment_methods: { enabled: true },
+  transfer_data: { destination: stripeAccountId },
+});
 
       paymentIntents.push({
-        shop_id: shop.shop_id,
-        client_secret: intent.client_secret!,
+        shop_id: shopId,
+        shop_name: items[0].shop_name,
+        amount: totalAmount,
+        client_secret: paymentIntent.client_secret,
+        stripe_account: stripeAccountId, // สำคัญ
       });
     }
 
-    res.status(200).json({
-      message: 'สร้าง PaymentIntents สำเร็จ',
-      paymentIntents,
-    });
+    res.status(200).json({ paymentIntents });
+    return 
   } catch (error) {
-    console.error('❌ สร้าง multi-vendor payment ล้มเหลว:', error);
-    res.status(500).json({ message: 'ไม่สามารถสร้างการชำระเงินได้' });
+    console.error('❌ สร้าง PaymentIntent ล้มเหลว:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการชำระเงิน' });
+    return 
   }
 });
 

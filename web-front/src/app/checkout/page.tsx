@@ -9,6 +9,11 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+
+  const cartid = 1 ;
+
+
+  
   useEffect(() => {
     const fetchSummary = async () => {
       const token = localStorage.getItem('token');

@@ -2,7 +2,6 @@ import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { pool } from "../config/db";
 
-import { generateEmailToken } from "../utils/jwt";
 
 const registerRoute = Router();
 
@@ -20,10 +19,6 @@ registerRoute.post("/register", async (req: Request, res: Response): Promise<voi
     const query = "INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING user_Id";
     const result = await pool.query(query, [username, hashedPassword, email]);
 
-
-
-
-    
     res.status(201).json({ message: "User registered", userId: result.rows[0].user_Id });
   } catch (err) {
     console.error("Error during registration:", err);
