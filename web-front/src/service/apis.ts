@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
-
-export const API_URL = "http://192.168.1.133:5000";  
+// import dotenv from 'dotenv'
+export const API_URL = "http://192.168.1.111:5000";  
 
 export type TransferItem = {
   storeId: number;

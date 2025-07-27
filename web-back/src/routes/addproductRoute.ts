@@ -22,7 +22,7 @@ addproductRoute.post(
       console.log("👤 ผู้ใช้งานที่ login:", user);
 
       if (user.role !== "store") {
-        console.warn("⛔️ สิทธิ์ไม่เพียงพอ: ผู้ใช้ไม่ใช่ร้านค้า");
+        console.warn("สิทธิ์ไม่เพียงพอ: ผู้ใช้ไม่ใช่ร้านค้า");
         res.status(400).json({ message: "คุณไม่มีสิทธิ" });
         return
       }
