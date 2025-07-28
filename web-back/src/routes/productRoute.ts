@@ -1,42 +1,49 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../config/db";
 import { authenticateToken,authstore } from "../middleware/authMiddleware";
+import { PrismaClient, products } from "@prisma/client";
 
 const productRoute = Router();
-
+const prisma = new PrismaClient();
 
 productRoute.get("/loadproduct",authenticateToken,authstore, async (req: Request, res: Response): Promise<void> => {
 
   console.log('Loadproduct route called');
   try {
 
-    const user = req.user as { shop_id: number };
-    const shopId = user.shop_id
+    const shopId = req.user?.shop_id;
+    const productowner = await prisma.products.findMany({
+  where: {
+    product_owners: {
+      some: {
+        shop_id: shopId,  // shopId คือค่าที่รับเข้ามาแทน $1
+      }
+    }
+  },
+  select: {
+    product_id: true,
+    product_name: true,
+    price: true,
+    status: true,
+    image: true,
+    product_owners: {
+      select: {
+        shop_id: true,
+      }
+    }
+  }
+});
 
-    const query = `SELECT 
-  p.product_id,
-  p.product_name,
-  p.price,
-  p.status,
-  p.image,
-  po.shop_id
-FROM products p
-JOIN product_owners po ON p.product_id = po.product_id
-WHERE po.shop_id = $1`;
-    const result = await pool.query(query,[shopId]);
 
     const host = req.headers.host; // ex: "192.168.1.133:5000"
     const protocol = req.protocol; // ex: "http"
 
-    const products = result.rows.map(prod => ({
+    const products = productowner.map(prod => ({
   ...prod,
   image: prod.image ? `${protocol}://${host}${prod.image}` : null
 }));
 
-    if (result.rows.length === 0) {
-      res.status(404).json({ message: 'No products found' });
-      return;
-    }
+
 
     res.status(200).json(products);
     console.log('✅ Products from DB:', products);

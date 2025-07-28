@@ -34,7 +34,7 @@ export default function StoreDashboardPage() {
       setUsername(name);
 
       const store = await loadstorename(token);
-      setStoreName(store.shopname);
+      setStoreName(store.shop_name);
       setShopId(store.shop_id);
       setStripeConnected(Boolean(store.stripe_account_id));
 

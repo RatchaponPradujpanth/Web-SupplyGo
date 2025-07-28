@@ -1,57 +1,79 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../config/db';
 import { authenticateToken } from '../middleware/authMiddleware';
+import { PrismaClient} from "@prisma/client";
+
 
 const cartRoute = Router();
-
+const prisma = new PrismaClient();
 cartRoute.get("/cart",authenticateToken, async(req : Request,res : Response):Promise<void> =>{
    
     try{
-        const protocol = req.protocol;  // 'http' หรือ 'https'
-const host = req.get('host');   // 'localhost:5000' หรือโดเมน
-
-        const user = req.user as {user_id:number};
-        const userId = user.user_id
-
-        const querycart = 'SELECT cart_id FROM cart WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1'
-        const resultcart = await pool.query (querycart , [userId])
-
-        if (resultcart.rows.length === 0 ){
-            res.status(200).json({items: [], cart_id: null})
-            return;
-        }
-
-        const cartId = resultcart.rows[0].cart_id;
-
+        //const user = req.user as {user_id:number};
         
-// ดึงข้อมูลจาก DB เช่น:
-const queryitem = `
-  SELECT 
-    ci.cart_item_id,
-    ci.quantity,
-    ci.price_per_unit,
-    (ci.quantity * ci.price_per_unit) AS total_price,
-    p.product_name,
-    p.image,
-    s.shop_name
-  FROM cart_items ci
-  JOIN products p ON ci.product_id = p.product_id
-  JOIN shops s ON ci.shop_id = s.shop_id
-  WHERE ci.cart_id = $1
-  ORDER BY s.shop_name ASC
-`;
 
-const resultitem = await pool.query(queryitem, [cartId]);
+        //const querycart = 'SELECT cart_id FROM cart WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1'
+        const userId = req.user?.user_id
+        const resultcart = await prisma.cart.findUnique({
+          where : {
+            user_id : userId
+          },
+          select : {
+            cart_id : true
+          }
+        })
 
-const itemsWithImageUrl = resultitem.rows.map((item) => ({
-  ...item,
-  image: item.image
-    ? `${protocol}://${host}/images/${item.image.replace(/^.*[\\\/]/, '').replace(/"/g, '')}`
-    : null,
+if (!resultcart) {
+      res.status(404).json({ message: "cart not found" });
+      return;
+    }
+
+   
+
+    const resultitem = await prisma.cart_items.findMany({
+      where : {
+        cart_id : resultcart.cart_id
+      },
+      orderBy: { shops: { shop_name: 'asc' } },
+      select : {
+        cart_item_id : true,
+        quantity : true,
+        price_per_unit : true,
+        
+        products : {
+          select: {
+            product_name : true,
+            image : true,
+          }
+        },
+        shops : {
+          select :{
+            shop_name : true
+          }
+        }
+        
+      }
+    })
+
+//const resultitem = await pool.query(queryitem, [cartId]);
+       const host = req.headers.host; // ex: "192.168.1.133:5000"
+    const protocol = req.protocol; // ex: "http"
+
+    const itemsWithImageUrl = resultitem.map(prod => ({
+  cart_item_id: prod.cart_item_id,
+  quantity: prod.quantity,
+  price_per_unit: prod.price_per_unit,
+  product_name: prod.products.product_name,
+  image: prod.products.image ? `${protocol}://${host}${prod.products.image}` : null,
+  shop_name: prod.shops.shop_name,
+  total_price: (prod.quantity ?? 0) * Number(prod.price_per_unit ?? 0)
 }));
-console.log(itemsWithImageUrl);
+
+
+
+
 res.status(200).json({
-  cart_id: cartId,
+  cart_id: resultcart.cart_id,
   items: itemsWithImageUrl,
 });
 

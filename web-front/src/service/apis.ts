@@ -148,10 +148,10 @@ export const loadproduct = async (token: string): Promise<Product[]> => {
 
 export const loadstorename = async (
   token: string
-): Promise<{ shopname: string; shop_id: number; stripe_account_id?: string | null }> => {
+): Promise<{ shop_name: string; shop_id: number; stripe_account_id?: string | null }> => {
   try {
     console.log("📦 loading store with token:", token); // ตรวจ token
-    const response = await axios.get<{ shopname: string; shop_id: number }>(
+    const response = await axios.get<{ shop_name: string; shop_id: number }>(
       `${API_URL}/api/loadstorename`,
       {
         headers: {
@@ -159,7 +159,7 @@ export const loadstorename = async (
         },
       }
     );
-    console.log("✅ ได้ชื่อร้าน:", response.data.shopname);
+    console.log("✅ ได้idร้าน:", response.data.shop_id);
     return response.data;
   } catch (error) {
     console.error("Load store name error:", error);
