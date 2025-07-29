@@ -1,23 +1,33 @@
 import express, { Request, Response, Router } from "express";
 import Stripe from "stripe";
 import dotenv from "dotenv";
-import { pool } from "../config/db";
-import { authenticateToken, authstore } from "../middleware/authMiddleware";
-
+import { PrismaClient } from "@prisma/client";
 dotenv.config();
 
 const storeconnect = Router();
+const prisma = new PrismaClient();
 
 storeconnect.get("/connect", async (req: Request, res: Response):Promise<void> => {
   try {
-    const { acct_id, shop_id } = req.query;
-    if (!acct_id || !shop_id) {
-      res.status(400).send("ข้อมูลไม่ครบ");
-      return;
-    }
+    const { acct_id } = req.query;
 
-    const query = 'UPDATE shops SET stripe_account_id = $1 WHERE shop_id = $2';
-    const result = await pool.query(query,[acct_id,shop_id])
+    const shopId = req.user?.shop_id
+
+    if (typeof acct_id !== "string" || !shopId) {
+  res.status(400).send("ข้อมูลไม่ครบ");
+  return;
+}
+
+    //const query = 'UPDATE shops SET stripe_account_id = $1 WHERE shop_id = $2';
+    const updatetable = await prisma.shops.update({
+      where:{
+        shop_id : shopId,
+      },
+      data :{
+        stripe_account_id : acct_id,
+      }
+
+    })
 
     // ใส่ logic ได้ตรงนี้ เช่น UPDATE database หรืออะไรก็ตาม
     res.send('เชื่อมบัญชี Stripe สำเร็จ');
