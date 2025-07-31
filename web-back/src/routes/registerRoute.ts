@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { pool } from "../config/db";
 import { PrismaClient } from "@prisma/client";
 
 const registerRoute = Router();

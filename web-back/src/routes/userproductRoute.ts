@@ -19,7 +19,7 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
 
 
     res.status(200).json(products);
-    console.log('✅ Products from DB:', products);
+    //console.log('✅ Products from DB:', products);
   } catch (error) {
     console.error('❌ Error loading products:', error);
     res.status(500).json({ message: 'Internal server error' });

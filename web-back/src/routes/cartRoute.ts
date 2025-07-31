@@ -1,85 +1,92 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/authMiddleware';
-import { PrismaClient} from "@prisma/client";
-
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const cartRoute = Router();
 const prisma = new PrismaClient();
-cartRoute.get("/cart",authenticateToken, async(req : Request,res : Response):Promise<void> =>{
-   
-    try{
-        //const user = req.user as {user_id:number};
-        
 
-        //const querycart = 'SELECT cart_id FROM cart WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1'
-        const userId = req.user?.user_id
-        const resultcart = await prisma.cart.findUnique({
-          where : {
-            user_id : userId
-          },
-          select : {
-            cart_id : true
-          }
-        })
+cartRoute.get("/cart", authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?.user_id;
 
-if (!resultcart) {
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const resultcart = await prisma.cart.findUnique({
+      where: { user_id: userId },
+      select: { cart_id: true },
+    });
+
+    if (!resultcart) {
       res.status(404).json({ message: "cart not found" });
       return;
     }
 
-   
+    const cartId = resultcart.cart_id;
 
     const resultitem = await prisma.cart_items.findMany({
-      where : {
-        cart_id : resultcart.cart_id
+      where: { cart_id: cartId },
+      include: {
+        products: {
+          select: {
+            product_id: true,
+            product_name: true,
+            image: true,
+            price: true,
+            status: true,
+          },
+        },
+        shops: { select: { shop_name: true } },
       },
       orderBy: { shops: { shop_name: 'asc' } },
-      select : {
-        cart_item_id : true,
-        quantity : true,
-        price_per_unit : true,
-        
-        products : {
-          select: {
-            product_name : true,
-            image : true,
-          }
-        },
-        shops : {
-          select :{
-            shop_name : true
-          }
+    });
+
+    const host = req.headers.host;
+    const protocol = req.protocol;
+
+    const updatePromises: Promise<any>[] = [];
+
+    const itemsWithImageUrl = resultitem
+      .filter(item => item.products.status === "active")
+      .map(item => {
+        const currentPrice = Number(item.products.price ?? 0);
+        const cartPrice = Number(item.price_per_unit ?? 0);
+
+        if (cartPrice !== currentPrice) {
+          updatePromises.push(
+            prisma.cart_items.update({
+              where: { cart_item_id: item.cart_item_id },
+              data: { price_per_unit: new Prisma.Decimal(currentPrice) },  // <-- แก้ตรงนี้
+            })
+          );
+
+          item.price_per_unit = new Prisma.Decimal(currentPrice); // อัปเดตใน memory
         }
-        
-      }
-    })
 
-//const resultitem = await pool.query(queryitem, [cartId]);
-       const host = req.headers.host; // ex: "192.168.1.133:5000"
-    const protocol = req.protocol; // ex: "http"
+        return {
+          cart_item_id: item.cart_item_id,
+          quantity: item.quantity,
+          price_per_unit: item.price_per_unit,
+          product_name: item.products.product_name,
+          image: item.products.image ? `${protocol}://${host}${item.products.image}` : null,
+          shop_name: item.shops.shop_name,
+          total_price: (item.quantity ?? 0) * Number(item.price_per_unit ?? 0),
+        };
+      });
 
-    const itemsWithImageUrl = resultitem.map(prod => ({
-  cart_item_id: prod.cart_item_id,
-  quantity: prod.quantity,
-  price_per_unit: prod.price_per_unit,
-  product_name: prod.products.product_name,
-  image: prod.products.image ? `${protocol}://${host}${prod.products.image}` : null,
-  shop_name: prod.shops.shop_name,
-  total_price: (prod.quantity ?? 0) * Number(prod.price_per_unit ?? 0)
-}));
+    await Promise.all(updatePromises);
 
+    res.status(200).json({
+      cart_id: cartId,
+      items: itemsWithImageUrl,
+    });
 
-
-
-res.status(200).json({
-  cart_id: resultcart.cart_id,
-  items: itemsWithImageUrl,
-});
-
-    }catch(error){
-        console.error("❌ Error loading cart:", error);
+  } catch (error) {
+    console.error("❌ Error loading cart:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในการโหลดข้อมูลตะกร้า" });
-    }
-})
+  }
+});
 
 export default cartRoute;

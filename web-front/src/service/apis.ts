@@ -1,7 +1,18 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://192.168.1.111:5000";  
+export const API_URL = "http://192.168.1.102:5000";  
 
+
+export type Shop = {
+  shop_id: number;
+  shop_name?: string;
+};
+
+export type ProductOwner = {
+  shop_id: number;
+  shops?: Shop;
+  product_id: number;
+};
 export type TransferItem = {
   storeId: number;
   amount: number;
@@ -38,6 +49,7 @@ export interface Product {
   product_description: string;
   price: number;
   image: string;
+  product_owners?: ProductOwner[];
 }
 
 interface CartItem {
@@ -457,3 +469,28 @@ export const loadaddress = async (token: string): Promise<Address[]> => {
     throw error;
   }
 };
+
+export async function addtocart(product_id: number, quantity: number) {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await axios.post(
+      `${API_URL}/api/addtocart`,
+      { product_id, quantity },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return res.data; // ข้อมูลที่ backend ตอบกลับ
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ message?: string }>;
+    const errorMsg =
+      err.response?.data?.message || err.message || "Add to cart failed";
+
+    console.error("Add to cart error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+}

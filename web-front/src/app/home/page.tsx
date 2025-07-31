@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadUsername, fetchUserRole, loaduserproduct } from '@/service/apis';
-import { Product } from '@/service/apis';
+import { loadUsername, fetchUserRole, loaduserproduct, Product, addtocart } from '@/service/apis';
 
 export default function UserDashboardPage() {
   const [username, setUsername] = useState('');
@@ -31,10 +30,8 @@ export default function UserDashboardPage() {
         const name = await loadUsername(token);
         setUsername(name);
 
-        // โหลดสินค้าของผู้ใช้
         const userProducts = await loaduserproduct();
         setProducts(userProducts);
-
       } catch (err) {
         console.error("🚫 Error loading user dashboard:", err);
         router.push('/');
@@ -48,6 +45,19 @@ export default function UserDashboardPage() {
     localStorage.removeItem('token');
     router.push('/');
   };
+
+  // 🔁 เปลี่ยน handleAddToCart
+const handleAddToCart = async (product: Product) => {
+  try {
+    await addtocart(product.product_id, 1); // ส่งแค่ 2 ค่า
+
+    alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
+  } catch (err) {
+    console.error('❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้:', err);
+    alert('เกิดข้อผิดพลาดขณะเพิ่มสินค้า');
+  }
+};
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-400 to-blue-600 text-white p-6">
@@ -76,13 +86,19 @@ export default function UserDashboardPage() {
                     className="w-32 h-32 object-cover rounded"
                   />
                 )}
-                <div className="text-left">
+                <div className="text-left flex-1">
                   <h3 className="text-xl font-bold">{product.product_name}</h3>
                   <p className="italic text-gray-700 text-sm">{product.product_description}</p>
                   <p className="mt-2 font-semibold text-green-700">
                     💰 ราคา: ฿{Number(product.price).toFixed(2)}
                   </p>
                 </div>
+                <button
+                  onClick={() => handleAddToCart(product)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded shadow"
+                >
+                  ➕ เพิ่มลงตะกร้า
+                </button>
               </li>
             ))}
           </ul>
