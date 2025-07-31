@@ -8,7 +8,7 @@ datasource db {
 }
 
 model address {
-  address_id   Int     @id
+  address_id   Int     @id @default(autoincrement())
   user_id      Int?
   firstname    String?
   lastname     String?
@@ -37,9 +37,9 @@ model cart_items {
   cart_id        Int
   product_id     Int
   shop_id        Int
-  quantity       Int?
-  price_per_unit Decimal?  @db.Decimal
-  added_at       DateTime? @default(now()) @db.Timestamp(6)
+  quantity       Int
+  price_per_unit Decimal  @db.Decimal
+  added_at       DateTime @default(now()) @db.Timestamp(6)
   cart           cart      @relation(fields: [cart_id], references: [cart_id], onDelete: NoAction, onUpdate: NoAction)
   products       products  @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
   shops          shops     @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction)
@@ -108,7 +108,7 @@ model products {
   product_id          Int                 @id @default(autoincrement())
   product_name        String?
   product_description String?
-  price               String?
+  price               Decimal? @db.Decimal(10, 2)
   category_id         Int?
   status              String?
   image               String?

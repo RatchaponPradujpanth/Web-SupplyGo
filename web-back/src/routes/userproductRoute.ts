@@ -1,7 +1,5 @@
 import { Router, Request, Response } from "express";
-import { pool } from "../config/db";
-import { authenticateToken } from "../middleware/authMiddleware";
-import { PrismaClient, products } from "@prisma/client";
+import { PrismaClient} from "@prisma/client";
 
 const userproductRoute = Router();
 const prisma = new PrismaClient();
