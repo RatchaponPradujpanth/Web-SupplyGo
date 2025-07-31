@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../config/db';
 import { authenticateToken } from '../middleware/authMiddleware';
 import { PrismaClient } from "@prisma/client";
 

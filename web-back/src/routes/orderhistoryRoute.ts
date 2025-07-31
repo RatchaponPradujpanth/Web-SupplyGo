@@ -1,5 +1,4 @@
 import { Router, Request, Response } from "express";
-import { pool } from "../config/db";
 import { authenticateToken,authstore } from "../middleware/authMiddleware";
 
 const orderhistoryRoute = Router();
@@ -10,7 +9,7 @@ orderhistoryRoute.get("/orderhistory",authenticateToken, async (req : Request , 
     const userId = user.user_id;   
 
         const query = ``
-        const result = await pool.query(query[userId])
+        
 
          
     } catch (error) {

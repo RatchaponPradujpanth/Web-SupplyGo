@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/authMiddleware';
-import { pool } from '../config/db';
 import { PrismaClient, products } from "@prisma/client";
 
 const cartSummaryRoute = Router();
