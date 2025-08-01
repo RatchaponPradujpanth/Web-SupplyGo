@@ -67,6 +67,41 @@ interface CartResponse {
   items: CartItem[];
 }
 
+export interface OrderHistoryResponse {
+  orders: {
+    order_id: number;
+    address_id: number;
+  }[];
+  order_shops: {
+  order_shop_id: number;
+  order_id: number;   // เพิ่มตรงนี้
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number: string;
+}[];
+  order_items: {
+    order_shop_id: number;     // <-- เพิ่มตรงนี้
+    product_id: number;
+    quantity: number;
+    price_per_unit: number;
+    total_price: number;
+  }[];
+  addresses: {
+  address_id: number;   // เพิ่มตรงนี้
+  firstname: string;
+  lastname: string;
+  phone_number: number;
+  house_number: string;
+  street: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: number;
+}[];
+}
+
+
 export const RegisterUser = async (
   username: string,
   password: string,
@@ -494,3 +529,18 @@ export async function addtocart(product_id: number, quantity: number) {
     throw new Error(errorMsg);
   }
 }
+
+export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
+  try {
+    const response = await axios.get<OrderHistoryResponse>(`${API_URL}/api/orderhistory`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:", error.message);
+    throw error;
+  }
+};

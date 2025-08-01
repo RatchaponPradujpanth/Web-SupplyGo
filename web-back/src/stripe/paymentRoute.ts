@@ -41,7 +41,7 @@ if (isNaN(cartId)) {
       if (!groupedByShop.has(item.shop_id)) groupedByShop.set(item.shop_id, []);
       groupedByShop.get(item.shop_id)!.push(item);
     }
-
+    
     const paymentIntents = [];
 
     for (const [shopId, items] of groupedByShop.entries()) {

@@ -46,7 +46,7 @@ addtocartRoute.post("/addtocart", authenticateToken, async (req: Request, res: R
       return;
     }
 
-    if (productData.status !== "Ready") {
+    if (productData.status !== "active") {
       res.status(400).json({ error: "สินค้าไม่พร้อมจำหน่าย" });
       return;
     }
