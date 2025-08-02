@@ -544,3 +544,62 @@ export const getOrderHistory = async (token: string): Promise<OrderHistoryRespon
     throw error;
   }
 };
+
+
+export interface ShopOrderResponse {
+  orders: any[];
+  order_shops: any[];
+  order_items: any[];
+  addresses: any[];
+}
+
+export const getShopOrderHistory = async (token: string, trackingNumber?: string): Promise<ShopOrderResponse> => {
+  try {
+    const response = await axios.get<ShopOrderResponse>(`${API_URL}/api/shoporderhistory`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      params: trackingNumber ? { tracking_number: trackingNumber } : {},
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ โหลดข้อมูลคำสั่งซื้อร้านค้าไม่สำเร็จ:", error.message);
+    throw error;
+  }
+};
+
+
+export const updateTrackingNumber = async (
+  token: string,
+  orderShopId: number,
+  trackingNumber: string
+): Promise<void> => {
+  console.log('📡 Sending request:', {
+    url: `${API_URL}/api/orders/tracking`, // เอา /api ออก
+    orderShopId,
+    trackingNumber,
+    hasToken: !!token
+  });
+
+  try {
+    const response = await axios.patch(
+      `${API_URL}/api/orders/tracking`, // เอา /api ออก
+      {
+        orderShopId,
+        trackingNumber
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    
+    console.log('✅ Response:', response.data);
+  } catch (error: any) {
+    console.error("❌ updateTrackingNumber error:", error.response?.data || error.message);
+    throw error;
+  }
+};

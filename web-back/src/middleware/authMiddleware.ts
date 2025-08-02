@@ -41,16 +41,35 @@ export const authenticateToken = (
 };
  
 
-  export const authstore = (
+export const authstore = (
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  if (req.user?.role !== "store") {
-    console.log("id นี้ไม่ใช่ร้านค้า");
-    res.status(403).json({ message: "เฉพาะร้านค้าเท่านั้น" });
-    return; // ✅ ต้อง return เพื่อหยุดไม่ให้ไป next()
+  console.log("🔍 authstore - checking user:", req.user);
+  
+  // ตรวจสอบว่ามี user data หรือไม่
+  if (!req.user) {
+    console.log("❌ ไม่มี user data");
+    res.status(401).json({ message: "กรุณาเข้าสู่ระบบ" });
+    return;
   }
 
-  next(); // ✅ ไปต่อเฉพาะเมื่อเป็นร้านค้าเท่านั้น
+  // ตรวจสอบ role
+  if (req.user.role !== "store") {
+    console.log("❌ Role ไม่ถูกต้อง:", req.user.role);
+    res.status(403).json({ message: "เฉพาะร้านค้าเท่านั้น" });
+    return;
+  }
+
+  // ตรวจสอบ shop_id
+  if (!req.user.shop_id) {
+    console.log("❌ ไม่มี shop_id");
+    res.status(403).json({ message: "ไม่พบข้อมูลร้านค้า กรุณาสร้างร้านก่อน" });
+    return;
+  }
+
+  console.log("✅ ผ่านการตรวจสอบร้านค้า - Shop ID:", req.user.shop_id);
+  next();
 };
+

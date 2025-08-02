@@ -72,37 +72,36 @@ export default function StoreDashboardPage() {
       </div>
 
       <div className="w-full max-w-4xl bg-white bg-opacity-80 text-black rounded-lg p-6 shadow-lg">
-  <h2 className="text-2xl font-semibold mb-4">📋 รายการสินค้า</h2>
+        <h2 className="text-2xl font-semibold mb-4">📋 รายการสินค้า</h2>
 
-  {products.length > 0 ? (
-    <ul className="space-y-4">
-      {products.map((product) => (
-        <li
-          key={product.product_id}
-          className="bg-white bg-opacity-90 rounded-lg p-4 flex flex-col md:flex-row items-center gap-4 shadow"
-        >
-          {product.image && (
-            <img
-              src={product.image}
-              alt={product.product_name}
-              className="w-32 h-32 object-cover rounded"
-            />
-          )}
-          <div className="text-left">
-            <h3 className="text-xl font-bold">{product.product_name}</h3>
-            <p className="italic text-sm text-gray-700">{product.product_description}</p>
-            <p className="mt-2 font-semibold text-green-700">
-              💰 ราคา: ฿{Number(product.price).toFixed(2)}
-            </p>
-          </div>
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p className="italic text-gray-600 text-center">ยังไม่มีสินค้าในร้าน</p>
-  )}
-</div>
-
+        {products.length > 0 ? (
+          <ul className="space-y-4">
+            {products.map((product) => (
+              <li
+                key={product.product_id}
+                className="bg-white bg-opacity-90 rounded-lg p-4 flex flex-col md:flex-row items-center gap-4 shadow"
+              >
+                {product.image && (
+                  <img
+                    src={product.image}
+                    alt={product.product_name}
+                    className="w-32 h-32 object-cover rounded"
+                  />
+                )}
+                <div className="text-left">
+                  <h3 className="text-xl font-bold">{product.product_name}</h3>
+                  <p className="italic text-sm text-gray-700">{product.product_description}</p>
+                  <p className="mt-2 font-semibold text-green-700">
+                    💰 ราคา: ฿{Number(product.price).toFixed(2)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="italic text-gray-600 text-center">ยังไม่มีสินค้าในร้าน</p>
+        )}
+      </div>
 
       <div className="mt-6">
         <button
@@ -111,6 +110,15 @@ export default function StoreDashboardPage() {
         >
           ➕ เพิ่มสินค้า
         </button>
+
+        <div className="mt-4">
+          <button
+            onClick={() => router.push('/shop-order')}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition"
+          >
+            📦 จัดการออเดอร์
+          </button>
+        </div>
       </div>
 
       <button
