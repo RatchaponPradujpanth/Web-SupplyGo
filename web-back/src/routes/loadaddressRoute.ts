@@ -1,19 +1,21 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../config/db';
 import { authenticateToken } from "../middleware/authMiddleware";
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const loadaddressRoute = Router();
 
 // GET /api/address  - ดึงที่อยู่ทั้งหมดของ user ที่ login
 loadaddressRoute.get('/address', authenticateToken, async (req: Request & { user?: { user_id: number } }, res: Response) => {
   try {
-    const result = await pool.query(
-      `SELECT * FROM address WHERE user_id = $1`,
-      [req.user!.user_id]
-    );
+    const userId = req.user!.user_id;
+
+    const addresses = await prisma.address.findMany({
+      where: { user_id: userId }
+    });
 
     res.status(200).json({
-      addresses: result.rows,
+      addresses,
     });
   } catch (error) {
     console.error('❌ ดึงที่อยู่ล้มเหลว:', error);

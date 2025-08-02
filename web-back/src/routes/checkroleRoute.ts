@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken, authstore } from '../middleware/authMiddleware';
-import { pool } from '../config/db';
 
 const checkroleRoute = Router();
 

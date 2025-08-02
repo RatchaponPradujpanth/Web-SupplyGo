@@ -1,7 +1,6 @@
 import express, { Request, Response, Router, NextFunction } from "express";
 import Stripe from "stripe";
 import dotenv from "dotenv";
-import { pool } from "../config/db";
 import { authenticateToken, authstore } from "../middleware/authMiddleware";
 
 dotenv.config();

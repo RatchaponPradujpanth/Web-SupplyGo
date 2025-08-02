@@ -1,7 +1,18 @@
 import axios, { AxiosError } from "axios";
+// import dotenv from 'dotenv'
+export const API_URL = "http://192.168.1.102:5000";  
 
-export const API_URL = "http://192.168.1.133:5000";  
 
+export type Shop = {
+  shop_id: number;
+  shop_name?: string;
+};
+
+export type ProductOwner = {
+  shop_id: number;
+  shops?: Shop;
+  product_id: number;
+};
 export type TransferItem = {
   storeId: number;
   amount: number;
@@ -38,6 +49,7 @@ export interface Product {
   product_description: string;
   price: number;
   image: string;
+  product_owners?: ProductOwner[];
 }
 
 interface CartItem {
@@ -54,6 +66,41 @@ interface CartResponse {
   cart_id: number | null;
   items: CartItem[];
 }
+
+export interface OrderHistoryResponse {
+  orders: {
+    order_id: number;
+    address_id: number;
+  }[];
+  order_shops: {
+  order_shop_id: number;
+  order_id: number;   // เพิ่มตรงนี้
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number: string;
+}[];
+  order_items: {
+    order_shop_id: number;     // <-- เพิ่มตรงนี้
+    product_id: number;
+    quantity: number;
+    price_per_unit: number;
+    total_price: number;
+  }[];
+  addresses: {
+  address_id: number;   // เพิ่มตรงนี้
+  firstname: string;
+  lastname: string;
+  phone_number: number;
+  house_number: string;
+  street: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: number;
+}[];
+}
+
 
 export const RegisterUser = async (
   username: string,
@@ -148,10 +195,10 @@ export const loadproduct = async (token: string): Promise<Product[]> => {
 
 export const loadstorename = async (
   token: string
-): Promise<{ shopname: string; shop_id: number; stripe_account_id?: string | null }> => {
+): Promise<{ shop_name: string; shop_id: number; stripe_account_id?: string | null }> => {
   try {
     console.log("📦 loading store with token:", token); // ตรวจ token
-    const response = await axios.get<{ shopname: string; shop_id: number }>(
+    const response = await axios.get<{ shop_name: string; shop_id: number }>(
       `${API_URL}/api/loadstorename`,
       {
         headers: {
@@ -159,7 +206,7 @@ export const loadstorename = async (
         },
       }
     );
-    console.log("✅ ได้ชื่อร้าน:", response.data.shopname);
+    console.log("✅ ได้idร้าน:", response.data.shop_id);
     return response.data;
   } catch (error) {
     console.error("Load store name error:", error);
@@ -454,6 +501,46 @@ export const loadaddress = async (token: string): Promise<Address[]> => {
     return response.data.addresses;
   } catch (error) {
     console.error("Load address error:", error);
+    throw error;
+  }
+};
+
+export async function addtocart(product_id: number, quantity: number) {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await axios.post(
+      `${API_URL}/api/addtocart`,
+      { product_id, quantity },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return res.data; // ข้อมูลที่ backend ตอบกลับ
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ message?: string }>;
+    const errorMsg =
+      err.response?.data?.message || err.message || "Add to cart failed";
+
+    console.error("Add to cart error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
+export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
+  try {
+    const response = await axios.get<OrderHistoryResponse>(`${API_URL}/api/orderhistory`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:", error.message);
     throw error;
   }
 };

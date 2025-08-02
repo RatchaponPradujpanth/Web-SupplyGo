@@ -1,0 +1,160 @@
+-- 1. users
+CREATE TABLE IF NOT EXISTS public.users (
+    user_id SERIAL PRIMARY KEY,
+    username TEXT,
+    password TEXT,
+    email TEXT,
+    registration_date TIMESTAMP DEFAULT now(),
+    role TEXT
+);
+
+-- 2. address
+CREATE TABLE IF NOT EXISTS public.address (
+    address_id SERIAL PRIMARY KEY,
+    user_id INTEGER,
+    firstname TEXT,
+    lastname TEXT,
+    phone_number INTEGER,
+    house_number TEXT,
+    street TEXT,
+    sub_district TEXT,
+    district TEXT,
+    province TEXT,
+    postal_code INTEGER,
+    address_type TEXT,
+    CONSTRAINT address_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users(user_id)
+);
+
+-- 3. shops
+CREATE TABLE IF NOT EXISTS public.shops (
+    shop_id SERIAL PRIMARY KEY,
+    shop_name TEXT,
+    user_id INTEGER NOT NULL,
+    address TEXT,
+    stripe_account_id TEXT,
+    CONSTRAINT shops_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users(user_id)
+);
+
+-- 4. cart
+CREATE TABLE IF NOT EXISTS public.cart (
+    cart_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now(),
+    CONSTRAINT cart_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users(user_id)
+);
+
+-- 5. product_categories
+CREATE TABLE IF NOT EXISTS public.product_categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name TEXT,
+    description TEXT
+);
+
+-- 6. products
+CREATE TABLE IF NOT EXISTS public.products (
+    product_id SERIAL PRIMARY KEY,
+    product_name TEXT,
+    product_description TEXT,
+    price TEXT,
+    category_id INTEGER,
+    status TEXT,
+    image TEXT,
+    created_date TIMESTAMP DEFAULT now(),
+    updated_date TIMESTAMP DEFAULT now(),
+    CONSTRAINT products_category_id_fkey FOREIGN KEY (category_id)
+        REFERENCES public.product_categories(category_id)
+);
+
+-- 7. product_batches
+CREATE TABLE IF NOT EXISTS public.product_batches (
+    batch_id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    batch_number TEXT,
+    manufactured_date DATE,
+    expiry_date DATE,
+    quantity TEXT,
+    CONSTRAINT product_batches_product_id_fkey FOREIGN KEY (product_id)
+        REFERENCES public.products(product_id)
+);
+
+-- 8. product_owners
+CREATE TABLE IF NOT EXISTS public.product_owners (
+    id SERIAL PRIMARY KEY,
+    shop_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    CONSTRAINT product_owners_shop_id_fkey FOREIGN KEY (shop_id)
+        REFERENCES public.shops(shop_id),
+    CONSTRAINT product_owners_product_id_fkey FOREIGN KEY (product_id)
+        REFERENCES public.products(product_id)
+);
+
+-- 9. cart_items
+CREATE TABLE IF NOT EXISTS public.cart_items (
+    cart_item_id SERIAL PRIMARY KEY,
+    cart_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    shop_id INTEGER NOT NULL,
+    quantity INTEGER,
+    price_per_unit NUMERIC,
+    added_at TIMESTAMP DEFAULT now(),
+    CONSTRAINT cart_items_cart_id_fkey FOREIGN KEY (cart_id)
+        REFERENCES public.cart(cart_id),
+    CONSTRAINT cart_items_product_id_fkey FOREIGN KEY (product_id)
+        REFERENCES public.products(product_id),
+    CONSTRAINT cart_items_shop_id_fkey FOREIGN KEY (shop_id)
+        REFERENCES public.shops(shop_id)
+);
+
+-- 10. "order"
+CREATE TABLE IF NOT EXISTS public."order" (
+    order_id SERIAL PRIMARY KEY,
+    address_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    order_date TIMESTAMP,
+    total_amount NUMERIC,
+    status TEXT,
+    CONSTRAINT order_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users(user_id),
+    CONSTRAINT order_address_id_fkey FOREIGN KEY (address_id)
+        REFERENCES public.address(address_id)
+);
+
+-- 11. order_shops
+CREATE TABLE IF NOT EXISTS public.order_shops (
+    order_shop_id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    shop_id INTEGER NOT NULL,
+    subtotal NUMERIC,
+    status TEXT,
+    tracking_number TEXT,
+    CONSTRAINT order_shops_order_id_fkey FOREIGN KEY (order_id)
+        REFERENCES public."order"(order_id),
+    CONSTRAINT order_shops_shop_id_fkey FOREIGN KEY (shop_id)
+        REFERENCES public.shops(shop_id)
+);
+
+-- 12. order_items
+CREATE TABLE IF NOT EXISTS public.order_items (
+    order_item_id SERIAL PRIMARY KEY,
+    order_shop_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER,
+    price_per_unit NUMERIC,
+    total_price NUMERIC,
+    CONSTRAINT order_items_order_shop_id_fkey FOREIGN KEY (order_shop_id)
+        REFERENCES public.order_shops(order_shop_id),
+    CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id)
+        REFERENCES public.products(product_id)
+);
+
+
+DB_HOST=
+DB_PORT=
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+JWT_SECRET=
