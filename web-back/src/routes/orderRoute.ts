@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../config/db';
 import { authenticateToken } from '../middleware/authMiddleware';
+import { PrismaClient } from "@prisma/client";
 
 const orderRoute = Router();
+const prisma = new PrismaClient();
+
 
 interface UserPayload {
   user_id: number;
@@ -44,46 +46,53 @@ orderRoute.post('/order-success', authenticateToken, async (req: CustomRequest, 
   }
 
   try {
-    const cartItemsRes = await pool.query<CartItem>(
-      `
-      SELECT 
-        ci.product_id, 
-        ci.quantity, 
-        ci.price_per_unit,
-        s.shop_id
-      FROM cart_items ci
-      JOIN shops s ON ci.shop_id = s.shop_id
-      WHERE ci.cart_id = $1
-      `,
-      [cartId]
-    );
-    const cartItems = cartItemsRes.rows;
 
-    console.log('🛒 รายการใน cart:', cartItems);
+    const cartItemsRaw =await prisma.cart_items.findMany({
+      where : {
+        cart_id : cartId,
+      },
+      select : {
+        product_id : true,
+        quantity : true,
+        price_per_unit : true,
+         shop_id: true,
+      },
+    });
+    const cartItems: CartItem[] = cartItemsRaw.map((item) => ({
+  product_id: item.product_id,
+  quantity: item.quantity, // ✅ เป็น number แน่นอน
+  price_per_unit: Number(item.price_per_unit), // ✅ แปลง Decimal → number
+  shop_id: item.shop_id,
+}));
+
+    
 
     if (cartItems.length === 0) {
-      console.log('❌ ไม่พบสินค้าในตะกร้า');
       res.status(400).json({ message: 'ไม่พบสินค้าในตะกร้า' });
-      return 
+      return;
     }
 
     const totalAmount = cartItems.reduce(
-      (sum: number, item: CartItem) => sum + item.quantity * item.price_per_unit,
+      (sum, item) => sum + item.quantity * item.price_per_unit,
       0
     );
     console.log('💰 ยอดรวมทั้งหมด:', totalAmount);
 
-    const orderRes = await pool.query(
-      `
-      INSERT INTO "order" (address_id, user_id, order_date, total_amount, status)
-      VALUES ($1, $2, NOW(), $3, 'paid')
-      RETURNING order_id
-      `,
-      [address_id, userId, totalAmount]
-    );
-    const order_id = orderRes.rows[0].order_id;
 
-    console.log('📝 สร้าง order แล้ว, order_id:', order_id);
+
+
+    const order = await prisma.order.create({
+      data : {
+        address_id : address_id,
+        user_id : userId,
+        order_date : new Date(),
+        total_amount : totalAmount,
+        status : 'paid',
+      },
+    });
+    const orderId = order.order_id;
+
+    console.log('📝 สร้าง order แล้ว, order_id:', orderId);
 
     const itemsByShop = cartItems.reduce((acc: Record<number, CartItem[]>, item) => {
       if (!acc[item.shop_id]) acc[item.shop_id] = [];
@@ -100,43 +109,34 @@ orderRoute.post('/order-success', authenticateToken, async (req: CustomRequest, 
         0
       );
 
-      const orderShopRes = await pool.query(
-        `
-        INSERT INTO order_shops (order_id, shop_id, subtotal, status, tracking_number)
-        VALUES ($1, $2, $3, 'pending', NULL)
-        RETURNING order_shop_id
-        `,
-        [order_id, shopId, subtotal]
-      );
-      const order_shop_id = orderShopRes.rows[0].order_shop_id;
+      const orderShop = await prisma.order_shops.create({
+        data:{
+          order_id : orderId,
+          shop_id : shopId,
+          subtotal : subtotal,
+          status : 'padding',
+          tracking_number : null,
+        },
+      });
+
+      const order_shop_id = orderShop.order_shop_id;
 
       console.log(`📦 สร้าง order_shop สำหรับ shop_id ${shopId}, order_shop_id:`, order_shop_id);
 
-      const insertItemsPromises = items.map((item) =>
-        pool.query(
-          `
-          INSERT INTO order_items (order_shop_id, product_id, quantity, price_per_unit, total_price)
-          VALUES ($1, $2, $3, $4, $5)
-          `,
-          [
-            order_shop_id,
-            item.product_id,
-            item.quantity,
-            item.price_per_unit,
-            item.quantity * item.price_per_unit,
-          ]
-        )
-      );
-      await Promise.all(insertItemsPromises);
+      const orderItemsData = items.map((item) => ({
+        order_shop_id: order_shop_id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price_per_unit: item.price_per_unit,
+        total_price: item.quantity * item.price_per_unit,
+      }));
 
-      console.log(`🧾 เพิ่มรายการสินค้าให้กับร้าน ${shopId}`);
+      await prisma.order_items.createMany({
+        data: orderItemsData,
+      });
     }
-
-    console.log('✅ บันทึกคำสั่งซื้อสำเร็จทั้งหมด');
-
     res.status(200).json({
       message: 'บันทึกคำสั่งซื้อสำเร็จ',
-      order_id,
     });
   } catch (error) {
     console.error('❌ บันทึกคำสั่งซื้อล้มเหลว:', error);

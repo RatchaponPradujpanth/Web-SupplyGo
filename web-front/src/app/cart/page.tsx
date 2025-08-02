@@ -29,39 +29,41 @@ export default function CartPage() {
 
   useEffect(() => {
     const fetchCart = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('กรุณาเข้าสู่ระบบ');
-        router.push('/');
-        return;
-      }
+  const token = localStorage.getItem('token');
+  if (!token) {
+    router.push('/');
+    return;
+  }
 
-      try {
-        const response = await fetch(`${API_URL}/api/cart`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+  try {
+    const response = await fetch(`${API_URL}/api/cart`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
 
-        if (!response.ok) {
-          throw new Error('โหลดตะกร้าไม่สำเร็จ');
-        }
+    if (!response.ok) {
+      // ไม่ต้อง alert แค่ log พอ
+      //console.error('ไม่สามารถโหลดข้อมูลตะกร้าได้');
+      setCartItems([]);
+      return;
+    }
 
-        const data: CartResponse = await response.json();
-        setCartItems(data.items);
+    const data: CartResponse = await response.json();
+    setCartItems(data.items);
 
-        const totalPrice = data.items.reduce(
-          (acc, item) => acc + Number(item.total_price),
-          0
-        );
-        setTotal(totalPrice);
-      } catch (error) {
-        console.error('❌ โหลดตะกร้าล้มเหลว:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const totalPrice = data.items.reduce(
+      (acc, item) => acc + Number(item.total_price),
+      0
+    );
+    setTotal(totalPrice);
+  } catch (error) {
+    console.error('❌ เกิดข้อผิดพลาดในการโหลดตะกร้า:', error);
+  } finally {
+    setLoading(false);
+  }
+}
 
     fetchCart();
   }, [router]);

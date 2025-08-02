@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadUsername, fetchUserRole, loaduserproduct } from '@/service/apis';
-import { Product } from '@/service/apis';
+import { loadUsername, fetchUserRole, loaduserproduct, Product, addtocart } from '@/service/apis';
 
 export default function UserDashboardPage() {
   const [username, setUsername] = useState('');
@@ -31,10 +30,8 @@ export default function UserDashboardPage() {
         const name = await loadUsername(token);
         setUsername(name);
 
-        // โหลดสินค้าของผู้ใช้
         const userProducts = await loaduserproduct();
         setProducts(userProducts);
-
       } catch (err) {
         console.error("🚫 Error loading user dashboard:", err);
         router.push('/');
@@ -47,6 +44,17 @@ export default function UserDashboardPage() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/');
+  };
+
+  const handleAddToCart = async (product: Product) => {
+    try {
+      await addtocart(product.product_id, 1);
+
+      alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
+    } catch (err) {
+      console.error('❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้:', err);
+      alert('เกิดข้อผิดพลาดขณะเพิ่มสินค้า');
+    }
   };
 
   return (
@@ -76,13 +84,19 @@ export default function UserDashboardPage() {
                     className="w-32 h-32 object-cover rounded"
                   />
                 )}
-                <div className="text-left">
+                <div className="text-left flex-1">
                   <h3 className="text-xl font-bold">{product.product_name}</h3>
                   <p className="italic text-gray-700 text-sm">{product.product_description}</p>
                   <p className="mt-2 font-semibold text-green-700">
                     💰 ราคา: ฿{Number(product.price).toFixed(2)}
                   </p>
                 </div>
+                <button
+                  onClick={() => handleAddToCart(product)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded shadow"
+                >
+                  ➕ เพิ่มลงตะกร้า
+                </button>
               </li>
             ))}
           </ul>
@@ -91,12 +105,20 @@ export default function UserDashboardPage() {
         )}
       </div>
 
-      <div className="text-right mt-6">
+      <div className="text-right mt-6 space-y-4">
         <button
           onClick={() => router.push('/cart')}
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg shadow transition"
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg shadow transition w-full md:w-auto"
         >
           🛒 ไปดูตะกร้าสินค้า
+        </button>
+
+        {/* ปุ่มเพิ่มไปยังหน้า order history */}
+        <button
+          onClick={() => router.push('/orderhistory')}
+          className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition w-full md:w-auto"
+        >
+          📦 ดูประวัติคำสั่งซื้อ
         </button>
       </div>
 

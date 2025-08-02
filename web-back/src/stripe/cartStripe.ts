@@ -1,40 +1,72 @@
 // GET /api/cart-summary/:cartId
 import { Router, Request, Response } from 'express';
-import { pool } from '../config/db';
+import { PrismaClient} from "@prisma/client";
 import { authenticateToken } from '../middleware/authMiddleware';
 
 const cartStripe = Router();
-
+const prisma = new PrismaClient();
 cartStripe.get(
   '/cart-summary/:cartId',
   authenticateToken,
   async (req: Request & { user?: { user_id: number } }, res: Response): Promise<void> => {
-    const cartId = req.params.cartId;
+    const cartId = parseInt(req.params.cartId, 10);
 
     try {
-      const result = await pool.query(
-        `
-        SELECT 
-          ci.shop_id, 
-          s.shop_name,
-          s.stripe_account_id, 
-          SUM(ci.quantity * ci.price_per_unit) AS amount,
-          c.user_id
-        FROM cart_items ci
-        JOIN shops s ON ci.shop_id = s.shop_id
-        JOIN cart c ON ci.cart_id = c.cart_id
-        WHERE ci.cart_id = $1
-        GROUP BY ci.shop_id, s.shop_name, s.stripe_account_id, c.user_id
-        `,
-        [cartId]
-      );
 
-      const shopPayments = result.rows;
 
-      if (shopPayments.length === 0) {
-        res.status(400).json({ message: 'ไม่พบสินค้าหรือร้านค้าในตะกร้า' });
-        return;
-      }
+      const result = await prisma.cart_items.findMany({
+        where : {
+          cart_id : cartId,
+        },
+        select : {
+          quantity : true,
+          price_per_unit : true,
+          shops : {
+            select : {
+              shop_id :true,
+              shop_name : true,
+              stripe_account_id: true,
+            }
+          },
+          cart : {
+            select :{
+              user_id : true,
+            }
+          }
+        }
+
+      })
+
+      const shopPaymentsMap = result.reduce((acc, item) => {
+  const shopId = item.shops.shop_id;
+  const shopName = item.shops.shop_name ?? "Unknown Shop";  // กำหนดชื่อสำรอง
+  const stripeAccountId = item.shops.stripe_account_id ?? null;
+
+  if (!acc[shopId]) {
+    acc[shopId] = {
+      shop_id: shopId,
+      shop_name: shopName,
+      stripe_account_id: stripeAccountId,
+      amount: 0,
+      user_id: item.cart.user_id,
+    };
+  }
+
+  acc[shopId].amount += Number(item.quantity) * Number(item.price_per_unit);
+
+  return acc;
+}, {} as Record<
+  number,
+  {
+    shop_id: number;
+    shop_name: string;
+    stripe_account_id: string | null;
+    amount: number;
+    user_id: number;
+  }
+>);
+    
+const shopPayments = Object.values(shopPaymentsMap);
 
       res.status(200).json({
         message: 'ดึงข้อมูลตะกร้าสำเร็จ',

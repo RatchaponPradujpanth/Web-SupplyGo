@@ -1,64 +1,92 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../config/db';
 import { authenticateToken } from '../middleware/authMiddleware';
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const cartRoute = Router();
+const prisma = new PrismaClient();
 
-cartRoute.get("/cart",authenticateToken, async(req : Request,res : Response):Promise<void> =>{
-   
-    try{
-        const protocol = req.protocol;  // 'http' หรือ 'https'
-const host = req.get('host');   // 'localhost:5000' หรือโดเมน
+cartRoute.get("/cart", authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?.user_id;
 
-        const user = req.user as {user_id:number};
-        const userId = user.user_id
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
 
-        const querycart = 'SELECT cart_id FROM cart WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1'
-        const resultcart = await pool.query (querycart , [userId])
+    const resultcart = await prisma.cart.findUnique({
+      where: { user_id: userId },
+      select: { cart_id: true },
+    });
 
-        if (resultcart.rows.length === 0 ){
-            res.status(200).json({items: [], cart_id: null})
-            return;
+    if (!resultcart) {
+      res.status(404).json({ message: "cart not found" });
+      return;
+    }
+
+    const cartId = resultcart.cart_id;
+
+    const resultitem = await prisma.cart_items.findMany({
+      where: { cart_id: cartId },
+      include: {
+        products: {
+          select: {
+            product_id: true,
+            product_name: true,
+            image: true,
+            price: true,
+            status: true,
+          },
+        },
+        shops: { select: { shop_name: true } },
+      },
+      orderBy: { shops: { shop_name: 'asc' } },
+    });
+
+    const host = req.headers.host;
+    const protocol = req.protocol;
+
+    const updatePromises: Promise<any>[] = [];
+
+    const itemsWithImageUrl = resultitem
+      .filter(item => item.products.status === "active")
+      .map(item => {
+        const currentPrice = Number(item.products.price ?? 0);
+        const cartPrice = Number(item.price_per_unit ?? 0);
+
+        if (cartPrice !== currentPrice) {
+          updatePromises.push(
+            prisma.cart_items.update({
+              where: { cart_item_id: item.cart_item_id },
+              data: { price_per_unit: new Prisma.Decimal(currentPrice) },  // <-- แก้ตรงนี้
+            })
+          );
+
+          item.price_per_unit = new Prisma.Decimal(currentPrice); // อัปเดตใน memory
         }
 
-        const cartId = resultcart.rows[0].cart_id;
+        return {
+          cart_item_id: item.cart_item_id,
+          quantity: item.quantity,
+          price_per_unit: item.price_per_unit,
+          product_name: item.products.product_name,
+          image: item.products.image ? `${protocol}://${host}${item.products.image}` : null,
+          shop_name: item.shops.shop_name,
+          total_price: (item.quantity ?? 0) * Number(item.price_per_unit ?? 0),
+        };
+      });
 
-        
-// ดึงข้อมูลจาก DB เช่น:
-const queryitem = `
-  SELECT 
-    ci.cart_item_id,
-    ci.quantity,
-    ci.price_per_unit,
-    (ci.quantity * ci.price_per_unit) AS total_price,
-    p.product_name,
-    p.image,
-    s.shop_name
-  FROM cart_items ci
-  JOIN products p ON ci.product_id = p.product_id
-  JOIN shops s ON ci.shop_id = s.shop_id
-  WHERE ci.cart_id = $1
-  ORDER BY s.shop_name ASC
-`;
+    await Promise.all(updatePromises);
 
-const resultitem = await pool.query(queryitem, [cartId]);
+    res.status(200).json({
+      cart_id: cartId,
+      items: itemsWithImageUrl,
+    });
 
-const itemsWithImageUrl = resultitem.rows.map((item) => ({
-  ...item,
-  image: item.image
-    ? `${protocol}://${host}/images/${item.image.replace(/^.*[\\\/]/, '').replace(/"/g, '')}`
-    : null,
-}));
-console.log(itemsWithImageUrl);
-res.status(200).json({
-  cart_id: cartId,
-  items: itemsWithImageUrl,
-});
-
-    }catch(error){
-        console.error("❌ Error loading cart:", error);
+  } catch (error) {
+    console.error("❌ Error loading cart:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในการโหลดข้อมูลตะกร้า" });
-    }
-})
+  }
+});
 
 export default cartRoute;

@@ -1,44 +1,75 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/authMiddleware';
-import { pool } from '../config/db';
+import { PrismaClient, products } from "@prisma/client";
 
 const cartSummaryRoute = Router();
+const prisma = new PrismaClient();
+
 
 cartSummaryRoute.get("/cartsummary",authenticateToken,async (req : Request , res : Response):Promise<void> => {
     try {
-        const user = req.user as {user_id:number}
-    const userId = user.user_id
+    
+    const userId = req.user?.user_id
 
-    const querycart = 'SELECT cart_id FROM cart WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
-    const resultcart = await pool.query(querycart,[userId])
+    const resultcart = await prisma.cart.findFirst({
+      where : {
+        user_id : userId,
+      },
+      select :{
+        cart_id : true,
+      }
+    })
 
-    if (resultcart.rows.length === 0){
-        res.status(200).json({item :[] , totalamount:[]})
-        return;
-    }
 
-    const cartId = resultcart.rows[0].cart_id;
+      //เช็คตะกร้า
+  if (!resultcart) {
+  res.status(404).json({ message: "ไม่พบตะกร้าของผู้ใช้" });
+  return;
+}
+    const resultitem = await prisma.cart_items.findMany({
+      where : {
+        cart_id : resultcart.cart_id
+      },
+      select : {
+        cart_item_id: true,
+        quantity : true,
+        price_per_unit : true,
 
-    const queryitem = `
-      SELECT 
-        ci.cart_item_id,
-        ci.quantity,
-        ci.price_per_unit,
-        (ci.quantity * ci.price_per_unit) AS total_price,
-        p.product_name,
-        s.shop_id,
-        s.shop_name
-      FROM cart_items ci
-      JOIN products p ON ci.product_id = p.product_id
-      JOIN shops s ON ci.shop_id = s.shop_id
-      WHERE ci.cart_id = $1
-    `;
-    const resultitem = await pool.query(queryitem,[cartId])
-    const items = resultitem.rows
+        products : {
+          select : {
+            product_name : true,
+            image : true,
+          }
+        },
 
-    const totalAmount = items.reduce((sum, item) => sum + Number(item.total_price), 0);
-    res.status(200).json({ cart_id: cartId, items, totalAmount });
+        shops :{
+          select : {
+            shop_id : true,
+            shop_name : true,
+          }
+        }
 
+        
+      }
+    });
+
+    const itemsWithTotal = resultitem.map(item => ({
+  cart_item_id: item.cart_item_id,
+  quantity: item.quantity,
+  price_per_unit: item.price_per_unit,
+  total_price: Number(item.quantity) * Number(item.price_per_unit),
+  product_name: item.products.product_name,
+  image: item.products.image,
+  shop_id: item.shops.shop_id,
+  shop_name: item.shops.shop_name
+}));
+    const totalAmount = itemsWithTotal.reduce((sum, item) => sum + item.total_price, 0);
+
+res.status(200).json({ 
+  cart_id: resultcart.cart_id, // หรือ resultcart.cart_id
+  items: itemsWithTotal,
+  totalAmount 
+});
     } catch (error) {
         console.error('❌ Error loading cart summary:');
         res.status(500).json({ message: 'Internal server error' });
