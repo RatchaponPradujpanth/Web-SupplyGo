@@ -65,11 +65,11 @@ export default function OrderHistoryPage() {
 
                   {items.length > 0 ? (
                     <div className="mt-2 space-y-2">
-                      {items.map(item => (
-                        <div key={item.product_id} className="text-sm border-b pb-2">
-                          สินค้า #{item.product_id} - {item.quantity} ชิ้น x {item.price_per_unit} = <span className="font-medium">{item.total_price} บาท</span>
-                        </div>
-                      ))}
+                      {items.map((item, index) => (
+  <div key={`${item.product_id}-${index}`} className="text-sm border-b pb-2">
+    สินค้า #{item.product_id} - {item.quantity} ชิ้น x {item.price_per_unit} = <span className="font-medium">{item.total_price} บาท</span>
+  </div>
+))}
                     </div>
                   ) : (
                     <div className="text-sm text-gray-500 italic mt-2">ไม่มีรายการสินค้า</div>

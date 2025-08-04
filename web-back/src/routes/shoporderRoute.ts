@@ -129,9 +129,9 @@ shoporderRoute.get("/orders", authenticateToken, authstore, async (req: Request,
  * อัปเดตเลขพัสดุสำหรับ order_shop ที่ร้านเป็นเจ้าของ
  */
 shoporderRoute.patch("/orders/tracking", authenticateToken, authstore, async (req: Request, res: Response): Promise<void> => {
-  console.log("🎯 PATCH /orders/tracking called");
-  console.log("📝 Request body:", req.body);
-  console.log("👤 User from token:", req.user);
+  // console.log("🎯 PATCH /orders/tracking called");
+  // console.log("📝 Request body:", req.body);
+  // console.log("👤 User from token:", req.user);
 
   const { orderShopId, trackingNumber } = req.body;
   const shopId = req.user?.shop_id;
@@ -170,5 +170,55 @@ shoporderRoute.patch("/orders/tracking", authenticateToken, authstore, async (re
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+shoporderRoute.patch("/orders/status", authenticateToken, authstore, async (req: Request, res: Response): Promise<void> => {
+  const { orderShopId, status } = req.body;
+  const shopId = req.user?.shop_id;
+
+  if (!orderShopId || !status || status.trim() === "") {
+    res.status(400).json({ error: "orderShopId และ status ต้องถูกส่งมา" });
+    return 
+  }
+
+  const orderShopIdNum = Number(orderShopId);
+  if (isNaN(orderShopIdNum)) {
+    res.status(400).json({ error: "orderShopId ต้องเป็นตัวเลข" });
+    return 
+  }
+
+  const validStatuses = ["Pending", "Shipped", "Delivered", "Cancelled"];
+  if (!validStatuses.includes(status.trim())) {
+    res.status(400).json({ error: "สถานะไม่ถูกต้อง" });
+    return 
+  }
+
+  try {
+    const result = await prisma.order_shops.updateMany({
+      where: {
+        order_shop_id: orderShopIdNum,
+        shop_id: shopId,
+      },
+      data: {
+        status: status.trim(),
+      },
+    });
+
+    if (result.count === 0) {
+      res.status(404).json({ error: "ไม่พบคำสั่งซื้อหรือคุณไม่มีสิทธิ์" });
+      return 
+    }
+
+    res.json({ message: "อัปเดตสถานะคำสั่งซื้อเรียบร้อย" });
+  } catch (err) {
+    console.error("❌ อัปเดตสถานะล้มเหลว:", err);
+    res.status(500).json({ error: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" });
+  }
+});
+
+  
+
+
+
+
 
 export default shoporderRoute;

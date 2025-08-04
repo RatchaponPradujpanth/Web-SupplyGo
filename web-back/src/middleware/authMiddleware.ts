@@ -69,7 +69,7 @@ export const authstore = (
     return;
   }
 
-  console.log("✅ ผ่านการตรวจสอบร้านค้า - Shop ID:", req.user.shop_id);
+  console.log("ผ่านการตรวจสอบ - Shop ID:", req.user.shop_id);
   next();
 };
 

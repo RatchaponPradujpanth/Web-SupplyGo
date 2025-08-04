@@ -603,3 +603,46 @@ export const updateTrackingNumber = async (
     throw error;
   }
 };
+
+export interface ShopOrder {
+  order_shop_id: number;
+  order_id: number;
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number: string;
+}
+
+export const updatestatus = async (
+  token: string,
+  orderShopId: number,
+  status: string
+): Promise<void> => {
+  console.log('📡 Sending request:', {
+    url: `${API_URL}/api/orders/status`, // เอา /api ออก
+    orderShopId,
+    status,
+    hasToken: !!token
+  });
+
+  try {
+    const response = await axios.patch(
+      `${API_URL}/api/orders/status`, // เอา /api ออก
+      {
+        orderShopId,
+        status
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    
+    console.log('✅ Response:', response.data);
+  } catch (error: any) {
+    console.error("❌ updateTrackingNumber error:", error.response?.data || error.message);
+    throw error;
+  }
+};
