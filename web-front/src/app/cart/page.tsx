@@ -2,24 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_URL } from '@/service/apis';
-
-interface CartItem {
-  cart_item_id: number;
-  product_name: string;
-  shop_name: string;
-  quantity: number;
-  price_per_unit: number;
-  total_price: number;
-  image: string;
-}
-
-interface CartResponse {
-  cart_id: number;
-  items: CartItem[];
-}
-
-
+import { cartUser } from '@/service/api/loadcart';
+import type { CartResponse, CartItem } from '@/types/type';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -29,41 +13,28 @@ export default function CartPage() {
 
   useEffect(() => {
     const fetchCart = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    router.push('/');
-    return;
-  }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
 
-  try {
-    const response = await fetch(`${API_URL}/api/cart`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+      try {
+        const data = await cartUser(token);
+        setCartItems(data.items);
 
-    if (!response.ok) {
-      // ไม่ต้อง alert แค่ log พอ
-      //console.error('ไม่สามารถโหลดข้อมูลตะกร้าได้');
-      setCartItems([]);
-      return;
-    }
-
-    const data: CartResponse = await response.json();
-    setCartItems(data.items);
-
-    const totalPrice = data.items.reduce(
-      (acc, item) => acc + Number(item.total_price),
-      0
-    );
-    setTotal(totalPrice);
-  } catch (error) {
-    console.error('❌ เกิดข้อผิดพลาดในการโหลดตะกร้า:', error);
-  } finally {
-    setLoading(false);
-  }
-}
+        const totalPrice = data.items.reduce(
+          (acc, item) => acc + Number(item.total_price),
+          0
+        );
+        setTotal(totalPrice);
+      } catch (error) {
+        console.error('❌ เกิดข้อผิดพลาดในการโหลดตะกร้า:', error);
+        setCartItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchCart();
   }, [router]);
@@ -71,7 +42,9 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">🛒 ตะกร้าสินค้าของคุณ</h1>
+        <h1 className="text-2xl font-bold mb-4 text-gray-800">
+          🛒 ตะกร้าสินค้าของคุณ
+        </h1>
 
         {loading ? (
           <p className="text-gray-600">⏳ กำลังโหลด...</p>
@@ -84,20 +57,46 @@ export default function CartPage() {
                 key={item.cart_item_id}
                 className="flex items-center bg-gray-50 p-4 rounded-lg shadow-sm"
               >
-                <img
-  src={item.image ?? ''}  // ใช้ค่า image ที่ได้จาก backend ตรง ๆ เลย
-  alt={item.product_name}
-  className="mt-2 w-40 rounded"
-/>
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-gray-800">{item.product_name}</h2>
-                  <p className="text-sm text-gray-600">ร้าน: {item.shop_name}</p>
-                  <p className="text-sm text-gray-600">
-                    จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}
+                <div className="flex-shrink-0">
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.product_name}
+                      className="w-40 h-40 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 bg-gray-200 rounded flex items-center justify-center">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="ml-6 flex-grow">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {item.product_name}
+                  </h3>
+
+                  {item.variant_info && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {item.variant_info}
+                    </p>
+                  )}
+
+                  <p className="text-sm text-gray-500 mt-1">
+                    ร้าน: {item.shop_name}
                   </p>
-                  <p className="font-semibold text-gray-800">
-                    รวม: ฿{Number(item.total_price).toFixed(2)}
-                  </p>
+
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-blue-600 font-medium">
+                      ฿{Number(item.price_per_unit).toLocaleString()}
+                    </span>
+                    <span className="text-gray-600">
+                      จำนวน: {item.quantity}
+                    </span>
+                    <span className="text-blue-700 font-semibold">
+                      รวม: ฿{Number(item.total_price).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}

@@ -1,20 +1,9 @@
 'use client';
 
-import { useEffect, useState, ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import { getCategories } from '@/service/apis';
-import { addproduct } from '@/service/apis';
-
-function parseJwt(token: string) {
-  try {
-    const base64Payload = token.split('.')[1];
-    const payload = atob(base64Payload);
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
+import { useRouter } from 'next/navigation';
+import { addproduct, getCategories } from '@/service/apis';
 
 interface Category {
   category_id: number;
@@ -24,196 +13,347 @@ interface Category {
 export default function AddProductPage() {
   const router = useRouter();
 
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [price, setPrice] = useState<number | ''>('');
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+
+  const [useVariants, setUseVariants] = useState(false);
+  const [options, setOptions] = useState<{ name: string; values: string[] }[]>([
+    { name: '', values: [''] },
+  ]);
+  const [variants, setVariants] = useState<
+    {
+      sku: string;
+      price: number;
+      stock_quantity: number;
+      option_values: string[];
+    }[]
+  >([]);
+
   const [loading, setLoading] = useState(false);
 
-  // โหลดประเภทสินค้าจาก API (สมมติมี API /api/categories)
+  // โหลดประเภทสินค้า
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const data = await getCategories()
+        const data = await getCategories();
         setCategories(data);
-      } catch (error) {
-        console.error('โหลดประเภทสินค้าไม่สำเร็จ', error);
+      } catch (err) {
+        console.error('โหลดประเภทสินค้าไม่สำเร็จ', err);
       }
     }
     fetchCategories();
   }, []);
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('กรุณาเข้าสู่ระบบก่อน');
-      router.push('/login');
+
+  // จัดการ option name/value
+  const handleOptionNameChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index].name = value;
+    setOptions(newOptions);
+  };
+
+  const handleOptionValueChange = (optionIndex: number, valueIndex: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[optionIndex].values[valueIndex] = value;
+    setOptions(newOptions);
+  };
+
+  const addOption = () => {
+    setOptions([...options, { name: '', values: [''] }]);
+  };
+
+  const addOptionValue = (optionIndex: number) => {
+    const newOptions = [...options];
+    newOptions[optionIndex].values.push('');
+    setOptions(newOptions);
+  };
+
+  // สร้าง variants จาก options (cartesian product)
+  const generateVariants = () => {
+    // ฟังก์ชัน cartesian product
+    const cartesian = (arrays: string[][]): string[][] =>
+      arrays.reduce<string[][]>(
+        (acc, curr) =>
+          acc.flatMap((a) => curr.map((c) => [...a, c])),
+        [[]]
+      );
+
+    // เอาเฉพาะ values ที่ไม่ว่างเปล่า
+    const filteredValues = options.map((opt) => opt.values.filter((v) => v.trim() !== ''));
+
+    if (filteredValues.some((vals) => vals.length === 0)) {
+      toast.error('กรุณากรอกค่าตัวเลือกให้ครบทุก option');
       return;
     }
 
-    const payload = parseJwt(token);
-    if (!payload || payload.role !== 'store') {
-      toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
-      router.push('/');
+    const combos = cartesian(filteredValues);
+
+    // สร้าง variants เริ่มต้น
+    const newVariants = combos.map((combo) => ({
+      sku: '',
+      price: 0,
+      stock_quantity: 0,
+      option_values: combo,
+    }));
+
+    setVariants(newVariants);
+  };
+
+  // เปลี่ยนข้อมูล variant
+  const handleVariantChange = (
+    index: number,
+    field: 'sku' | 'price' | 'stock_quantity',
+    value: string
+  ) => {
+    const newVariants = [...variants];
+    if (field === 'price' || field === 'stock_quantity') {
+      // แปลงเป็น number ถ้าไม่ใช่เลข ให้เป็น 0
+      const numValue = Number(value);
+      newVariants[index][field] = isNaN(numValue) ? 0 : numValue;
+    } else {
+      newVariants[index][field] = value;
+    }
+    setVariants(newVariants);
+  };
+
+  // ส่งข้อมูลไป api
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!productName || !categoryId) {
+      toast.error('กรุณากรอกชื่อสินค้าและประเภทสินค้า');
       return;
     }
 
-    setAuthorized(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!imageFile) {
-      setImagePreview(null);
+    if (!useVariants && (price === '' || price < 0)) {
+      toast.error('กรุณากรอกราคาสินค้า');
       return;
     }
 
-    const objectUrl = URL.createObjectURL(imageFile);
-    setImagePreview(objectUrl);
+    if (useVariants) {
+      // เช็ค variants ว่าราคาหรือจำนวนติดลบไหม
+      for (const v of variants) {
+        if (v.price < 0 || v.stock_quantity < 0) {
+          toast.error('ราคาหรือจำนวนคงเหลือของ Variant ต้องไม่ติดลบ');
+          return;
+        }
+      }
+    }
 
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [imageFile]);
+    setLoading(true);
 
- async function handleSubmit(e: FormEvent) {
-  e.preventDefault();
-  if (!productName || !price || !categoryId || !imageFile) {
-    toast.error('กรุณากรอกข้อมูลให้ครบ');
-    return;
-  }
+    try {
+      const token = localStorage.getItem('token') || '';
+      await addproduct(
+        token,
+        productName,
+        productDescription,
+        useVariants ? 0 : Number(price),
+        Number(categoryId),
+        imageFiles,
+        useVariants ? options : [],
+        useVariants ? variants : []
+      );
 
-  setLoading(true);
+      toast.success('เพิ่มสินค้าสำเร็จ');
 
-    
-  try {
-    const token = localStorage.getItem('token') || '';
-    await addproduct(token, productName, productDescription, price, categoryId, imageFile);
-    toast.success('เพิ่มสินค้าสำเร็จ!');
-    setProductName('');
-    setProductDescription('');
-    setPrice('');
-    setCategoryId('');
-    setImageFile(null);
-    setImagePreview(null);
-  } catch (error) {
-    toast.error('เกิดข้อผิดพลาดในการส่งข้อมูล');
-  } finally {
-    setLoading(false);
-  }
-}
-
-  if (authorized === null) {
-    return <p className="text-center mt-10">กำลังตรวจสอบสิทธิ์...</p>;
-  }
-
-  if (authorized === false) {
-    return <p className="text-center mt-10 text-red-500">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>;
-  }
+      // reset form
+      setProductName('');
+      setProductDescription('');
+      setPrice('');
+      setCategoryId('');
+      setImageFiles([]);
+      setOptions([{ name: '', values: [''] }]);
+      setVariants([]);
+      setUseVariants(false);
+    } catch (error) {
+      toast.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded shadow-md mt-10">
       <Toaster position="top-right" />
       <h2 className="text-2xl font-bold mb-6">เพิ่มสินค้าใหม่</h2>
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ชื่อสินค้า */}
-        <div>
-          <label htmlFor="productName" className="block font-semibold mb-1">
-            ชื่อสินค้า <span className="text-red-500">*</span>
-          </label>
+        <label className="flex items-center gap-2">
           <input
-            id="productName"
-            type="text"
-            value={productName}
-            onChange={e => setProductName(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="ระบุชื่อสินค้า"
-            required
+            type="checkbox"
+            checked={useVariants}
+            onChange={(e) => setUseVariants(e.target.checked)}
           />
-        </div>
+          ใช้ตัวเลือกย่อย (Variants)
+        </label>
+
+        {/* ชื่อสินค้า */}
+        <input
+          type="text"
+          placeholder="ชื่อสินค้า"
+          value={productName}
+          onChange={(e) => setProductName(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+          required
+        />
 
         {/* คำอธิบาย */}
-        <div>
-          <label htmlFor="productDescription" className="block font-semibold mb-1">
-            คำอธิบายสินค้า
-          </label>
-          <textarea
-            id="productDescription"
-            value={productDescription}
-            onChange={e => setProductDescription(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="รายละเอียดสินค้า"
-            rows={4}
-          />
-        </div>
+        <textarea
+          placeholder="คำอธิบาย"
+          value={productDescription}
+          onChange={(e) => setProductDescription(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
 
-        {/* ราคา */}
-        <div>
-          <label htmlFor="price" className="block font-semibold mb-1">
-            ราคา (บาท) <span className="text-red-500">*</span>
-          </label>
+        {/* ราคา ถ้าไม่ใช้ variant */}
+        {!useVariants && (
           <input
-            id="price"
             type="number"
-            min="0"
-            step="0.01"
+            placeholder="ราคาสินค้า"
+            min={0}
+            step={0.01}
             value={price}
-            onChange={e => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="ระบุราคา"
+            onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
+            className="w-full border rounded px-3 py-2"
             required
           />
-        </div>
+        )}
 
         {/* ประเภทสินค้า */}
-        <div>
-          <label htmlFor="category" className="block font-semibold mb-1">
-            ประเภทสินค้า <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="category"
-            value={categoryId}
-            onChange={e => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          >
-            <option value="">-- เลือกประเภทสินค้า --</option>
-            {categories.map(cat => (
-              <option key={cat.category_id} value={cat.category_id}>
-                {cat.category_name}
-              </option>
-            ))}
-          </select>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+          required
+        >
+          <option value="">-- เลือกประเภทสินค้า --</option>
+          {categories.map((cat) => (
+            <option key={cat.category_id} value={cat.category_id}>
+              {cat.category_name}
+            </option>
+          ))}
+        </select>
+
+        {/* อัปโหลดรูปหลายไฟล์ */}
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => setImageFiles(Array.from(e.target.files || []))}
+          className="w-full"
+          required
+        />
+        <div className="flex flex-wrap gap-2">
+          {imageFiles.map((file, i) => {
+            const url = URL.createObjectURL(file);
+            return (
+              <img
+                key={i}
+                src={url}
+                alt={`preview-${i}`}
+                className="w-20 h-20 object-cover border rounded"
+                onLoad={() => URL.revokeObjectURL(url)}
+              />
+            );
+          })}
         </div>
 
-        {/* อัปโหลดรูป */}
-        <div>
-          <label className="block font-semibold mb-1">
-            รูปสินค้า <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={e => setImageFile(e.target.files?.[0] || null)}
-            required
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded file:border-0
-              file:text-sm file:font-semibold
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100
-            "
-          />
-          {imagePreview && (
-            <img src={imagePreview} alt="Preview" className="mt-3 max-w-xs rounded border" />
-          )}
-        </div>
+        {/* ตัวเลือกและ variants */}
+        {useVariants && (
+          <>
+            <div>
+              <h3 className="font-semibold mb-2">ตั้งค่าคุณลักษณะ (Options)</h3>
+              {options.map((opt, i) => (
+                <div key={i} className="mb-4 border p-2 rounded">
+                  <input
+                    type="text"
+                    placeholder="ชื่อคุณลักษณะ เช่น สี, ขนาด"
+                    value={opt.name}
+                    onChange={(e) => handleOptionNameChange(i, e.target.value)}
+                    className="w-full mb-2 px-2 py-1 border rounded"
+                    required
+                  />
+                  {opt.values.map((val, j) => (
+                    <input
+                      key={j}
+                      type="text"
+                      placeholder={`ค่า ${j + 1}`}
+                      value={val}
+                      onChange={(e) => handleOptionValueChange(i, j, e.target.value)}
+                      className="w-full mb-1 px-2 py-1 border rounded"
+                      required
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addOptionValue(i)}
+                    className="text-blue-600 text-sm"
+                  >
+                    + เพิ่มค่า
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={addOption} className="text-green-600 text-sm">
+                + เพิ่มคุณลักษณะใหม่
+              </button>
 
-        {/* ปุ่มบันทึก */}
+              <button
+                type="button"
+                onClick={generateVariants}
+                className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded"
+              >
+                สร้างตัวเลือกย่อย (Variants)
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="font-semibold mb-2">ตัวเลือกย่อย (Variants)</h3>
+              {variants.length === 0 && <p className="text-gray-500">ยังไม่มีตัวเลือกย่อย</p>}
+              {variants.map((variant, vi) => (
+                <div key={vi} className="border rounded p-2 mb-2">
+                  <div>ค่าตัวเลือก: {variant.option_values.join(', ')}</div>
+                  <input
+                    type="text"
+                    placeholder="SKU"
+                    value={variant.sku}
+                    onChange={(e) => handleVariantChange(vi, 'sku', e.target.value)}
+                    className="w-full mb-1 px-2 py-1 border rounded"
+                    required
+                  />
+                  <input
+                    type="number"
+                    placeholder="ราคา"
+                    min={0}
+                    step={0.01}
+                    value={variant.price}
+                    onChange={(e) => handleVariantChange(vi, 'price', e.target.value)}
+                    className="w-full mb-1 px-2 py-1 border rounded"
+                    required
+                  />
+                  <input
+                    type="number"
+                    placeholder="จำนวนคงเหลือ"
+                    min={0}
+                    step={1}
+                    value={variant.stock_quantity}
+                    onChange={(e) => handleVariantChange(vi, 'stock_quantity', e.target.value)}
+                    className="w-full mb-1 px-2 py-1 border rounded"
+                    required
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded transition disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded"
         >
           {loading ? 'กำลังบันทึก...' : 'เพิ่มสินค้า'}
         </button>

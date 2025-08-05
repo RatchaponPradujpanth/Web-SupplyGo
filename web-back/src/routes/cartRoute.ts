@@ -27,70 +27,105 @@ cartRoute.get("/cart", authenticateToken, async (req: Request, res: Response): P
     const cartId = resultcart.cart_id;
 
     const resultitem = await prisma.cart.findUniqueOrThrow({
-  where: { cart_id: cartId },
-  include: {
-    cart_items: {
-      select: {
-        cart_item_id: true,
-        quantity: true,
-        price_per_unit: true,
-        products: {
+      where: { cart_id: cartId },
+      include: {
+        cart_items: {
           select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-            price: true,
-            status: true,
-          },
-        },
-        shops: {
-          select: {
-            shop_name: true,
-          },
-        },
-      },
-      orderBy: {
-        shops: {
-          shop_name: 'asc',
-        },
-      },
-    },
-  },
-});
-
+            cart_item_id: true,
+            quantity: true,
+            price_per_unit: true,
+            variant_id: true,
+            variant: {              // Add variant selection
+              select: {
+                sku: true,
+                price: true,
+                stock_quantity: true,
+                variant_options: {
+                  select: {
+                    value: true,
+                    option: {
+                      select: {
+                        name: true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            products: {
+              select: {
+                product_id: true,
+                product_name: true,
+                price: true,
+                status: true,
+                product_images: {
+                  where: { is_primary: true },
+                  select: { image_url: true },
+                  take: 1
+                }
+              },
+            },
+            shops: {           // Add shops selection
+              select: {
+                shop_name: true,
+              },
+            },
+          }
+        }
+      }
+    });
 
     const host = req.headers.host;
     const protocol = req.protocol;
-
+const getFullUrl = (path?: string | null) => {
+      if (!path) return null;
+      if (path.startsWith("http")) return path;
+      return `${protocol}://${host}${path.startsWith("/") ? path : "/" + path}`;
+    };
     const updatePromises: Promise<any>[] = [];
 
     const itemsWithImageUrl = resultitem.cart_items
-  .filter(item => item.products.status?.toLowerCase() === "active") // ✅
-  .map(item => {
-    const currentPrice = Number(item.products.price ?? 0);
-    const cartPrice = Number(item.price_per_unit ?? 0);
+      .filter(item => item.products.status?.toLowerCase() === "active")
+      .map(item => {
+        // ใช้ราคาจาก variant ถ้ามี หรือใช้ราคาสินค้าปกติ
+        
+        const currentPrice = item.variant?.price ?? item.products.price ?? 0;
+        const cartPrice = Number(item.price_per_unit ?? 0);
 
-    if (cartPrice !== currentPrice) {
-      updatePromises.push(
-        prisma.cart_items.update({
-          where: { cart_item_id: item.cart_item_id },
-          data: { price_per_unit: new Prisma.Decimal(currentPrice) },
-        })
-      );
+        if (cartPrice !== Number(currentPrice)) {
+          updatePromises.push(
+            prisma.cart_items.update({
+              where: { cart_item_id: item.cart_item_id },
+              data: { price_per_unit: new Prisma.Decimal(currentPrice) },
+            })
+          );
+          item.price_per_unit = new Prisma.Decimal(currentPrice);
+        }
 
-      item.price_per_unit = new Prisma.Decimal(currentPrice);
-    }
+        // สร้าง variant options string
+        const variantOptions = item.variant?.variant_options.map(vo => ({
+          name: vo.option.name,
+          value: vo.value
+        }));
 
-          return {
-      cart_item_id: item.cart_item_id,
-      quantity: item.quantity,
-      price_per_unit: item.price_per_unit,
-      product_name: item.products.product_name,
-      image: item.products.image ? `${protocol}://${host}${item.products.image}` : null,
-      shop_name: item.shops.shop_name,
-      total_price: (item.quantity ?? 0) * Number(item.price_per_unit ?? 0),
-    };
-  });
+        const variantDisplay = variantOptions
+          ? variantOptions.map(opt => `${opt.name}: ${opt.value}`).join(', ')
+          : null;
+
+        return {
+          cart_item_id: item.cart_item_id,
+          quantity: item.quantity,
+          price_per_unit: item.price_per_unit,
+          product_name: item.products.product_name,
+          image: item.products.product_images[0]?.image_url 
+            ? getFullUrl(`/upload/products/${item.products.product_images[0].image_url.replace('/upload/products/', '')}`)
+            : null,
+          shop_name: item.shops.shop_name,
+          variant_id: item.variant_id,
+          variant_info: variantDisplay,
+          total_price: (item.quantity ?? 0) * Number(item.price_per_unit ?? 0),
+        };
+      });
 
     await Promise.all(updatePromises);
 

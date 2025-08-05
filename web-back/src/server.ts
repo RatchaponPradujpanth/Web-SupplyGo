@@ -4,7 +4,7 @@ import loginRoute from "./routes/loginRoute";
 import registerRoute from "./routes/registerRoute";
 import cors from "cors";
 import loadusernameRoute from "./routes/loadusernameRoute";
-import productRoute from "./routes/productRoute";
+import manageproductsRoute from "./routes/manageproductsRoute";
 import path from 'path';
 import loadstorename from "./routes/loadstorenameRoute";
 import storeregisstripe from "./stripe/CreateAccountstripe";
@@ -23,18 +23,19 @@ import loadaddressRoute from "./routes/loadaddressRoute";
 import addtocartRoute from "./routes/addtocartRoute";
 import orderhistoryRoute from "./routes/orderhistoryRoute";
 import shoporderRoute from "./routes/shoporderRoute";
+import primarypictureRoute from "./routes/primarypictureRoute";
 
 dotenv.config(); // โหลดค่า .env
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use('/upload', express.static(path.join(__dirname, '../upload')));
+app.use('/upload', express.static(path.join(__dirname, '../uploads')));
 app.use('/images',express.static(path.join(__dirname, 'picture')));
 app.use("/api",registerRoute);
 app.use("/api",loginRoute);
 app.use("/api",loadusernameRoute);
-app.use("/api",productRoute);
+app.use("/api",manageproductsRoute);
 app.use('/api',loadstorename)
 app.use("/api",storeregisstripe);
 app.use("/api",storeconnect);
@@ -52,6 +53,8 @@ app.use("/api",loadaddressRoute);
 app.use("/api",addtocartRoute);
 app.use("/api",orderhistoryRoute);
 app.use("/api",shoporderRoute)
+app.use("/api",primarypictureRoute);
+
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");

@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://192.168.1.102:5000";  
+export const API_URL = "http://192.168.1.111:5000";  
 
 
 export type Shop = {
@@ -50,6 +50,21 @@ export interface Product {
   price: number;
   image: string;
   product_owners?: ProductOwner[];
+
+  // 🆕 เพิ่มส่วนนี้เพื่อรองรับ relations
+  status?: string;
+  product_variants?: {
+    variant_id: number;
+    sku: string;
+    price: number;
+    stock_quantity: number;
+    option_values: string[];
+  }[];
+
+  product_images?: {
+    image_id: number;
+    image_url: string;
+  }[];
 }
 
 interface CartItem {
@@ -169,11 +184,11 @@ export const loadUsername = async (token: string): Promise<string> => {
 export const loadproduct = async (token: string): Promise<Product[]> => {
   if (!token) throw new Error("No token provided");
   try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/loadproduct`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
     console.log("✅ Products fetched:", response.data);
     return response.data;
@@ -348,7 +363,14 @@ export const addproduct = async (
   product_description: string,
   price: number,
   category_id: number,
-  imageFile: File
+  imageFiles: File[],
+  options: { name: string; values: string[] }[],
+  variants: {
+    sku: string;
+    price: number;
+    stock_quantity: number;
+    option_values: string[];
+  }[]
 ): Promise<void> => {
   try {
     const formData = new FormData();
@@ -356,7 +378,15 @@ export const addproduct = async (
     formData.append("product_description", product_description);
     formData.append("price", price.toString());
     formData.append("category_id", category_id.toString());
-    formData.append("image", imageFile); // ต้องใช้ชื่อ 'image' ตรงกับ backend
+
+    // ✅ แนบ images หลายรูป
+    imageFiles.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    // ✅ แนบ options และ variants แบบ JSON string
+    formData.append("options", JSON.stringify(options));
+    formData.append("variants", JSON.stringify(variants));
 
     const response = await axios.post(`${API_URL}/api/add-product`, formData, {
       headers: {
@@ -364,12 +394,14 @@ export const addproduct = async (
         "Content-Type": "multipart/form-data",
       },
     });
+
     console.log("✅ เพิ่มสินค้าสำเร็จ", response.data);
   } catch (error) {
-    console.error("❌ error ที่ api:");
+    console.error("❌ error ที่ api:", error);
     throw error;
   }
 };
+
 
 export const getCategories = async (): Promise<Category[]> => {
   try {
@@ -395,25 +427,25 @@ export async function fetchUserRole(token: string): Promise<string> {
   }
 }
 
-export const loaduserproduct = async (): Promise<Product[]> => {
-  try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/loaduserproduct`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+// export const loaduserproduct = async (): Promise<Product[]> => {
+//   try {
+//     const response = await axios.get<Product[]>(`${API_URL}/api/loaduserproduct`, {
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//     });
 
-    console.log("✅ Products fetched:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Failed to load products";
+//     console.log("✅ Products fetched:", response.data);
+//     return response.data;
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Failed to load products";
 
-    console.error("Error fetching products:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Error fetching products:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const submitOrder = async (
   token: string,
@@ -505,30 +537,30 @@ export const loadaddress = async (token: string): Promise<Address[]> => {
   }
 };
 
-export async function addtocart(product_id: number, quantity: number) {
-  try {
-    const token = localStorage.getItem("token");
+// export async function addtocart(product_id: number, quantity: number) {
+//   try {
+//     const token = localStorage.getItem("token");
 
-    const res = await axios.post(
-      `${API_URL}/api/addtocart`,
-      { product_id, quantity },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+//     const res = await axios.post(
+//       `${API_URL}/api/addtocart`,
+//       { product_id, quantity, variant_id, option_value_ids },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
 
-    return res.data; // ข้อมูลที่ backend ตอบกลับ
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Add to cart failed";
+//     return res.data; // ข้อมูลที่ backend ตอบกลับ
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Add to cart failed";
 
-    console.error("Add to cart error:", errorMsg);
-    throw new Error(errorMsg);
-  }
-}
+//     console.error("Add to cart error:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// }
 
 export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
   try {
