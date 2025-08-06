@@ -109,36 +109,55 @@ export interface OrderHistoryResponse {
   orders: {
     order_id: number;
     address_id: number;
-  }[];
-  order_shops: {
-    order_shop_id: number;
-    order_id: number;
-    shop_id: number;
-    subtotal: number;
-    status: string;
-    tracking_number: string;
-  }[];
-  order_items: {
-    order_shop_id: number;
-    product_id: number;
-    quantity: number;
-    price_per_unit: number;
-    total_price: number;
-  }[];
-  addresses: {
-    address_id: number;
-    firstname: string;
-    lastname: string;
-    phone_number: number;
-    house_number: string;
-    street: string;
-    sub_district: string;
-    district: string;
-    province: string;
-    postal_code: number;
+    order_date: string;
+    total_amount?: number;
+    status?: string;
+    address?: {   // <== เพิ่มฟิลด์นี้
+      address_id: number;
+      firstname: string;
+      lastname: string;
+      phone_number: string;
+      house_number: string;
+      street: string;
+      sub_district: string;
+      district: string;
+      province: string;
+      postal_code: string;
+    } | null;
+    order_shops: {
+      order_shop_id: number;
+      shop_id: number;
+      subtotal: number;
+      status: string;
+      tracking_number: string;
+      shops: {
+        shop_name: string;
+      };
+      order_items: {
+        order_item_id: number;
+        product_id: number;
+        quantity: number;
+        price_per_unit: number;
+        total_price: number;
+        products: {
+          product_name: string;
+          product_images: {
+            image_url: string;
+          }[];
+        };
+        variant_option: {
+          value: string;
+          option: {
+            name: string;
+          };
+          variant: {
+            sku: string;
+          };
+        } | null;
+      }[];
+    }[];
   }[];
 }
-
 export interface ShopPaymentIntent {
   shop_id: number;
   shop_name: string;

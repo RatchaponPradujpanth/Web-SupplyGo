@@ -7,20 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model address {
-  address_id   Int     @id @default(autoincrement())
-  user_id      Int?
-  firstname    String?
-  lastname     String?
-  phone_number Int?
-  house_number String?
-  street       String?
-  sub_district String?
-  district     String?
-  province     String?
-  postal_code  Int?
-  address_type String?
-  users        users?  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_id")
+  address_id     Int      @id @default(autoincrement())
+  user_id        Int?
+  firstname      String?
+  lastname       String?
+  phone_number   Int?
+  house_number   String?
+  street         String?
+  sub_district   String?
+  district       String?
+  province       String?
+  postal_code    Int?
+  address_type   String?
+
+  users          users?   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_id")
+  orders         order[]  @relation("OrderToAddress") // 👈 ชื่อเดียวกัน
 }
 
 model cart {
@@ -71,6 +74,7 @@ model order {
   transaction_id  String?
 
   users           users         @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  address         address       @relation("OrderToAddress", fields: [address_id], references: [address_id]) // 👈 ตรงกับฝั่ง address
   order_shops     order_shops[]
 }
 
