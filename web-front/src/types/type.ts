@@ -98,6 +98,12 @@ export interface CartItem {
   variant_id?: number;
   variant_info?: string; // เพิ่ม variant_info
   total_price: number;
+  product_id: number;
+}
+
+
+export interface CartItemWithExtra extends CartItem {
+  variant_option_ids?: number[];
 }
 
 export interface CartResponse {

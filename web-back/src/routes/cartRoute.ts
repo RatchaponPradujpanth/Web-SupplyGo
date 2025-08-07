@@ -31,6 +31,7 @@ cartRoute.get("/cart", authenticateToken, async (req: Request, res: Response): P
       include: {
         cart_items: {
           select: {
+            product_id : true,
             cart_item_id: true,
             quantity: true,
             price_per_unit: true,
@@ -114,6 +115,7 @@ const getFullUrl = (path?: string | null) => {
 
         return {
           cart_item_id: item.cart_item_id,
+          product_id: item.product_id,
           quantity: item.quantity,
           price_per_unit: item.price_per_unit,
           product_name: item.products.product_name,

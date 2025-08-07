@@ -26,7 +26,7 @@ export const authenticateToken = (
 
   try {
     const decoded = jwt.verify(token, SECRET) as { user_id: number , shop_id:number,role:string };
-    console.log("✅ Decoded token payload:", decoded);
+    //console.log("✅ Decoded token payload:", decoded);
     req.user = decoded;
     next();//บอกให้ทำ middle ถัดไป ถ้าไม่มีก็ทำ route ถัดไป
     //เมื่อคุณเรียก next(), Express จะ ส่ง req (และ res) ตัวเดิม ไปยัง middleware หรือ route ถัดไป
