@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://192.168.1.111:5000";  
+export const API_URL = "http://192.168.1.118:5000";  
 
 
 export type Shop = {
@@ -297,21 +297,21 @@ export const cartUser = async (token: string): Promise<CartResponse> => {
   }
 };
 
-export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
-  try {
-    const response = await axios.get<CheckoutSummary>(`${API_URL}/api/cartsummary`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+// export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
+//   try {
+//     const response = await axios.get<CheckoutSummary>(`${API_URL}/api/cartsummary`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
 
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
-    throw error;
-  }
-};
+//     return response.data;
+//   } catch (error: any) {
+//     console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
+//     throw error;
+//   }
+// };
 
 export type ShopPaymentIntent = {
   shop_id: number;
@@ -319,6 +319,7 @@ export type ShopPaymentIntent = {
   amount: number;
   client_secret: string;
   stripe_account: string;
+  order_shop_id: number;
 };
 
 export const createMultiVendorPayment = async (

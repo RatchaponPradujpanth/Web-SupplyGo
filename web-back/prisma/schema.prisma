@@ -70,8 +70,7 @@ model order {
   user_id         Int
   order_date      DateTime?     @db.Timestamp(6)
   total_amount    Decimal?      @db.Decimal
-  status          String?
-  transaction_id  String?
+  status          String?       @default("not paid")
 
   users           users         @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   address         address       @relation("OrderToAddress", fields: [address_id], references: [address_id]) // 👈 ตรงกับฝั่ง address
@@ -83,8 +82,10 @@ model order_shops {
   order_id        Int
   shop_id         Int
   subtotal        Decimal?      @db.Decimal
-  status          String?
+  status          String?       @default("not paid")
   tracking_number String?
+  transaction_id  String?       // paymentIntent.id
+  charge_id       String?       // charge.id ใหม่เพิ่ม
   order_items     order_items[]
   order           order         @relation(fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction)
   shops           shops         @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction)

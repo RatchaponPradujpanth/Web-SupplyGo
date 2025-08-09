@@ -25,6 +25,8 @@ import orderhistoryRoute from "./routes/orderhistoryRoute";
 import shoporderRoute from "./routes/shoporderRoute";
 import primarypictureRoute from "./routes/primarypictureRoute";
 import removecartitemRoute from "./routes/removecartitemRoute";
+import savetransactionRoute from "./routes/savetransactionRoute";
+import createorderRoute from "./routes/createorderRoute";
 
 dotenv.config(); // โหลดค่า .env
 
@@ -56,7 +58,8 @@ app.use("/api",orderhistoryRoute);
 app.use("/api",shoporderRoute)
 app.use("/api",primarypictureRoute);
 app.use("/api",removecartitemRoute)
-
+app.use("/api",savetransactionRoute )
+app.use("/api",createorderRoute)
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });

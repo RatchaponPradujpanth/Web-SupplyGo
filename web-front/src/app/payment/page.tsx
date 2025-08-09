@@ -1,39 +1,19 @@
+// src/app/payment/PaymentForm.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useStripe, useElements, CardElement, Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { useRouter } from 'next/navigation';
 import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import { motion, AnimatePresence } from 'framer-motion';
-
-import {
+  cartUser,
+  loadaddress,
   createMultiVendorPayment,
   submitOrder,
-  loadaddress,
-  cartUser,
   ShopPaymentIntent,
 } from '@/service/apis';
-
-interface Address {
-  address_id: number;
-  firstname: string;
-  lastname: string;
-  phone_number: string;
-  house_number: string;
-  street: string;
-  sub_district: string;
-  district: string;
-  province: string;
-  postal_code: string;
-  address_type: string;
-}
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { motion, AnimatePresence } from 'framer-motion';
+import { savetransaction } from '@/service/api/savetranscation';
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -55,7 +35,24 @@ const CARD_ELEMENT_OPTIONS = {
   hidePostalCode: true,
 };
 
-function PaymentForm() {
+interface Address {
+  address_id: number;
+  firstname: string;
+  lastname: string;
+  phone_number: string;
+  house_number: string;
+  street: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: string;
+  address_type: string;
+}
+
+// Initialize Stripe with your publishable key
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+function PaymentFormContent() {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -71,7 +68,7 @@ function PaymentForm() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      console.error("No token found");
+      setMessage({ type: 'error', text: 'ไม่พบโทเค็นผู้ใช้ กรุณาเข้าสู่ระบบ' });
       return;
     }
 
@@ -97,7 +94,6 @@ function PaymentForm() {
         setPaymentList(paymentRes.paymentIntents);
         setMessage(null);
       } catch (error: any) {
-        console.error(error);
         setMessage({ type: 'error', text: error.message || 'โหลดข้อมูลการชำระเงินล้มเหลว' });
       }
     };
@@ -108,34 +104,41 @@ function PaymentForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      setMessage({ type: 'error', text: 'ยังไม่พร้อมสำหรับการชำระเงิน' });
+      return;
+    }
     const cardElement = elements.getElement(CardElement);
     if (!cardElement || !cartId || !addressId) {
-      setMessage({ type: 'error', text: 'ข้อมูลไม่ครบถ้วน' });
+      setMessage({ type: 'error', text: 'ข้อมูลไม่ครบถ้วน กรุณาตรวจสอบที่อยู่และข้อมูลบัตร' });
       return;
     }
 
     setLoading(true);
 
     try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('ไม่พบ token สำหรับการยืนยันตัวตน');
+
       for (const [index, payment] of paymentList.entries()) {
-        setMessage({ type: 'info', text: `กำลังจ่ายร้าน ${payment.shop_id} (${index + 1}/${paymentList.length})` });
+         console.log("Saving transaction for payment:", payment);
+        setMessage({ type: 'info', text: `กำลังชำระเงินร้าน ${payment.shop_id} (${index + 1}/${paymentList.length})` });
 
         const { error, paymentIntent } = await stripe.confirmCardPayment(payment.client_secret, {
           payment_method: { card: cardElement },
         });
 
         if (error || paymentIntent?.status !== 'succeeded') {
-          throw new Error(`ร้าน ${payment.shop_id} จ่ายไม่สำเร็จ: ${error?.message || paymentIntent?.status}`);
+          throw new Error(`ร้าน ${payment.shop_id} ชำระเงินไม่สำเร็จ: ${error?.message || paymentIntent?.status}`);
         }
+
+        await savetransaction(token, payment.shop_id, payment.order_shop_id, paymentIntent.id);
       }
 
-      const token = localStorage.getItem('token')!;
-      const orderRes = await submitOrder(token, cartId, addressId);
+      await submitOrder(token, cartId, addressId);
 
       setMessage({ type: 'success', text: '✅ ชำระเงินและบันทึกออเดอร์สำเร็จ!' });
       setPaidSuccess(true);
-      console.log('📦 Order created:', orderRes);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะชำระเงิน' });
       setPaidSuccess(false);
@@ -227,12 +230,10 @@ function PaymentForm() {
   );
 }
 
-export default function PaymentPage() {
+export default function PaymentForm() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-indigo-50 via-white to-indigo-50 p-6">
-      <Elements stripe={stripePromise}>
-        <PaymentForm />
-      </Elements>
-    </main>
+    <Elements stripe={stripePromise}>
+      <PaymentFormContent />
+    </Elements>
   );
 }

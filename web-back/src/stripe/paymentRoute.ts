@@ -74,6 +74,7 @@ if (isNaN(cartId)) {
         amount: totalAmount,
         client_secret: paymentIntent.client_secret,
         stripe_account: stripeAccountId,
+        
       });
     }
 

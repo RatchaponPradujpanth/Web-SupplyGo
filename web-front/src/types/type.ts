@@ -76,6 +76,8 @@ export interface CheckoutItem {
   quantity: number;
   price_per_unit: number;
   total_price: number;
+  product_id: number;
+  variant_option_id: number;
 }
 
 export interface CheckoutSummary {
@@ -206,4 +208,22 @@ export interface ShopOrder {
   subtotal: number;
   status: string;
   tracking_number: string;
+}
+
+
+export interface CreateOrderPayload {
+  addressId: number;
+  cartItems: {
+    productId: number;
+    quantity: number;
+    price_per_unit: number;
+    variant_option_id?: number | null;
+    shopId: number;
+  }[];
+  totalAmount: number;
+}
+export interface CreateOrderResponse {
+  order_id: number;
+  status: string;
+  total_amount: number;
 }

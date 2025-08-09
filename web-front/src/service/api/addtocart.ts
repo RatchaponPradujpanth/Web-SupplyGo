@@ -14,7 +14,7 @@ export async function addtocart(
       throw new Error("Authentication token is missing");
     }
 
-    console.log("🔔 API call addtocart with:", { product_id, quantity, variant_id, option_value_id });
+    //console.log("🔔 API call addtocart with:", { product_id, quantity, variant_id, option_value_id });
 
     const response = await axios.post(
       `${API_URL}/api/addtocart`, 
