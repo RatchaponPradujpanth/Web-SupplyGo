@@ -26,6 +26,9 @@ interface CartItem {
   variant_option_id?: number; // Add this field
 }
 
+//รอปรับเป็นสำหรับอัพเดทข้อมูลในตาราง
+
+
 orderRoute.post('/order-success', authenticateToken, async (req: CustomRequest, res: Response) => {
   const userId = req.user?.user_id;
   const { cartId, address_id } = req.body;

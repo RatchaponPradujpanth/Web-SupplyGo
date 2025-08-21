@@ -7,6 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// ------------------------
+/// Model เดิม
+/// ------------------------
 
 model address {
   address_id     Int      @id @default(autoincrement())
@@ -22,8 +25,8 @@ model address {
   postal_code    Int?
   address_type   String?
 
-  users          users?   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "user_id")
-  orders         order[]  @relation("OrderToAddress") // 👈 ชื่อเดียวกัน
+  users          users?   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  orders         order[]  @relation("OrderToAddress")
 }
 
 model cart {
@@ -48,9 +51,7 @@ model cart_items {
   cart                 cart                        @relation(fields: [cart_id], references: [cart_id])
   products             products                    @relation(fields: [product_id], references: [product_id])
   shops                shops                       @relation(fields: [shop_id], references: [shop_id])
-
   variant              product_variants?           @relation(fields: [variant_id], references: [variant_id])
-
   variant_option_links cart_item_variant_options[]
 }
 
@@ -73,7 +74,7 @@ model order {
   status          String?       @default("not paid")
 
   users           users         @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  address         address       @relation("OrderToAddress", fields: [address_id], references: [address_id]) // 👈 ตรงกับฝั่ง address
+  address         address       @relation("OrderToAddress", fields: [address_id], references: [address_id])
   order_shops     order_shops[]
 }
 
@@ -148,6 +149,9 @@ model products {
   product_variants    product_variants[]
   product_options     product_options[]
   product_images      product_images[]
+
+  // Relation กลับสำหรับ group_buying
+  group_buyings       group_buying[]
 }
 
 model product_images {
@@ -177,7 +181,7 @@ model product_variants {
   product         products          @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
   variant_options variant_options[]
 
-  cart_items      cart_items[]      // <-- เพิ่มฝั่งตรงข้าม relation ที่หายไป
+  cart_items      cart_items[]
 }
 
 model variant_options {
@@ -202,6 +206,9 @@ model shops {
   order_shops       order_shops[]
   product_owners    product_owners[]
   users             users            @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Relation กลับสำหรับ group_buying
+  group_buyings     group_buying[]
 }
 
 model users {
@@ -215,4 +222,44 @@ model users {
   cart              cart[]
   order             order[]
   shops             shops[]
+
+  // Relation กลับสำหรับ user_points + group_members
+  user_points       user_points?
+  group_members     group_members[]
+}
+
+/// ------------------------
+/// Model ใหม่: Group Buying + User Points
+/// ------------------------
+
+model user_points {
+  id       Int   @id @default(autoincrement())
+  user_id  Int   @unique
+  balance  Int   @default(0)
+
+  user     users @relation(fields: [user_id], references: [user_id])
+}
+
+model group_buying {
+  id               Int      @id @default(autoincrement())
+  shop_id          Int
+  product_id       Int
+  required_members Int
+  total_items      Int
+  status           String   @default("open")  // open | success | closed
+  created_at       DateTime @default(now())
+
+  shop             shops    @relation(fields: [shop_id], references: [shop_id])
+  product          products @relation(fields: [product_id], references: [product_id])
+  members          group_members[]
+}
+
+model group_members {
+  id        Int      @id @default(autoincrement())
+  group_id  Int
+  user_id   Int
+  joined_at DateTime @default(now())
+
+  group     group_buying @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user      users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }

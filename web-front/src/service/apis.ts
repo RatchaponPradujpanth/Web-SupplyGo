@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://192.168.1.118:5000";  
+export const API_URL = "http://10.36.16.208:5000";  
 
 
 export type Shop = {
@@ -77,10 +77,12 @@ interface CartItem {
   shop_name: string;
 }
 
-interface CartResponse {
-  cart_id: number | null;
-  items: CartItem[];
-}
+
+import type { CartResponse } from "@/types/type";
+// interface CartResponse {
+//   cart_id: number | null;
+//   items: CartItem[];
+// }
 
 export interface OrderHistoryResponse {
   orders: {
@@ -320,29 +322,41 @@ export type ShopPaymentIntent = {
   client_secret: string;
   stripe_account: string;
   order_shop_id: number;
+  order_items?: Array<{
+    product_id: number;
+    product_name: string;
+    variant_option?: {
+      value: string;
+      option_name: string;
+      sku: string;
+    } | null;
+    quantity: number;
+    price_per_unit: number;
+    total_price: number;
+  }>;
 };
 
-export const createMultiVendorPayment = async (
-  token: string,
-  cartId: number
-): Promise<{ paymentIntents: ShopPaymentIntent[] }> => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/api/payment-multivendor`,
-      { cartId },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error: any) {
-    const msg = error.response?.data?.message || "ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้";
-    throw new Error(msg);
-  }
-};
+// export const createMultiVendorPayment = async (
+//   token: string,
+//   orderId: number
+// ): Promise<{ paymentIntents: ShopPaymentIntent[]; order_id: number }> => {
+//   try {
+//     const response = await axios.post(
+//       `${API_URL}/api/payment-multivendor`,
+//       { orderId },  // <-- ส่ง orderId แทน cartId
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+//     return response.data;
+//   } catch (error: any) {
+//     const msg = error.response?.data?.message || "ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้";
+//     throw new Error(msg);
+//   }
+// };
 
 export async function uploadImages(images: File[]) {
   console.log("🚀 [uploadImages] เริ่มส่งไฟล์จำนวน:", images.length);
@@ -686,5 +700,56 @@ export const updatestatus = async (
   } catch (error: any) {
     console.error("❌ updateTrackingNumber error:", error.response?.data || error.message);
     throw error;
+  }
+};
+
+
+export interface ShopPaymentIntentForFrontend {
+  shop_id: number;
+  shop_name: string;
+  amount: number;
+  client_secret: string;
+  stripe_account: string;
+  order_shop_id: number;
+  order_items?: any[];
+}
+
+export interface PaymentResponse {
+  message: string;
+  order_id: number;
+  order_date: string;
+  total_amount: number;
+  user_info: {
+    user_id: number;
+    username: string;
+    email: string;
+  };
+  total_payment_intents: number;
+  paymentIntents: ShopPaymentIntentForFrontend[];
+}
+
+export const createMultiVendorPayment = async (
+  token: string,
+  orderId?: number
+): Promise<PaymentResponse> => {
+  try {
+    const body: any = {};
+    if (orderId && orderId !== 0) {
+      body.orderId = orderId;
+    }
+    const response = await axios.post(
+      `${API_URL}/api/payment-multivendor`,
+      body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้';
+    throw new Error(msg);
   }
 };

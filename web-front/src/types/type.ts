@@ -1,12 +1,12 @@
 // src/types/product.ts
 
-export interface VariantOption {
-  variant_option_id: number
-  variant_id: number
-  option_id : number
-  value: string;
-  //option_name: string;
-}
+// export interface VariantOption {
+//   variant_option_id: number
+//   variant_id: number
+//   option_id : number
+//   value: string;
+//   //option_name: string;
+// }
 
 export interface ProductVariant {
   variant_id: number;
@@ -68,6 +68,7 @@ export interface Category {
   category_name: string;
 }
 
+// Updated CheckoutItem Interface
 export interface CheckoutItem {
   cart_item_id: number;
   product_name: string;
@@ -77,7 +78,10 @@ export interface CheckoutItem {
   price_per_unit: number;
   total_price: number;
   product_id: number;
-  variant_option_id: number;
+  variant_id?: number | null; // เพิ่ม variant_id
+  variant?: Variant | null; // เพิ่ม variant object
+  variant_options?: VariantOption[]; // เปลี่ยนจาก variant_option_id เป็น array
+  image?: string;
 }
 
 export interface CheckoutSummary {
@@ -111,6 +115,8 @@ export interface CartItemWithExtra extends CartItem {
 export interface CartResponse {
   cart_id: number;
   items: CartItem[];
+  cart_items: any[];
+  total_amount: number;
 }
 
 export interface OrderHistoryResponse {
@@ -213,17 +219,88 @@ export interface ShopOrder {
 
 export interface CreateOrderPayload {
   addressId: number;
+  totalAmount: number;
   cartItems: {
     productId: number;
     quantity: number;
     price_per_unit: number;
-    variant_option_id?: number | null;
     shopId: number;
+    variant_id?: number | null; // เพิ่ม variant_id
+    variant_option_ids?: number[]; // เปลี่ยนเป็น array
+    total_price?: number;
   }[];
-  totalAmount: number;
 }
+
 export interface CreateOrderResponse {
   order_id: number;
   status: string;
   total_amount: number;
+  message: string;
+}
+
+
+// Variant Option Type
+export interface VariantOption {
+  variant_option_id: number;
+  value: string;
+  option_name: string;
+  option_id: number;
+}
+
+// Variant Type
+export interface Variant {
+  variant_id: number;
+  sku?: string;
+  price?: number;
+  stock_quantity?: number;
+  image?: string;
+}
+
+export interface CreateOrderPayload {
+  addressId: number;
+  totalAmount: number;
+  cartItems: {
+    productId: number;
+    quantity: number;
+    price_per_unit: number;
+    shopId: number;
+    variant_id?: number | null; // เพิ่ม variant_id
+    variant_option_ids?: number[]; // เปลี่ยนเป็น array
+    total_price?: number;
+  }[];
+}
+
+export interface CartSummaryResponse {
+  cart_id: number;
+  items: CheckoutItem[];
+  totalAmount: number;
+}
+
+export interface userpoint {
+  balance : number;
+}
+
+// GroupBuying Type
+export interface GroupBuying {
+  id: number;
+  shop_id: number;
+  product_id: number;
+  required_members: number;
+  total_items: number;
+  status: 'open' | 'success' | 'closed';
+  created_at: string; // DateTime จาก API จะมาเป็น string
+
+  // ความสัมพันธ์ (optional)
+  shop?: {
+    shop_name?: string;
+  };
+  product?: {
+    product_id: number; // <-- เพิ่มตรงนี้
+    product_name?: string;
+    product_images?: { image_url: string }[];
+  };
+  members?: {
+    user_id: number;
+    username?: string;
+  }[];
 }

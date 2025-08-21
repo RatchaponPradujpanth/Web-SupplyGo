@@ -385,6 +385,17 @@ const renderOptionSelectors = () => {
         </button>
       </div>
 
+
+        {/* ปุ่มใหม่ไปหน้า Group Buying */}
+  <button
+    onClick={() => router.push('/groupbuying')}
+    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition w-full md:w-auto"
+  >
+    🤝 ไปหน้า Group Buying
+  </button>
+
+
+  
       <button
         onClick={handleLogout}
         className="mt-8 px-6 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition"

@@ -27,9 +27,23 @@ export default function CheckoutPage() {
 
       try {
         const data = await getCartSummary(token);
+        console.log("Cart summary data:", data);
+
+        // เช็คว่ามี product_id และ variant options จริงไหมในข้อมูล
+        if (data?.items?.length) {
+          data.items.forEach((item: CheckoutItem, index: number) => {
+            console.log(`Item ${index + 1}:`, {
+              product_id: item.product_id,
+              variant_id: item.variant_id,
+              variant_options: item.variant_options
+            });
+          });
+        }
+
         setSummary(data);
 
         const addrData = await loadaddress(token);
+        console.log("Address data:", addrData);
         setAddresses(addrData);
 
         if (addrData.length > 0) {
@@ -51,6 +65,9 @@ export default function CheckoutPage() {
   if (!summary || summary.items.length === 0)
     return <div className="p-6 text-gray-500">ยังไม่มีสินค้าที่จะชำระเงิน</div>;
 
+  if (addresses.length === 0)
+    return <div className="p-6 text-gray-500">ไม่พบที่อยู่จัดส่ง กรุณาเพิ่มที่อยู่ก่อน</div>;
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   // คำนวณยอดรวมทั้งหมด
@@ -67,23 +84,41 @@ export default function CheckoutPage() {
     return acc;
   }, {} as Record<string, number>);
 
-if (selectedAddress === null) {
-  alert('กรุณาเลือกที่อยู่จัดส่ง');
-  return;
-}
+  // Log important state before render
+  console.log("Selected address:", selectedAddress);
+  console.log("Total amount:", totalAmount);
+  console.log("Subtotals by shop:", subtotalsByShop);
 
-  // เตรียม payload ให้ตรง type ของ backend (แก้ชื่อ items เป็น cartItems ถ้าต้องการ)
+  if (selectedAddress === null) {
+    alert('กรุณาเลือกที่อยู่จัดส่ง');
+    return null;  // ป้องกัน render ผิดพลาด
+  }
+
+  // เตรียม payload ให้ตรง type ของ backend (แก้ไขตาม API ใหม่)
   const createOrderPayload: CreateOrderPayload = {
     addressId: selectedAddress,
     totalAmount,
-    cartItems: summary.items.map(item => ({
-      productId: item.product_id,
-      quantity: item.quantity,
-      price_per_unit: item.price_per_unit,
-      total_price: item.total_price,
-      shopId: item.shop_id,
-      variant_option_id: item.variant_option_id || null,
-    })),
+    cartItems: summary.items.map(item => {
+      console.log("Processing item for payload:", {
+        productId: item.product_id,
+        quantity: item.quantity,
+        price_per_unit: item.price_per_unit,
+        shopId: item.shop_id,
+        variant_id: item.variant_id,
+        variant_options: item.variant_options,
+        total_price: item.total_price,
+      });
+
+      return {
+        productId: item.product_id,
+        quantity: item.quantity,
+        price_per_unit: item.price_per_unit,
+        shopId: item.shop_id,
+        variant_id: item.variant_id || null, // เพิ่ม variant_id
+        variant_option_ids: item.variant_options?.map(vo => vo.variant_option_id) || [], // แก้เป็น array
+        total_price: item.total_price,
+      };
+    }),
   };
 
   const handleCreateOrder = async () => {
@@ -96,6 +131,8 @@ if (selectedAddress === null) {
       alert('กรุณาเลือกที่อยู่จัดส่ง');
       return;
     }
+
+    console.log("Sending createOrderPayload:", createOrderPayload);
 
     try {
       setCreatingOrder(true);
@@ -136,6 +173,33 @@ if (selectedAddress === null) {
             <p>ร้าน: {item.shop_name}</p>
             <p>จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}</p>
             <p>รวมรายการ: ฿{Number(item.total_price).toFixed(2)}</p>
+            
+            {/* แสดง variant options ถ้ามี */}
+            {item.variant_options && item.variant_options.length > 0 && (
+              <div className="mt-2 p-2 bg-gray-50 rounded">
+                <p className="text-sm font-medium text-gray-700 mb-1">ตัวเลือกสินค้า:</p>
+                <div className="flex flex-wrap gap-1">
+                  {item.variant_options.map(vo => (
+                    <span
+                      key={vo.variant_option_id}
+                      className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                    >
+                      {vo.option_name}: {vo.value}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* แสดง variant information ถ้ามี */}
+            {item.variant && (
+              <div className="mt-2 text-sm text-gray-600">
+                {item.variant.sku && <p>SKU: {item.variant.sku}</p>}
+                {item.variant.stock_quantity !== undefined && (
+                  <p>คงเหลือ: {item.variant.stock_quantity} ชิ้น</p>
+                )}
+              </div>
+            )}
           </li>
         ))}
       </ul>
