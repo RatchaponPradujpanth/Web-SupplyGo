@@ -15,8 +15,6 @@ export default function UserDashboardPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [mainImage, setMainImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
-
-  // เปลี่ยนเป็น object เพื่อง่ายต่อการจัดการ
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
 
   const router = useRouter();
@@ -30,6 +28,26 @@ export default function UserDashboardPage() {
     }).format(price);
   };
 
+  // ฟังก์ชัน helper แสดงราคาช่วง
+  const getDisplayPrice = (product: Product, variantId?: number | null) => {
+    if (product.product_variants && product.product_variants.length > 0) {
+      if (variantId) {
+        const selectedVariant = product.product_variants.find(v => v.variant_id === variantId);
+        return formatPrice(selectedVariant?.price);
+      } else {
+        const prices = product.product_variants
+          .map(v => v.price)
+          .filter((p): p is number => p !== null);
+        if (prices.length === 0) return 'ติดต่อร้านค้า';
+        if (prices.length === 1) return formatPrice(prices[0]);
+        return `${formatPrice(Math.min(...prices))} - ${formatPrice(Math.max(...prices))}`;
+      }
+    } else {
+      return formatPrice(product.price);
+    }
+  };
+
+  // load data
   useEffect(() => {
     const loadData = async () => {
       const token = localStorage.getItem('token');
@@ -62,13 +80,11 @@ export default function UserDashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    //console.log('selectedProduct changed:', selectedProduct);
     if (selectedProduct?.product_images?.length) {
       setMainImage(selectedProduct.product_images[0].image_url);
     } else {
       setMainImage(null);
     }
-    // เคลียร์ค่าเลือกตอนเปลี่ยนสินค้าใหม่
     setSelectedVariantId(null);
     setSelectedOptions({});
     setQuantity(1);
@@ -79,14 +95,12 @@ export default function UserDashboardPage() {
     router.push('/');
   };
 
-  // ฟังก์ชันเพิ่มสินค้าลงตะกร้า
   const handleAddToCart = async () => {
     if (!selectedProduct) return;
 
     const product_id = selectedProduct.product_id;
     const variant_id = selectedVariantId || undefined;
 
-    // ดึง variant_options จาก variant ที่เลือก
     let option_value_id;
     if (variant_id) {
       const selectedVariant = selectedProduct.product_variants?.find(
@@ -95,11 +109,7 @@ export default function UserDashboardPage() {
       option_value_id = selectedVariant?.variant_options?.map(vo => vo.variant_option_id);
     }
 
-    console.log("🚀 กำลังเพิ่มสินค้าลงตะกร้า ด้วยข้อมูล:");
-    console.log("product_id:", product_id);
-    console.log("quantity:", quantity);
-    console.log("variant_id:", variant_id);
-    console.log("option_value_id (array):", option_value_id);
+    console.log("🚀 เพิ่มสินค้าลงตะกร้า:", { product_id, quantity, variant_id, option_value_id });
 
     try {
       await addtocart(product_id, quantity, variant_id, option_value_id);
@@ -114,62 +124,52 @@ export default function UserDashboardPage() {
     }
   };
 
-const renderVariantSelector = () => {
-  if (!selectedProduct || !selectedProduct.product_variants?.length) return null;
+  const renderVariantSelector = () => {
+    if (!selectedProduct || !selectedProduct.product_variants?.length) return null;
 
-  return (
-    <div className="mt-4">
-      <label htmlFor="variant-select" className="font-semibold block mb-1">
-        เลือกตัวเลือก (Variant):
-      </label>
-      <select
-        id="variant-select"
-        className="w-full p-2 border rounded"
-        value={selectedVariantId ?? ''}
-        onChange={(e) => {
-          const val = e.target.value;
-          const variantId = val ? Number(val) : null;
-          setSelectedVariantId(variantId);
-
-          if (variantId && selectedProduct.product_variants) {
-            const selectedVariant = selectedProduct.product_variants.find(v => v.variant_id === variantId);
-            console.log('🚩 เลือก variant_id:', variantId);
-            console.log('🚩 variant_options ของ variant ที่เลือก:', selectedVariant?.variant_options);
-          }
-        }}
-      >
-        <option value="">-- เลือกตัวเลือก --</option>
-        {selectedProduct.product_variants.map((v) => (
-          <option key={v.variant_id} value={v.variant_id}>
-            {v.sku} — {formatPrice(v.price)} — สต็อก: {v.stock_quantity ?? '-'}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-};
-
-const renderOptionSelectors = () => {
-  //console.log('renderOptionSelectors called, selectedProduct:', selectedProduct);
-
-  if (!selectedProduct || !selectedProduct.product_options?.length) return null;
-
-  return selectedProduct.product_options.map((option) => {
-    console.log("Current select value:", selectedOptions[option.option_id]);
     return (
+      <div className="mt-4">
+        <label htmlFor="variant-select" className="font-semibold block mb-1">
+          เลือกตัวเลือก (Variant):
+        </label>
+        <select
+          id="variant-select"
+          className="w-full p-2 border rounded"
+          value={selectedVariantId ?? ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            const variantId = val ? Number(val) : null;
+            setSelectedVariantId(variantId);
+            if (variantId && selectedProduct.product_variants) {
+              const selectedVariant = selectedProduct.product_variants.find(v => v.variant_id === variantId);
+              console.log('🚩 เลือก variant_id:', variantId, selectedVariant?.variant_options);
+            }
+          }}
+        >
+          <option value="">-- เลือกตัวเลือก --</option>
+          {selectedProduct.product_variants.map((v) => (
+            <option key={v.variant_id} value={v.variant_id}>
+              {v.sku} — {formatPrice(v.price)} — สต็อก: {v.stock_quantity ?? '-'}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
+  const renderOptionSelectors = () => {
+    if (!selectedProduct || !selectedProduct.product_options?.length) return null;
+
+    return selectedProduct.product_options.map((option) => (
       <div key={option.option_id} className="mt-4">
         <label className="font-semibold block mb-1">{option.name}</label>
         <select
           className="w-full p-2 border rounded"
           value={selectedOptions[option.option_id] || ''}
           onChange={(e) => {
-            console.log(`onChange option_id ${option.option_id}:`, e.target.value);
             const val = e.target.value;
             if (val) {
-              setSelectedOptions(prev => ({
-                ...prev,
-                [option.option_id]: Number(val),
-              }));
+              setSelectedOptions(prev => ({ ...prev, [option.option_id]: Number(val) }));
             } else {
               setSelectedOptions(prev => {
                 const newOptions = { ...prev };
@@ -187,35 +187,19 @@ const renderOptionSelectors = () => {
           ))}
         </select>
       </div>
-    );
-  });
-};
+    ));
+  };
 
-
-  // ตรวจสอบว่าสามารถเพิ่มลงตะกร้าได้หรือไม่
   const canAddToCart = () => {
     if (!selectedProduct) return false;
-
-    // ถ้ามี variant ต้องเลือก variant
-    if (selectedProduct.product_variants && selectedProduct.product_variants.length > 0) {
-      if (!selectedVariantId) return false;
-    }
-
-    // ถ้ามี options ต้องเลือกครบทุก option
-    if (selectedProduct.product_options && selectedProduct.product_options.length > 0) {
-      const requiredOptionsCount = selectedProduct.product_options.length;
-      const selectedOptionsCount = Object.keys(selectedOptions).length;
-      if (selectedOptionsCount < requiredOptionsCount) return false;
-    }
-
+    if (selectedProduct.product_variants?.length && !selectedVariantId) return false;
+    if (selectedProduct.product_options?.length && Object.keys(selectedOptions).length < selectedProduct.product_options.length) return false;
     return true;
   };
 
+  // ----- Detail Page -----
   if (selectedProduct) {
-    const selectedVariant = selectedProduct.product_variants?.find(
-      (v) => v.variant_id === selectedVariantId
-    );
-    const displayPrice = selectedVariant?.price ?? selectedProduct.price;
+    const displayPrice = getDisplayPrice(selectedProduct, selectedVariantId);
 
     return (
       <div className="min-h-screen flex flex-col items-center p-6 bg-gradient-to-br from-green-400 to-blue-600 text-white">
@@ -240,88 +224,68 @@ const renderOptionSelectors = () => {
                 className="w-full max-w-md h-96 object-cover rounded-lg border shadow-md"
               />
             ) : (
-              <div className="w-full max-w-md h-96 bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
+              <div className="w-full max-w-md h-96 bg-gray-200 flex items-center justify-center rounded text-gray-500">
                 ไม่มีรูปภาพ
               </div>
             )}
           </div>
 
           <div className="flex flex-col w-1/2">
-            <div className="flex flex-col space-y-2 overflow-y-auto max-h-[400px] mb-6">
-              {selectedProduct.product_images?.map((img, index) => (
-                <img
-                  key={index}
-                  src={img.image_url}
-                  alt={`Thumbnail ${index + 1}`}
-                  className={`w-20 h-20 object-cover rounded cursor-pointer border ${
-                    mainImage === img.image_url ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                  onClick={() => setMainImage(img.image_url)}
-                />
-              ))}
+            <h2 className="text-3xl font-bold mb-2">{selectedProduct.product_name}</h2>
+            <p className="mb-4 italic text-gray-700">{selectedProduct.product_description}</p>
+
+            <p className="text-xl font-semibold text-green-700 mb-4">
+              ราคา: {displayPrice}
+            </p>
+
+            {renderVariantSelector()}
+            {renderOptionSelectors()}
+
+            <div className="mt-4">
+              <label htmlFor="quantity" className="font-semibold block mb-1">
+                จำนวน:
+              </label>
+              <input
+                type="number"
+                id="quantity"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                className="w-20 p-2 border rounded"
+              />
             </div>
 
-            <div className="flex flex-col flex-grow">
-              <h2 className="text-3xl font-bold mb-2">{selectedProduct.product_name}</h2>
-              <p className="mb-4 italic text-gray-700">{selectedProduct.product_description}</p>
-
-              <p className="text-xl font-semibold text-green-700 mb-4">
-                ราคา: {formatPrice(displayPrice)}
-              </p>
-
-              {/* เลือก variant (SKU) */}
-              {renderVariantSelector()}
-
-              {/* เลือก option_value_id (แต่ละ option เช่น สี, ไซส์) */}
-              {renderOptionSelectors()}
-
-              {/* จำนวน */}
-              <div className="mt-4">
-                <label htmlFor="quantity" className="font-semibold block mb-1">
-                  จำนวน:
-                </label>
-                <input
-                  type="number"
-                  id="quantity"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-20 p-2 border rounded"
-                />
+            {Object.keys(selectedOptions).length > 0 && (
+              <div className="mt-2 p-2 bg-gray-100 rounded text-sm text-black">
+                <strong>ตัวเลือกที่เลือก:</strong>
+                <pre>{JSON.stringify(selectedOptions, null, 2)}</pre>
               </div>
+            )}
 
-              {/* Debug info - แสดงสถานะการเลือก */}
-              {Object.keys(selectedOptions).length > 0 && (
-                <div className="mt-2 p-2 bg-gray-100 rounded text-sm text-black">
-                  <strong>ตัวเลือกที่เลือก:</strong>
-                  <pre>{JSON.stringify(selectedOptions, null, 2)}</pre>
-                </div>
-              )}
+            <button
+              onClick={handleAddToCart}
+              className={`font-semibold rounded-lg px-6 py-3 shadow mt-4 ${
+                canAddToCart()
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-gray-400 text-gray-700 cursor-not-allowed'
+              }`}
+              disabled={!canAddToCart()}
+            >
+              ➕ เพิ่มลงตะกร้า
+            </button>
 
-              <button
-                onClick={handleAddToCart}
-                className={`font-semibold rounded-lg px-6 py-3 shadow mt-4 ${
-                  canAddToCart()
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                }`}
-                disabled={!canAddToCart()}
-              >
-                ➕ เพิ่มลงตะกร้า
-              </button>
-
-              {!canAddToCart() && (
-                <p className="text-red-600 text-sm mt-2">
-                  กรุณาเลือกตัวเลือกให้ครบถ้วน
-                </p>
-              )}
-            </div>
+            {!canAddToCart() && (
+              <p className="text-red-600 text-sm mt-2">
+                กรุณาเลือกตัวเลือกให้ครบถ้วน
+              </p>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
+  // ----- Dashboard / Product List Page -----
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-400 to-blue-600 text-white p-6">
       <h1 className="text-4xl font-bold mb-4">Hello User 👤</h1>
@@ -358,7 +322,7 @@ const renderOptionSelectors = () => {
                   <h3 className="text-xl font-bold">{product.product_name}</h3>
                   <p className="italic text-gray-700 text-sm">{product.product_description}</p>
                   <p className="mt-2 font-semibold text-green-700">
-                    💰 ราคา: {formatPrice(product.price)}
+                    💰 ราคา: {getDisplayPrice(product)}
                   </p>
                 </div>
               </li>
@@ -383,25 +347,21 @@ const renderOptionSelectors = () => {
         >
           📦 ดูประวัติคำสั่งซื้อ
         </button>
+
+        <button
+          onClick={() => router.push('/groupbuying')}
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition w-full md:w-auto"
+        >
+          🤝 ไปหน้า Group Buying
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="mt-8 px-6 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition"
+        >
+          Logout / Clear Token
+        </button>
       </div>
-
-
-        {/* ปุ่มใหม่ไปหน้า Group Buying */}
-  <button
-    onClick={() => router.push('/groupbuying')}
-    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition w-full md:w-auto"
-  >
-    🤝 ไปหน้า Group Buying
-  </button>
-
-
-  
-      <button
-        onClick={handleLogout}
-        className="mt-8 px-6 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition"
-      >
-        Logout / Clear Token
-      </button>
     </div>
   );
 }

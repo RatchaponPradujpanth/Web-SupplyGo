@@ -19,21 +19,25 @@ addproductRoute.post(
         category_id,
         options,
         variants,
+        batches, // batch info จาก frontend
       } = req.body;
 
       const files = req.files as Express.Multer.File[];
       const user = req.user as { user_id: number; shop_id: number; role: string };
 
+      // ตรวจสิทธิ์
       if (user.role !== "store") {
         res.status(403).json({ message: "คุณไม่มีสิทธิในการเพิ่มสินค้า" });
-        return 
+        return;
       }
 
+      // ตรวจรูป
       if (!files || files.length === 0) {
         res.status(400).json({ message: "กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป" });
-        return 
+        return;
       }
 
+      // สร้าง Product
       const newProduct = await prisma.products.create({
         data: {
           product_name,
@@ -41,10 +45,11 @@ addproductRoute.post(
           price: parseFloat(price),
           category_id: parseInt(category_id),
           status: "active",
+          image: `/upload/products/${files[0].filename}`, // รูปหลัก
         },
       });
 
-      // เพิ่มรูปภาพ
+      //สร้าง Images
       const imageRecords = files.map((file, index) => ({
         product_id: newProduct.product_id,
         image_url: `/upload/products/${file.filename}`,
@@ -53,7 +58,7 @@ addproductRoute.post(
       }));
       await prisma.product_images.createMany({ data: imageRecords });
 
-      // ผูกเจ้าของสินค้า
+      // ผูกกับร้าน
       await prisma.product_owners.create({
         data: {
           shop_id: user.shop_id,
@@ -61,59 +66,121 @@ addproductRoute.post(
         },
       });
 
-      // แปลง options เป็น array ก่อนใช้ (ถ้าส่งเป็น JSON string)
-      const parsedOptions = typeof options === "string" ? JSON.parse(options) : options;
-      const parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants;
+      // แปลง options / variants / batches
+      const parsedOptions = typeof options === "string" ? JSON.parse(options) : options || [];
+      const parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants || [];
+      const parsedBatches = typeof batches === "string" ? JSON.parse(batches) : batches || [];
 
-      // เพิ่ม options เช่น สี, ขนาด
-      const createdOptions = await Promise.all(
-        parsedOptions.map((opt: any) =>
-          prisma.product_options.create({
-            data: {
-              name: opt.name,
-              product_id: newProduct.product_id,
-            },
-          })
-        )
-      );
-
-      // Mapping ตัวเลือกไว้ใช้กับ variant later
-      const optionMap = new Map<string, number>();
-      createdOptions.forEach((opt) => {
-        optionMap.set(opt.name, opt.option_id);
+      console.log("📦 Parsed data:", {
+        options: parsedOptions,
+        variants: parsedVariants,
+        batches: parsedBatches
       });
 
-      // เพิ่ม variants เช่น RED-S พร้อม variant_options
-      for (const variant of parsedVariants) {
-        const createdVariant = await prisma.product_variants.create({
-          data: {
-            product_id: newProduct.product_id,
-            sku: variant.sku,
-            price: parseFloat(variant.price),
-            stock_quantity: parseInt(variant.stock_quantity),
-          },
+      // ✅ ตรวจสอบว่ามี variants หรือไม่
+      const hasVariants = parsedVariants.length > 0 && parsedOptions.length > 0;
+
+      if (hasVariants) {
+        // 🎯 กรณีมี Variants
+        
+        // สร้าง Options
+        const createdOptions = await Promise.all(
+          parsedOptions.map((opt: any) =>
+            prisma.product_options.create({
+              data: {
+                name: opt.name,
+                product_id: newProduct.product_id,
+              },
+            })
+          )
+        );
+
+        // Mapping option name → option_id
+        const optionMap = new Map<string, number>();
+        createdOptions.forEach((opt) => {
+          optionMap.set(opt.name, opt.option_id);
         });
 
-        for (let i = 0; i < variant.option_values.length; i++) {
-          const optionName = parsedOptions[i].name;
-          const value = variant.option_values[i];
-          const option_id = optionMap.get(optionName);
+        // สร้าง Variants + Variant Options
+        const createdVariants: { [key: string]: number } = {}; // เก็บ variant_id ตาม sku
+        for (const variant of parsedVariants) {
+          const createdVariant = await prisma.product_variants.create({
+            data: {
+              product_id: newProduct.product_id,
+              sku: variant.sku,
+              price: parseFloat(variant.price),
+            },
+          });
 
-          if (option_id) {
-            await prisma.variant_options.create({
-              data: {
-                variant_id: createdVariant.variant_id,
-                option_id,
-                value,
-              },
-            });
+          createdVariants[variant.sku] = createdVariant.variant_id;
+
+          // เพิ่ม Variant Options
+          for (let i = 0; i < variant.option_values.length; i++) {
+            const optionName = parsedOptions[i].name;
+            const value = variant.option_values[i];
+            const option_id = optionMap.get(optionName);
+
+            if (option_id) {
+              await prisma.variant_options.create({
+                data: {
+                  variant_id: createdVariant.variant_id,
+                  option_id,
+                  value,
+                },
+              });
+            }
+          }
+        }
+
+        // ✅ สร้าง Batches สำหรับ Variants (รองรับ 2D array)
+        if (parsedBatches && parsedBatches.length > 0) {
+          for (let i = 0; i < parsedVariants.length; i++) {
+            const variant = parsedVariants[i];
+            const variant_id = createdVariants[variant.sku];
+            const variantBatches = parsedBatches[i] || []; // batches ของ variant นี้
+
+            if (variantBatches.length > 0) {
+              const batchRecords = variantBatches.map((b: any) => ({
+                product_id: null, // สินค้าที่มี variant จะใส่ null
+                variant_id: variant_id,
+                batch_number: b.batch_number || null,
+                manufactured_date: b.manufactured_date ? new Date(b.manufactured_date) : null,
+                expiry_date: b.expiry_date ? new Date(b.expiry_date) : null,
+                quantity: parseInt(b.quantity) || 0,
+              }));
+
+              await prisma.product_batches.createMany({ data: batchRecords });
+            }
+          }
+        }
+
+      } else {
+        // 🎯 กรณีสินค้าธรรมดา (ไม่มี variant)
+        
+        // ✅ สร้าง Batches สำหรับสินค้าธรรมดา
+        if (parsedBatches && parsedBatches.length > 0) {
+          // สำหรับสินค้าธรรมดา batches อาจเป็น 1D array หรือ 2D array[0]
+          const batchesToCreate = Array.isArray(parsedBatches[0]) ? parsedBatches[0] : parsedBatches;
+          
+          if (batchesToCreate.length > 0) {
+            const batchRecords = batchesToCreate.map((b: any) => ({
+              product_id: newProduct.product_id, // สินค้าธรรมดาใส่ product_id
+              variant_id: null, // ไม่มี variant ใส่ null
+              batch_number: b.batch_number || null,
+              manufactured_date: b.manufactured_date ? new Date(b.manufactured_date) : null,
+              expiry_date: b.expiry_date ? new Date(b.expiry_date) : null,
+              quantity: parseInt(b.quantity) || 0,
+            }));
+
+            await prisma.product_batches.createMany({ data: batchRecords });
           }
         }
       }
 
       res.status(201).json({
-        message: "เพิ่มสินค้าพร้อมตัวเลือกและรูปภาพสำเร็จ",
+        message: "เพิ่มสินค้าพร้อมตัวเลือก, รูปภาพ และ batch สำเร็จ",
         product_id: newProduct.product_id,
+        hasVariants: hasVariants,
       });
     } catch (error) {
       console.error("❌ เพิ่มสินค้า error:", error);

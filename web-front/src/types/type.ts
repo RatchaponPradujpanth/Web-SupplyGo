@@ -304,3 +304,92 @@ export interface GroupBuying {
     username?: string;
   }[];
 }
+// ===== เพิ่ม type ที่ยังขาด =====
+
+export interface users {
+  user_id: number;
+  username: string | null;
+  email: string | null;
+  role?: string | null;
+}
+
+export interface cart {
+  cart_id: number;
+  user_id: number;
+  created_at?: string;
+  updated_at?: string;
+  cart_items?: CartItem[];
+}
+
+export interface order {
+  order_id: number;
+  user_id: number;
+  address_id: number;
+  order_date?: string;
+  total_amount?: number;
+  status?: string;
+}
+
+export interface order_items {
+  order_item_id: number;
+  order_shop_id: number;
+  product_id: number;
+  quantity: number;
+  price_per_unit: number;
+  total_price: number;
+  variant_option?: VariantOption | null;
+}
+
+export interface order_shops {
+  order_shop_id: number;
+  order_id: number;
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number?: string | null;
+  transaction_id?: string | null;
+  charge_id?: string | null;
+}
+
+export interface product_batches {
+  batch_id: number;
+  product_id: number;
+  batch_number?: string | null;
+  manufactured_date?: string | null;
+  expiry_date?: string | null;
+  quantity?: string | null;
+}
+
+export interface group_members {
+  id: number;
+  group_id: number;
+  user_id: number;
+  joined_at: string;
+}
+
+export interface AdminDashboardApiResponse {
+  message: string;
+  dashboard: {
+    totalUsers: number;
+    totalStores: number;
+    totalProducts: number;
+    totalOrders: number;
+    recentOrders: {
+      order_id: number;
+      status: string;
+      total_amount: number;
+      order_date: string;
+      users: { username: string }[];
+    }[];
+    recentProducts: {
+      product_id: number;
+      product_name: string;
+      price: number;
+      status: string;
+      created_date: string;
+      product_owners: {
+        shops: { shop_name: string };
+      }[];
+    }[];
+  };
+}

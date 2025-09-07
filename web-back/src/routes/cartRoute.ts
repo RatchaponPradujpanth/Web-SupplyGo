@@ -27,54 +27,63 @@ cartRoute.get("/cart", authenticateToken, async (req: Request, res: Response): P
     const cartId = resultcart.cart_id;
 
     const resultitem = await prisma.cart.findUniqueOrThrow({
-      where: { cart_id: cartId },
-      include: {
-        cart_items: {
+  where: { cart_id: cartId },
+  include: {
+    cart_items: {
+      select: {
+        product_id: true,
+        cart_item_id: true,
+        quantity: true,
+        price_per_unit: true,
+        variant_id: true,
+        variant: {
           select: {
-            product_id : true,
-            cart_item_id: true,
-            quantity: true,
-            price_per_unit: true,
-            variant_id: true,
-            variant: {              // Add variant selection
+            sku: true,
+            price: true,
+            // รวม stock จาก batches แทน stock_quantity เดิม
+            product_batches: {
               select: {
-                sku: true,
-                price: true,
-                stock_quantity: true,
-                variant_options: {
+                batch_id: true,
+                batch_number: true,
+                manufactured_date: true,
+                expiry_date: true,
+                quantity: true,
+              },
+            },
+            variant_options: {
+              select: {
+                value: true,
+                option: {
                   select: {
-                    value: true,
-                    option: {
-                      select: {
-                        name: true
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            products: {
-              select: {
-                product_id: true,
-                product_name: true,
-                price: true,
-                status: true,
-                product_images: {
-                  where: { is_primary: true },
-                  select: { image_url: true },
-                  take: 1
-                }
+                    name: true,
+                  },
+                },
               },
             },
-            shops: {           // Add shops selection
-              select: {
-                shop_name: true,
-              },
+          },
+        },
+        products: {
+          select: {
+            product_id: true,
+            product_name: true,
+            price: true,
+            status: true,
+            product_images: {
+              where: { is_primary: true },
+              select: { image_url: true },
+              take: 1,
             },
-          }
-        }
-      }
-    });
+          },
+        },
+        shops: {
+          select: {
+            shop_name: true,
+          },
+        },
+      },
+    },
+  },
+});
 
     const host = req.headers.host;
     const protocol = req.protocol;

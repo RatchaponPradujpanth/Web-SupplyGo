@@ -108,14 +108,17 @@ model order_items {
 
 model product_batches {
   batch_id          Int       @id @default(autoincrement())
-  product_id        Int
+  product_id        Int?      // สินค้าธรรมดา
+  variant_id        Int?      // สินค้าที่มี variant 
+
   batch_number      String?
   manufactured_date DateTime? @db.Date
   expiry_date       DateTime? @db.Date
-  quantity          String?
-  products          products  @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
-}
+  quantity          Int @default(0)
 
+  product           products?          @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  variant           product_variants?  @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade)
+}
 model product_categories {
   category_id   Int        @id @default(autoincrement())
   category_name String?
@@ -176,12 +179,11 @@ model product_variants {
   product_id      Int
   sku             String?
   price           Decimal?          @db.Decimal(10, 2)
-  stock_quantity  Int?
-  image           String?
   product         products          @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
   variant_options variant_options[]
 
   cart_items      cart_items[]
+  product_batches product_batches[]
 }
 
 model variant_options {

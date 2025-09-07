@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://10.36.16.208:5000";  
+export const API_URL = "http://192.168.1.109:5000";  
 
 
 export type Shop = {
@@ -394,7 +394,13 @@ export const addproduct = async (
     price: number;
     stock_quantity: number;
     option_values: string[];
-  }[]
+  }[],
+  batches: {
+    batch_number: string;
+    manufactured_date: string;
+    expiry_date: string;
+    quantity: string;
+  }[][] // <-- เพิ่มตรงนี้
 ): Promise<void> => {
   try {
     const formData = new FormData();
@@ -403,14 +409,13 @@ export const addproduct = async (
     formData.append("price", price.toString());
     formData.append("category_id", category_id.toString());
 
-    // ✅ แนบ images หลายรูป
     imageFiles.forEach((file) => {
       formData.append("images", file);
     });
 
-    // ✅ แนบ options และ variants แบบ JSON string
     formData.append("options", JSON.stringify(options));
     formData.append("variants", JSON.stringify(variants));
+    formData.append("batches", JSON.stringify(batches)); // <-- เพิ่มตรงนี้
 
     const response = await axios.post(`${API_URL}/api/add-product`, formData, {
       headers: {
@@ -425,6 +430,7 @@ export const addproduct = async (
     throw error;
   }
 };
+
 
 
 export const getCategories = async (): Promise<Category[]> => {

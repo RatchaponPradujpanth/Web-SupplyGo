@@ -25,54 +25,71 @@ cartSummaryRoute.get("/cartsummary", authenticateToken, async (req: Request, res
         }
 
         const resultitem = await prisma.cart_items.findMany({
-            where: {
-                cart_id: resultcart.cart_id
+  where: {
+    cart_id: resultcart.cart_id,
+  },
+  select: {
+    cart_item_id: true,
+    quantity: true,
+    price_per_unit: true,
+    product_id: true,
+    variant_id: true,
+    products: {
+      select: {
+        product_name: true,
+        image: true, // รูปหลักของสินค้า
+      },
+    },
+    shops: {
+      select: {
+        shop_id: true,
+        shop_name: true,
+      },
+    },
+    variant: {
+      select: {
+        variant_id: true,
+        sku: true,
+        price: true,
+        product_batches: {
+          select: {
+            batch_id: true,
+            batch_number: true,
+            manufactured_date: true,
+            expiry_date: true,
+            quantity: true,
+          },
+        },
+        variant_options: {
+          select: {
+            value: true,
+            option: {
+              select: {
+                name: true,
+              },
             },
-            select: {
-                cart_item_id: true,
-                quantity: true,
-                price_per_unit: true,
-                product_id: true,
-                variant_id: true, // เพิ่ม variant_id
-                products: {
-                    select: {
-                        product_name: true,
-                        image: true,
-                    }
-                },
-                shops: {
-                    select: {
-                        shop_id: true,
-                        shop_name: true,
-                    }
-                },
-                variant: { // เพิ่ม variant information
-                    select: {
-                        variant_id: true,
-                        sku: true,
-                        price: true,
-                        stock_quantity: true,
-                        image: true,
-                    }
-                },
-                variant_option_links: { // เพิ่ม variant options ผ่าน many-to-many relationship
-                    select: {
-                        variant_option: {
-                            select: {
-                                variant_option_id: true,
-                                value: true,
-                                option: {
-                                    select: {
-                                        option_id: true,
-                                        name: true,
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
+          },
+        },
+      },
+    },
+    variant_option_links: { // ✅ เพิ่มตรงนี้
+      select: {
+        variant_option: {
+          select: {
+            variant_option_id: true,
+            value: true,
+            option: {
+              select: {
+                option_id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
 
         const itemsWithTotal = resultitem.map(item => ({
             cart_item_id: item.cart_item_id,
