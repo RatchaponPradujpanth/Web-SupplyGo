@@ -92,4 +92,5 @@ export const authadmin = (
     res.status(403).json({ message: "เฉพาะแอดมินเท่านั้น" });
     return;
   }
+  next();
 }

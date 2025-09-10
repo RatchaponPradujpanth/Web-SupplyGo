@@ -30,6 +30,8 @@ import createorderRoute from "./routes/createorderRoute";
 import loadbalanceRoute from "./routes/group_buying/loadbalanceRoute";
 import loadgroupbuyRoute from "./routes/group_buying/loadgroupbuyRoute";
 import admindashboardRoute from "./routes/admin/admindashboardRoute";
+import confirmPaymentRoute from "./routes/order/confirmPaymentRoute";
+import cancelorderRoute from "./routes/order/cancelorder";
 
 dotenv.config(); // โหลดค่า .env
 
@@ -66,6 +68,9 @@ app.use("/api",createorderRoute)
 app.use("/api",loadbalanceRoute)
 app.use("/api",loadgroupbuyRoute)
 app.use("/api",admindashboardRoute);
+app.use("/api",confirmPaymentRoute)
+app.use("/api",cancelorderRoute)
+app.use("/api",createorderRoute);
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");

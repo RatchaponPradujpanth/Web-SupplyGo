@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import uploadProductImage from "../middleware/uploadProductImage";
-import { authenticateToken } from "../middleware/authMiddleware";
+import { authenticateToken, authstore } from "../middleware/authMiddleware";
 import { PrismaClient } from "@prisma/client";
 
 const addproductRoute = Router();
@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 addproductRoute.post(
   "/add-product",
-  authenticateToken,
+  authenticateToken,authstore,
   uploadProductImage.array("images", 5),
   async (req: Request, res: Response) => {
     try {
@@ -19,7 +19,7 @@ addproductRoute.post(
         category_id,
         options,
         variants,
-        batches, // batch info จาก frontend
+        batches, 
       } = req.body;
 
       const files = req.files as Express.Multer.File[];
@@ -45,7 +45,6 @@ addproductRoute.post(
           price: parseFloat(price),
           category_id: parseInt(category_id),
           status: "active",
-          image: `/upload/products/${files[0].filename}`, // รูปหลัก
         },
       });
 

@@ -98,40 +98,63 @@ createorderRoute.post("/create-order", authenticateToken, async (req: Request, r
             },
           });
 
+          // เช็คว่าเป็นสินค้าปกติหรือมี variant
+          if (!item.variant_id) {
+            console.log(`🔍 Processing regular product (no variant) - Product ID: ${item.product_id}, Quantity to deduct: ${item.quantity}`);
+          } else {
+            console.log(`🔍 Processing product with variant - Product ID: ${item.product_id}, Variant ID: ${item.variant_id}, Quantity to deduct: ${item.quantity}`);
+          }
+
           //หาเลข batch
           const batch = await tx.product_batches.findFirst({
-            where: {
-              variant_id:item.variant_id
-            },
-            orderBy : {
-              expiry_date : "asc"
-            },
-            select:{
-              batch_id : true,quantity:true
-            }
-          })
+  where: item.variant_id
+    ? { variant_id: item.variant_id }   // ถ้ามี variant
+    : { product_id: item.product_id }, // ถ้าไม่มี variant
+  orderBy: {
+    expiry_date: "asc"
+  },
+  select: {
+    batch_id: true,
+    quantity: true
+  }
+});
+
+          console.log(`📦 Found batch for ${item.variant_id ? 'variant' : 'product'} ${item.variant_id || item.product_id}:`, batch);
 
           if (!batch || batch.quantity < item.quantity) {
+            console.log(`❌ Stock not enough! Required: ${item.quantity}, Available: ${batch?.quantity || 0}`);
             throw new Error("Stock not enough");
-            }
+          }
 
+          console.log(`📊 Stock before update - Batch ID: ${batch.batch_id}, Current quantity: ${batch.quantity}, Will deduct: ${item.quantity}`);
 
           // ลด stock ของ variant หรือ product
           if (item.variant_id) {
+            console.log(`🔄 Updating stock for variant product - Batch ID: ${batch.batch_id}`);
             await tx.product_batches.update({
-              where: { batch_id:batch.batch_id },
+              where: { batch_id: batch.batch_id },
               data: {
                 quantity: { decrement: item.quantity },
               },
             });
+            console.log(`✅ Stock updated for variant product - Batch ID: ${batch.batch_id}, Decremented by: ${item.quantity}`);
           } else {
+            console.log(`🔄 Updating stock for regular product (no variant) - Batch ID: ${batch.batch_id}`);
             await tx.product_batches.update({
-              where: { batch_id:batch.batch_id },
+              where: { batch_id: batch.batch_id },
               data: {
                 quantity: { decrement: item.quantity },
               },
             });
+            console.log(`✅ Stock updated for regular product - Batch ID: ${batch.batch_id}, Decremented by: ${item.quantity}, New quantity should be: ${batch.quantity - item.quantity}`);
           }
+
+          // เช็ค stock หลังการอัปเดต
+          const updatedBatch = await tx.product_batches.findFirst({
+            where: { batch_id: batch.batch_id },
+            select: { quantity: true }
+          });
+          console.log(`📈 Stock after update - Batch ID: ${batch.batch_id}, New quantity: ${updatedBatch?.quantity}`);
         }
       }
 
@@ -142,11 +165,13 @@ createorderRoute.post("/create-order", authenticateToken, async (req: Request, r
       });
       if (userCart) {
         await tx.cart_items.deleteMany({ where: { cart_id: userCart.cart_id } });
+        console.log(`🗑️ Cleared cart for user: ${userId}`);
       }
 
       return newOrder;
     });
 
+    console.log(`🎉 Order created successfully - Order ID: ${result.order_id}`);
     res.status(201).json({ message: "สร้างคำสั่งซื้อสำเร็จ", order_id: result.order_id });
   } catch (error) {
     console.error("❌ Create order error:", error);

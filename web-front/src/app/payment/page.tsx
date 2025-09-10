@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation';
 import { loadaddress, createMultiVendorPayment } from '@/service/apis';
 import { savetransaction } from '@/service/api/savetranscation';
 import { motion, AnimatePresence } from 'framer-motion';
-
+import { updatePaymentStatus} from '@/service/api/updatestatus';
+import { cancelorder } from '@/service/api/cancelorder';
 const CARD_ELEMENT_OPTIONS = {
   style: {
     base: {
@@ -177,11 +178,14 @@ function PaymentFormContent() {
         await savetransaction(token, payment.shop_id, payment.order_shop_id, paymentIntent.id);
       }
 
-      setMessage({ type: 'success', text: '✅ ชำระเงินสำเร็จทุกร้าน!' });
+      const confirmRes = await updatePaymentStatus(token , orderId);
+      if (!confirmRes.success) throw new Error('อัปเดตสถานะคำสั่งซื้อไม่สำเร็จ');
+
+      setMessage({ type: 'success', text: '✅ ชำระเงินสำเร็จและอัปเดตสถานะเรียบร้อย!' });
       setPaidSuccess(true);
 
       setTimeout(() => {
-        router.push('/orders');
+        router.push('/orderhistory');
       }, 2000);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะชำระเงิน' });
@@ -190,6 +194,42 @@ function PaymentFormContent() {
       setLoading(false);
     }
   };
+
+
+  const handleCancelOrder = async () => {
+  if (!orderId) {
+    setMessage({ type: 'error', text: 'ไม่พบ Order ID' });
+    return;
+  }
+
+  const confirmCancel = window.confirm('คุณแน่ใจหรือว่าต้องการยกเลิกคำสั่งซื้อนี้?');
+  if (!confirmCancel) return;
+
+  setLoading(true);
+
+  try {
+    const token = localStorage.getItem('token');
+    console.log("Token:", token); // ดูว่า token มีค่าไหม
+    if (!token) throw new Error('ไม่พบ token สำหรับการยืนยันตัวตน');
+
+    console.log("กำลังเรียก cancelorder สำหรับ orderId:", orderId);
+    const cancelRes = await cancelorder(token, orderId);
+    console.log("ผลลัพธ์ cancelorder:", cancelRes);
+
+    if (cancelRes.status === 'cancelled') {
+      console.log("ยกเลิกคำสั่งซื้อสำเร็จ");
+      setMessage({ type: 'success', text: 'ยกเลิกคำสั่งซื้อสำเร็จ' });
+      setPaymentList([]); // ลบรายการชำระเงิน
+    } else {
+      console.warn("ไม่สามารถยกเลิกคำสั่งซื้อได้:", cancelRes);
+      setMessage({ type: 'error', text: 'ไม่สามารถยกเลิกคำสั่งซื้อได้' });
+    }
+  } catch (error: any) {
+    setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะยกเลิกคำสั่งซื้อ' });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
@@ -311,9 +351,19 @@ function PaymentFormContent() {
                 ? 'กำลังชำระเงิน...'
                 : `ชำระเงิน ฿${paymentList.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}`}
             </button>
+
+            
           </form>
         </>
       )}
+      <button
+    type="button"
+    onClick={handleCancelOrder}
+    disabled={loading || !orderId}
+    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-md font-semibold"
+  >
+    {loading ? 'กำลังยกเลิก...' : 'ยกเลิกคำสั่งซื้อ'}
+  </button>
     </div>
   );
 }
