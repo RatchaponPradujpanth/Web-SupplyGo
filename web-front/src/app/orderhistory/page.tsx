@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getOrderHistory } from '@/service/apis'
-import type { OrderHistoryResponse } from '@/service/apis'
+import { getOrderHistory } from '@/service/api/orderHistory' 
+import type { OrderHistoryResponse } from '@/types/type'; 
 
 export default function OrderHistoryPage() {
   const [orderData, setOrderData] = useState<OrderHistoryResponse | null>(null)
@@ -38,44 +38,61 @@ export default function OrderHistoryPage() {
       <h1 className="text-2xl font-bold mb-4">ประวัติคำสั่งซื้อ</h1>
 
       {orderData.orders.map((order) => {
-        // หา order_shops ที่อยู่ใน order นี้
-        const orderShops = orderData.order_shops.filter(shop => shop.order_id === order.order_id)
-        // หา address ที่ตรงกับ order นี้
-        const address = orderData.addresses.find(addr => addr.address_id === order.address_id)
+        const orderShops = order.order_shops || [];
+        const address = order.address;  // ใช้ address จาก order โดยตรง
 
         return (
           <div key={order.order_id} className="border p-4 rounded-lg shadow space-y-4">
             <div className="text-lg font-semibold text-blue-700">คำสั่งซื้อ #{order.order_id}</div>
 
-            {address && (
+            {/* แสดงชื่อผู้รับ + ที่อยู่ จาก order.address */}
+            {address ? (
               <div className="text-sm text-gray-600">
                 ที่อยู่จัดส่ง: {address.firstname} {address.lastname}, {address.house_number}, {address.street}, {address.sub_district}, {address.district}, {address.province}, {address.postal_code}<br />
                 โทร: {address.phone_number}
               </div>
+            ) : (
+              <div className="text-sm text-gray-600">ไม่พบข้อมูลที่อยู่จัดส่ง</div>
             )}
 
             {orderShops.map(shop => {
-              // หา order_items ของร้านนี้
-              const items = orderData.order_items.filter(item => item.order_shop_id === shop.order_shop_id)
+              const items = shop.order_items || [];
 
               return (
                 <div key={shop.order_shop_id} className="border-t pt-4 mt-4">
-                  <div className="font-medium text-purple-700">ร้านค้า: {shop.shop_id}</div>
-                  <div className="text-sm text-gray-500">สถานะ: {shop.status} | Tracking: {shop.tracking_number || '-'}</div>
+                  <div className="font-medium text-purple-700">
+                    ร้านค้า: {shop.shops?.shop_name || shop.shop_id}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    สถานะ: {shop.status} | Tracking: {shop.tracking_number || '-'}
+                  </div>
 
                   {items.length > 0 ? (
                     <div className="mt-2 space-y-2">
                       {items.map((item, index) => (
-  <div key={`${item.product_id}-${index}`} className="text-sm border-b pb-2">
-    สินค้า #{item.product_id} - {item.quantity} ชิ้น x {item.price_per_unit} = <span className="font-medium">{item.total_price} บาท</span>
-  </div>
-))}
+                        <div key={`${item.product_id}-${index}`} className="text-sm border-b pb-2">
+                          <div>{item.products?.product_name ?? 'ไม่พบชื่อสินค้า'}</div>
+
+                          {item.variant_option ? (
+                            <div className="text-xs italic text-gray-600">
+                              {item.variant_option.option.name}: {item.variant_option.value} (SKU: {item.variant_option.variant.sku})
+                            </div>
+                          ) : null}
+
+                          <div>
+                            {item.quantity} ชิ้น x {item.price_per_unit} ={' '}
+                            <span className="font-medium">{item.total_price} บาท</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-sm text-gray-500 italic mt-2">ไม่มีรายการสินค้า</div>
                   )}
 
-                  <div className="mt-2 font-semibold text-right text-green-600">รวม: {shop.subtotal} บาท</div>
+                  <div className="mt-2 font-semibold text-right text-green-600">
+                    รวม: {shop.subtotal} บาท
+                  </div>
                 </div>
               )
             })}

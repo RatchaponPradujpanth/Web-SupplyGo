@@ -5,10 +5,7 @@ import { PrismaClient } from "@prisma/client";
 const shoporderRoute = Router();
 const prisma = new PrismaClient();
 
-/**
- * GET /shoporderhistory
- * ดึงประวัติคำสั่งซื้อร้านค้า พร้อมกรองเลขพัสดุ (tracking_number) ได้
- */
+
 shoporderRoute.get("/shoporderhistory", authenticateToken, authstore, async (req: Request, res: Response): Promise<void> => {
   const shopId = req.user?.shop_id;
   const trackingNumberFilter = req.query.tracking_number?.toString();

@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://192.168.1.102:5000";  
+export const API_URL = "http://192.168.1.109:5000";  
 
 
 export type Shop = {
@@ -50,6 +50,21 @@ export interface Product {
   price: number;
   image: string;
   product_owners?: ProductOwner[];
+
+  // 🆕 เพิ่มส่วนนี้เพื่อรองรับ relations
+  status?: string;
+  product_variants?: {
+    variant_id: number;
+    sku: string;
+    price: number;
+    stock_quantity: number;
+    option_values: string[];
+  }[];
+
+  product_images?: {
+    image_id: number;
+    image_url: string;
+  }[];
 }
 
 interface CartItem {
@@ -62,43 +77,54 @@ interface CartItem {
   shop_name: string;
 }
 
-interface CartResponse {
-  cart_id: number | null;
-  items: CartItem[];
-}
+
+import type { CartResponse } from "@/types/type";
+// interface CartResponse {
+//   cart_id: number | null;
+//   items: CartItem[];
+// }
 
 export interface OrderHistoryResponse {
   orders: {
     order_id: number;
     address_id: number;
-  }[];
-  order_shops: {
-  order_shop_id: number;
-  order_id: number;   // เพิ่มตรงนี้
-  shop_id: number;
-  subtotal: number;
-  status: string;
-  tracking_number: string;
-}[];
-  order_items: {
-    order_shop_id: number;     // <-- เพิ่มตรงนี้
-    product_id: number;
-    quantity: number;
-    price_per_unit: number;
-    total_price: number;
+    order_date: string;
+    order_shops: {
+      order_shop_id: number;
+      shop_id: number;
+      subtotal: number;
+      status: string;
+      tracking_number: string;
+      shops: {
+        shop_name: string;
+      };
+      order_items: {
+        order_item_id: number;
+        product_id: number;
+        quantity: number;
+        price_per_unit: number;
+        total_price: number;
+        products: {
+          product_name: string;
+          product_images: {
+            image_url: string;
+          }[];
+        };
+      }[];
+    }[];
   }[];
   addresses: {
-  address_id: number;   // เพิ่มตรงนี้
-  firstname: string;
-  lastname: string;
-  phone_number: number;
-  house_number: string;
-  street: string;
-  sub_district: string;
-  district: string;
-  province: string;
-  postal_code: number;
-}[];
+    address_id: number;
+    firstname: string;
+    lastname: string;
+    phone_number: string;
+    house_number: string;
+    street: string;
+    sub_district: string;
+    district: string;
+    province: string;
+    postal_code: string;
+  }[];
 }
 
 
@@ -169,11 +195,11 @@ export const loadUsername = async (token: string): Promise<string> => {
 export const loadproduct = async (token: string): Promise<Product[]> => {
   if (!token) throw new Error("No token provided");
   try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/loadproduct`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
     console.log("✅ Products fetched:", response.data);
     return response.data;
@@ -273,21 +299,21 @@ export const cartUser = async (token: string): Promise<CartResponse> => {
   }
 };
 
-export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
-  try {
-    const response = await axios.get<CheckoutSummary>(`${API_URL}/api/cartsummary`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+// export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
+//   try {
+//     const response = await axios.get<CheckoutSummary>(`${API_URL}/api/cartsummary`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
 
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
-    throw error;
-  }
-};
+//     return response.data;
+//   } catch (error: any) {
+//     console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
+//     throw error;
+//   }
+// };
 
 export type ShopPaymentIntent = {
   shop_id: number;
@@ -295,29 +321,42 @@ export type ShopPaymentIntent = {
   amount: number;
   client_secret: string;
   stripe_account: string;
+  order_shop_id: number;
+  order_items?: Array<{
+    product_id: number;
+    product_name: string;
+    variant_option?: {
+      value: string;
+      option_name: string;
+      sku: string;
+    } | null;
+    quantity: number;
+    price_per_unit: number;
+    total_price: number;
+  }>;
 };
 
-export const createMultiVendorPayment = async (
-  token: string,
-  cartId: number
-): Promise<{ paymentIntents: ShopPaymentIntent[] }> => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/api/payment-multivendor`,
-      { cartId },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error: any) {
-    const msg = error.response?.data?.message || "ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้";
-    throw new Error(msg);
-  }
-};
+// export const createMultiVendorPayment = async (
+//   token: string,
+//   orderId: number
+// ): Promise<{ paymentIntents: ShopPaymentIntent[]; order_id: number }> => {
+//   try {
+//     const response = await axios.post(
+//       `${API_URL}/api/payment-multivendor`,
+//       { orderId },  // <-- ส่ง orderId แทน cartId
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+//     return response.data;
+//   } catch (error: any) {
+//     const msg = error.response?.data?.message || "ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้";
+//     throw new Error(msg);
+//   }
+// };
 
 export async function uploadImages(images: File[]) {
   console.log("🚀 [uploadImages] เริ่มส่งไฟล์จำนวน:", images.length);
@@ -348,7 +387,20 @@ export const addproduct = async (
   product_description: string,
   price: number,
   category_id: number,
-  imageFile: File
+  imageFiles: File[],
+  options: { name: string; values: string[] }[],
+  variants: {
+    sku: string;
+    price: number;
+    stock_quantity: number;
+    option_values: string[];
+  }[],
+  batches: {
+    batch_number: string;
+    manufactured_date: string;
+    expiry_date: string;
+    quantity: string;
+  }[][] // <-- เพิ่มตรงนี้
 ): Promise<void> => {
   try {
     const formData = new FormData();
@@ -356,7 +408,14 @@ export const addproduct = async (
     formData.append("product_description", product_description);
     formData.append("price", price.toString());
     formData.append("category_id", category_id.toString());
-    formData.append("image", imageFile); // ต้องใช้ชื่อ 'image' ตรงกับ backend
+
+    imageFiles.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    formData.append("options", JSON.stringify(options));
+    formData.append("variants", JSON.stringify(variants));
+    formData.append("batches", JSON.stringify(batches)); // <-- เพิ่มตรงนี้
 
     const response = await axios.post(`${API_URL}/api/add-product`, formData, {
       headers: {
@@ -364,12 +423,15 @@ export const addproduct = async (
         "Content-Type": "multipart/form-data",
       },
     });
+
     console.log("✅ เพิ่มสินค้าสำเร็จ", response.data);
   } catch (error) {
-    console.error("❌ error ที่ api:");
+    console.error("❌ error ที่ api:", error);
     throw error;
   }
 };
+
+
 
 export const getCategories = async (): Promise<Category[]> => {
   try {
@@ -395,25 +457,25 @@ export async function fetchUserRole(token: string): Promise<string> {
   }
 }
 
-export const loaduserproduct = async (): Promise<Product[]> => {
-  try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/loaduserproduct`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+// export const loaduserproduct = async (): Promise<Product[]> => {
+//   try {
+//     const response = await axios.get<Product[]>(`${API_URL}/api/loaduserproduct`, {
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//     });
 
-    console.log("✅ Products fetched:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Failed to load products";
+//     console.log("✅ Products fetched:", response.data);
+//     return response.data;
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Failed to load products";
 
-    console.error("Error fetching products:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Error fetching products:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const submitOrder = async (
   token: string,
@@ -505,45 +567,45 @@ export const loadaddress = async (token: string): Promise<Address[]> => {
   }
 };
 
-export async function addtocart(product_id: number, quantity: number) {
-  try {
-    const token = localStorage.getItem("token");
+// export async function addtocart(product_id: number, quantity: number) {
+//   try {
+//     const token = localStorage.getItem("token");
 
-    const res = await axios.post(
-      `${API_URL}/api/addtocart`,
-      { product_id, quantity },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+//     const res = await axios.post(
+//       `${API_URL}/api/addtocart`,
+//       { product_id, quantity, variant_id, option_value_ids },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
 
-    return res.data; // ข้อมูลที่ backend ตอบกลับ
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Add to cart failed";
+//     return res.data; // ข้อมูลที่ backend ตอบกลับ
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Add to cart failed";
 
-    console.error("Add to cart error:", errorMsg);
-    throw new Error(errorMsg);
-  }
-}
+//     console.error("Add to cart error:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// }
 
-export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
-  try {
-    const response = await axios.get<OrderHistoryResponse>(`${API_URL}/api/orderhistory`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:", error.message);
-    throw error;
-  }
-};
+// export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
+//   try {
+//     const response = await axios.get<OrderHistoryResponse>(`${API_URL}/api/orderhistory`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
+//     return response.data;
+//   } catch (error: any) {
+//     console.error("❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:", error.message);
+//     throw error;
+//   }
+// };
 
 
 export interface ShopOrderResponse {
@@ -644,5 +706,56 @@ export const updatestatus = async (
   } catch (error: any) {
     console.error("❌ updateTrackingNumber error:", error.response?.data || error.message);
     throw error;
+  }
+};
+
+
+export interface ShopPaymentIntentForFrontend {
+  shop_id: number;
+  shop_name: string;
+  amount: number;
+  client_secret: string;
+  stripe_account: string;
+  order_shop_id: number;
+  order_items?: any[];
+}
+
+export interface PaymentResponse {
+  message: string;
+  order_id: number;
+  order_date: string;
+  total_amount: number;
+  user_info: {
+    user_id: number;
+    username: string;
+    email: string;
+  };
+  total_payment_intents: number;
+  paymentIntents: ShopPaymentIntentForFrontend[];
+}
+
+export const createMultiVendorPayment = async (
+  token: string,
+  orderId?: number
+): Promise<PaymentResponse> => {
+  try {
+    const body: any = {};
+    if (orderId && orderId !== 0) {
+      body.orderId = orderId;
+    }
+    const response = await axios.post(
+      `${API_URL}/api/payment-multivendor`,
+      body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้';
+    throw new Error(msg);
   }
 };
