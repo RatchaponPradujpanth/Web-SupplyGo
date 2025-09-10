@@ -2,9 +2,10 @@ node_modules/
 .env
 tom_sus.jpg
 Polish_Jerry.jpg
+<<<<<<< HEAD
 migrations/
 <<<<<<< HEAD
-generated/
 =======
-/src/generated/prisma
->>>>>>> 8efc63665a8c5d090442007de60a7e058372914f
+>>>>>>> ae51ecd241888f21f9c4a9c39a89b634b0f4c224
+generated/
+migrations/

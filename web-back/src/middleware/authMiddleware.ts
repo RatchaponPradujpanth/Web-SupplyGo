@@ -26,7 +26,7 @@ export const authenticateToken = (
 
   try {
     const decoded = jwt.verify(token, SECRET) as { user_id: number , shop_id:number,role:string };
-    console.log("✅ Decoded token payload:", decoded);
+    //console.log("✅ Decoded token payload:", decoded);
     req.user = decoded;
     next();//บอกให้ทำ middle ถัดไป ถ้าไม่มีก็ทำ route ถัดไป
     //เมื่อคุณเรียก next(), Express จะ ส่ง req (และ res) ตัวเดิม ไปยัง middleware หรือ route ถัดไป
@@ -73,3 +73,24 @@ export const authstore = (
   next();
 };
 
+
+export const authadmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) : void => {
+  console.log("authadmin - checking user:", req.user);
+
+  if (!req.user) {
+    console.log("❌ ไม่มี user data");
+    res.status(401).json({ message: "กรุณาเข้าสู่ระบบ" });
+    return;
+  }
+  // ตรวจสอบ role
+  if (req.user.role !== "admin") {
+    console.log("❌ Role ไม่ถูกต้อง:", req.user.role);
+    res.status(403).json({ message: "เฉพาะแอดมินเท่านั้น" });
+    return;
+  }
+  next();
+}
