@@ -1,5 +1,4 @@
 import axios, { AxiosError } from 'axios';
-import type { Product } from '@/types/product';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function addtocart(

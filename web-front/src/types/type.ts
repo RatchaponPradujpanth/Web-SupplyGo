@@ -8,14 +8,14 @@
 //   //option_name: string;
 // }
 
-export interface ProductVariant {
-  variant_id: number;
-  sku: string;
-  price: number | null;
-  stock_quantity: number | null;
-  image: string | null;
-  variant_options: VariantOption[];
-}
+// export interface ProductVariant {
+//   variant_id: number;
+//   sku: string;
+//   price: number | null;
+//   total_stock: number; // เปลี่ยนจาก stock_quantity
+//   image: string | null;
+//   variant_options: VariantOption[];
+// }
 
 export interface ProductImage {
   id: number;
@@ -31,21 +31,24 @@ export type ProductOption = {
   variant_options: VariantOption[];
 };
 
-export interface Product {
-  product_id: number;
-  product_name: string | null;
-  product_description: string | null;
-  price: number | null;
-  status?: string | null;
-  image: string | null;
+// export interface Product {
+//   product_id: number;
+//   product_name: string | null;
+//   product_description: string | null;
+//   price: number | null;
+//   status?: string | null;
+//   image: string | null;
 
-  // ความสัมพันธ์
-  product_variants?: ProductVariant[];
-  product_images?: ProductImage[];
-  product_options?: ProductOption[]; // เพิ่มฟิลด์นี้
+//   // ความสัมพันธ์
+//   product_variants?: ProductVariant[];
+//   product_images?: ProductImage[];
+//   product_options?: ProductOption[];
+//   product_owners?: ProductOwner[];
 
-  product_owners?: ProductOwner[];
-}
+//   // ✅ เพิ่มตรงนี้
+//   secondary_images?: string[];
+// }
+
 
 export type Shop = {
   shop_id: number;
@@ -282,7 +285,8 @@ export interface userpoint {
 
 // GroupBuying Type
 export interface GroupBuying {
-  id: number;
+  group_buying_id: number;
+  points_per_member:number;
   shop_id: number;
   product_id: number;
   required_members: number;
@@ -393,3 +397,39 @@ export interface AdminDashboardApiResponse {
     }[];
   };
 }
+
+export interface GroupBuyingMember {
+  id: number;
+  joined_at: string;
+  user_id: number;
+  username: string | null;
+  email: string | null;
+}
+
+export interface GroupBuyingProduct {
+  product_name: string | null;
+  image: string | null;
+  secondary_images?: string[]; // รูปรอง
+}
+
+export interface GroupBuyingResult {
+  group_buying_id: number;
+  group_name?: string | null;
+  description?: string | null;
+  expire_at?: string | null;
+  product_id: number;
+  variant_id?: number | null;
+  product_name: string | null; // fallback ถ้า group_name ไม่มี
+  product_image: string | null;
+  secondary_images: string[]; // กำหนดเป็น array ว่างได้ถ้าไม่มี
+  total_items: number;
+  required_members: number;
+  status: string;
+  created_at: string;
+  points_per_group: number;
+  points_per_member: number;
+  member_count: number;
+  members: GroupBuyingMember[];
+}
+
+

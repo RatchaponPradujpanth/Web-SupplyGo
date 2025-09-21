@@ -7,26 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// ------------------------
-/// Model เดิม
-/// ------------------------
-
 model address {
-  address_id     Int      @id @default(autoincrement())
-  user_id        Int?
-  firstname      String?
-  lastname       String?
-  phone_number   Int?
-  house_number   String?
-  street         String?
-  sub_district   String?
-  district       String?
-  province       String?
-  postal_code    Int?
-  address_type   String?
-
-  users          users?   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  orders         order[]  @relation("OrderToAddress")
+  address_id   Int     @id @default(autoincrement())
+  user_id      Int?
+  firstname    String?
+  lastname     String?
+  phone_number Int?
+  house_number String?
+  street       String?
+  sub_district String?
+  district     String?
+  province     String?
+  postal_code  Int?
+  address_type String?
+  users        users?  @relation(fields: [user_id], references: [user_id])
+  orders       order[] @relation("OrderToAddress")
 }
 
 model cart {
@@ -34,7 +29,7 @@ model cart {
   user_id    Int          @unique
   created_at DateTime?    @default(now()) @db.Timestamp(6)
   updated_at DateTime?    @default(now()) @db.Timestamp(6)
-  users      users        @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users      users        @relation(fields: [user_id], references: [user_id])
   cart_items cart_items[]
 }
 
@@ -43,39 +38,35 @@ model cart_items {
   cart_id              Int
   product_id           Int
   shop_id              Int
-  variant_id           Int?                        // optional
   quantity             Int
   price_per_unit       Decimal                     @db.Decimal
   added_at             DateTime                    @default(now()) @db.Timestamp(6)
-
+  variant_id           Int?
+  variant_option_links cart_item_variant_options[]
   cart                 cart                        @relation(fields: [cart_id], references: [cart_id])
   products             products                    @relation(fields: [product_id], references: [product_id])
   shops                shops                       @relation(fields: [shop_id], references: [shop_id])
   variant              product_variants?           @relation(fields: [variant_id], references: [variant_id])
-  variant_option_links cart_item_variant_options[]
 }
 
 model cart_item_variant_options {
   cart_item_id      Int
   variant_option_id Int
-
-  cart_item         cart_items        @relation(fields: [cart_item_id], references: [cart_item_id], onDelete: Cascade)
-  variant_option    variant_options   @relation(fields: [variant_option_id], references: [variant_option_id], onDelete: Cascade)
-
+  cart_item         cart_items      @relation(fields: [cart_item_id], references: [cart_item_id], onDelete: Cascade)
+  variant_option    variant_options @relation(fields: [variant_option_id], references: [variant_option_id], onDelete: Cascade)
   @@id([cart_item_id, variant_option_id])
 }
 
 model order {
-  order_id        Int           @id @default(autoincrement())
-  address_id      Int
-  user_id         Int
-  order_date      DateTime?     @db.Timestamp(6)
-  total_amount    Decimal?      @db.Decimal
-  status          String?       @default("not paid")
-
-  users           users         @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  address         address       @relation("OrderToAddress", fields: [address_id], references: [address_id])
-  order_shops     order_shops[]
+  order_id       Int           @id @default(autoincrement())
+  address_id     Int
+  user_id        Int
+  order_date     DateTime?     @db.Timestamp(6)
+  total_amount   Decimal?      @db.Decimal
+  status         String?       @default("not paid")
+  address        address       @relation("OrderToAddress", fields: [address_id], references: [address_id])
+  users          users         @relation(fields: [user_id], references: [user_id])
+  order_shops    order_shops[]
 }
 
 model order_shops {
@@ -85,40 +76,38 @@ model order_shops {
   subtotal        Decimal?      @db.Decimal
   status          String?       @default("not paid")
   tracking_number String?
-  transaction_id  String?       // paymentIntent.id
-  charge_id       String?       // charge.id ใหม่เพิ่ม
+  charge_id       String?
+  transaction_id  String?
   order_items     order_items[]
-  order           order         @relation(fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction)
-  shops           shops         @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction)
+  order           order         @relation(fields: [order_id], references: [order_id])
+  shops           shops         @relation(fields: [shop_id], references: [shop_id])
 }
 
 model order_items {
-  order_item_id     Int               @id @default(autoincrement())
+  order_item_id     Int              @id @default(autoincrement())
   order_shop_id     Int
   product_id        Int
   variant_option_id Int?
   quantity          Int?
-  price_per_unit    Decimal?          @db.Decimal
-  total_price       Decimal?          @db.Decimal
-
-  order_shops       order_shops       @relation(fields: [order_shop_id], references: [order_shop_id], onDelete: NoAction, onUpdate: NoAction)
-  products          products          @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
-  variant_option    variant_options?  @relation(fields: [variant_option_id], references: [variant_option_id])
+  price_per_unit    Decimal?         @db.Decimal
+  total_price       Decimal?         @db.Decimal
+  order_shops       order_shops      @relation(fields: [order_shop_id], references: [order_shop_id])
+  products          products         @relation(fields: [product_id], references: [product_id])
+  variant_option    variant_options? @relation(fields: [variant_option_id], references: [variant_option_id])
 }
 
 model product_batches {
-  batch_id          Int       @id @default(autoincrement())
-  product_id        Int?      // สินค้าธรรมดา
-  variant_id        Int?      // สินค้าที่มี variant 
-
+  batch_id          Int               @id @default(autoincrement())
+  product_id        Int?
   batch_number      String?
-  manufactured_date DateTime? @db.Date
-  expiry_date       DateTime? @db.Date
-  quantity          Int @default(0)
-
-  product           products?          @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
-  variant           product_variants?  @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade)
+  manufactured_date DateTime?         @db.Date
+  expiry_date       DateTime?         @db.Date
+  variant_id        Int?
+  quantity          Int               @default(0)
+  product           products?         @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  variant           product_variants? @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade)
 }
+
 model product_categories {
   category_id   Int        @id @default(autoincrement())
   category_name String?
@@ -130,8 +119,8 @@ model product_owners {
   id         Int      @id @default(autoincrement())
   shop_id    Int
   product_id Int
-  products   products @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
-  shops      shops    @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [product_id])
+  shops      shops    @relation(fields: [shop_id], references: [shop_id])
 }
 
 model products {
@@ -145,16 +134,15 @@ model products {
   created_date        DateTime?           @default(now()) @db.Timestamp(6)
   updated_date        DateTime?           @default(now()) @db.Timestamp(6)
   cart_items          cart_items[]
+  group_buyings       group_buying[]
   order_items         order_items[]
   product_batches     product_batches[]
-  product_owners      product_owners[]
-  product_categories  product_categories? @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
-  product_variants    product_variants[]
-  product_options     product_options[]
   product_images      product_images[]
-
-  // Relation กลับสำหรับ group_buying
-  group_buyings       group_buying[]
+  product_options     product_options[]
+  product_owners      product_owners[]
+  product_variants    product_variants[]
+  product_categories  product_categories? @relation(fields: [category_id], references: [category_id])
+  group_order_items   group_order_item[]
 }
 
 model product_images {
@@ -170,7 +158,7 @@ model product_options {
   option_id       Int               @id @default(autoincrement())
   name            String
   product_id      Int
-  product         products          @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
+  product         products          @relation(fields: [product_id], references: [product_id])
   variant_options variant_options[]
 }
 
@@ -179,89 +167,162 @@ model product_variants {
   product_id      Int
   sku             String?
   price           Decimal?          @db.Decimal(10, 2)
-  product         products          @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
-  variant_options variant_options[]
-
   cart_items      cart_items[]
   product_batches product_batches[]
+  group_buyings   group_buying[]
+  product         products          @relation(fields: [product_id], references: [product_id])
+  variant_options variant_options[]
 }
 
 model variant_options {
-  variant_option_id Int                      @id @default(autoincrement())
+  variant_option_id Int                         @id @default(autoincrement())
   variant_id        Int
   option_id         Int
   value             String
-
-  variant           product_variants         @relation(fields: [variant_id], references: [variant_id])
-  option            product_options          @relation(fields: [option_id], references: [option_id])
   cart_item_links   cart_item_variant_options[]
   order_items       order_items[]
+  option            product_options             @relation(fields: [option_id], references: [option_id])
+  variant           product_variants            @relation(fields: [variant_id], references: [variant_id])
 }
 
 model shops {
-  shop_id           Int              @id @default(autoincrement())
-  shop_name         String?          @unique
+  shop_id           Int                      @id @default(autoincrement())
+  shop_name         String?                  @unique
   user_id           Int
   address           String?
   stripe_account_id String?
   cart_items        cart_items[]
+  group_buyings     group_buying[]
   order_shops       order_shops[]
   product_owners    product_owners[]
-  users             users            @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user              users                    @relation(fields: [user_id], references: [user_id])
+  wallets           store_wallets?
 
-  // Relation กลับสำหรับ group_buying
-  group_buyings     group_buying[]
+  // เพิ่ม relation กลับมา
+  user_point_txs    user_point_transactions[]
+  store_withdrawals store_withdrawals[]
 }
-
 model users {
-  user_id           Int       @id @default(autoincrement())
-  username          String?   @unique
-  password          String?
-  email             String?   @unique
-  registration_date DateTime? @default(now()) @db.Timestamp(6)
-  role              String?
-  address           address[]
-  cart              cart[]
-  order             order[]
-  shops             shops[]
-
-  // Relation กลับสำหรับ user_points + group_members
-  user_points       user_points?
-  group_members     group_members[]
+  user_id            Int                      @id @default(autoincrement())
+  username           String?                  @unique
+  password           String?
+  email              String?                  @unique
+  registration_date  DateTime?                @default(now()) @db.Timestamp(6)
+  role               String?
+  address            address[]
+  cart               cart?
+  group_members      group_members[]
+  order              order[]
+  point_transactions point_transactions[]
+  shops              shops[]                  // 1 user → N shops
+  user_points        user_points?
+  user_point_txs     user_point_transactions[] // ← เพิ่มตรงนี้
 }
 
-/// ------------------------
-/// Model ใหม่: Group Buying + User Points
-/// ------------------------
 
 model user_points {
-  id       Int   @id @default(autoincrement())
-  user_id  Int   @unique
-  balance  Int   @default(0)
-
-  user     users @relation(fields: [user_id], references: [user_id])
+  user_points_id Int   @id @default(autoincrement())
+  user_id        Int   @unique
+  balance        Int   @default(0)
+  user           users @relation(fields: [user_id], references: [user_id])
 }
 
 model group_buying {
-  id               Int      @id @default(autoincrement())
-  shop_id          Int
-  product_id       Int
-  required_members Int
-  total_items      Int
-  status           String   @default("open")  // open | success | closed
-  created_at       DateTime @default(now())
+  group_buying_id   Int       @id @default(autoincrement())
+  shop_id           Int
+  product_id        Int
+  variant_id        Int?
+  required_members  Int
+  total_items       Int
+  status            String    @default("open")
+  points_per_group  Int       @default(0)
+  points_per_member Int       @default(0)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now()) @updatedAt
 
-  shop             shops    @relation(fields: [shop_id], references: [shop_id])
-  product          products @relation(fields: [product_id], references: [product_id])
-  members          group_members[]
+  group_name        String?
+  description       String?
+  expire_at         DateTime?
+  items_per_member  Int       @default(0)
+
+  shop              shops              @relation(fields: [shop_id], references: [shop_id])
+  product           products           @relation(fields: [product_id], references: [product_id])
+  variant           product_variants?  @relation(fields: [variant_id], references: [variant_id])
+  members           group_members[]
+  group_orders      group_order[]
 }
 
 model group_members {
-  id        Int      @id @default(autoincrement())
-  group_id  Int
-  user_id   Int
-  joined_at DateTime @default(now())
+  group_members_id   Int             @id @default(autoincrement())
+  group_buying_id    Int
+  user_id            Int
+  joined_at          DateTime        @default(now())
+  left_at            DateTime?
 
-  group     group_buying @relation(fields: [group_id], references: [id], onDelete: Cascade)
-  user      users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  group              group_buying    @relation(fields: [group_buying_id], references: [group_buying_id], onDelete: Cascade)
+  user               users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([group_buying_id, user_id, left_at])
+}
+
+model point_transactions {
+  point_transaction_id Int      @id @default(autoincrement())
+  user_id              Int
+  points               Int
+  amount               Int
+  transaction_id       String   @unique
+  status               String
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  users                users    @relation(fields: [user_id], references: [user_id])
+}
+
+model store_wallets {
+  shop_id  Int   @id
+  balance   Int   @default(0)
+  shop      shops @relation(fields: [shop_id], references: [shop_id])
+}
+
+model group_order {
+  group_order_id     Int             @id @default(autoincrement())
+  group_buying_id    Int
+  total_amount       Decimal?        @db.Decimal
+  status             String?         @default("pending")
+  created_at         DateTime        @default(now())
+
+  group              group_buying    @relation(fields: [group_buying_id], references: [group_buying_id])
+  items              group_order_item[]
+}
+
+model group_order_item {
+  group_order_item_id Int            @id @default(autoincrement())
+  group_order_id      Int
+  product_id          Int
+  quantity            Int
+  price_per_unit      Decimal?       @db.Decimal
+
+  order               group_order    @relation(fields: [group_order_id], references: [group_order_id])
+  product             products       @relation(fields: [product_id], references: [product_id])
+}
+model user_point_transactions {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  shop_id   Int
+  points     Int      // จำนวน point (+ve ได้ point, -ve ใช้ point)
+  type       String   // "earn" หรือ "redeem"
+  created_at DateTime @default(now())
+
+  user  users @relation(fields: [user_id], references: [user_id])
+  store shops @relation(fields: [shop_id], references: [shop_id])
+}
+
+model store_withdrawals {
+  id         Int      @id @default(autoincrement())
+  shop_id   Int
+  amount     Int      // จำนวนเงินที่ร้านต้องการถอน
+  status     String   // "pending", "completed", "failed"
+  stripe_tx  String?  // id ของ transaction ที่ได้จาก Stripe
+  created_at DateTime @default(now())
+
+  store shops @relation(fields: [shop_id], references: [shop_id])
 }

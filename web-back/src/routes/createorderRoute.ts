@@ -107,17 +107,17 @@ createorderRoute.post("/create-order", authenticateToken, async (req: Request, r
 
           //หาเลข batch
           const batch = await tx.product_batches.findFirst({
-  where: item.variant_id
-    ? { variant_id: item.variant_id }   // ถ้ามี variant
-    : { product_id: item.product_id }, // ถ้าไม่มี variant
-  orderBy: {
-    expiry_date: "asc"
-  },
-  select: {
-    batch_id: true,
-    quantity: true
-  }
-});
+            where: item.variant_id
+            ? { variant_id: item.variant_id }   // ถ้ามี variant
+            : { product_id: item.product_id }, // ถ้าไม่มี variant
+              orderBy: {
+                expiry_date: "asc"
+              },
+              select: {
+              batch_id: true,
+              quantity: true
+              }
+              });
 
           console.log(`📦 Found batch for ${item.variant_id ? 'variant' : 'product'} ${item.variant_id || item.product_id}:`, batch);
 

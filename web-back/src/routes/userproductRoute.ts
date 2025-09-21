@@ -22,6 +22,7 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
       },
     });
 
+    //หา path รูป
     const host = req.headers.host;
     const protocol = req.protocol;
     const getFullUrl = (path?: string | null) => {
@@ -34,12 +35,12 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
       const primaryImage = prod.product_images.find(img => img.is_primary);
       const mainImage = prod.image ? getFullUrl(prod.image) : primaryImage ? getFullUrl(primaryImage.image_url) : null;
 
+
+      // map ข้อมูลก่อนส่งไป frontend
       const variants = prod.product_variants.map(variant => {
-        const variantImage = getFullUrl(variant.image);
         return {
           ...variant,
           price: variant.price ? Number(variant.price) : null,
-          image: variantImage,
           variant_options: variant.variant_options.map(vo => ({
             variant_option_id: vo.variant_option_id,  // <-- เพิ่มตรงนี้
             option_name: vo.option.name,
@@ -48,25 +49,28 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
         };
       });
 
-      // 🔍 หากไม่มี price ใน products ให้ใช้ราคาที่ต่ำที่สุดใน variants
+      // ถ้าไม่มี price ใน products ให้ใช้ราคาที่ต่ำที่สุดใน variants
       const variantPrices = prod.product_variants
-        .map(v => v.price)
-        .filter(p => p !== null) as any[];
+        .map(v => v.price) //ดึงราคาจากทุก variant
+        .filter(p => p !== null) as any[]; //กรอกเอาเฉพาะที่มีราคาไม่เอา null
 
+        //ตรงนี้เทียบราคาที่ได้แล้วเอาถูกที่สุด
       const minVariantPrice = variantPrices.length > 0
         ? Number(
             variantPrices.reduce((min, p) => (p! < min! ? p : min), variantPrices[0])
           )
         : null;
 
+      //ส่งรูปไปแบบ full path
       const productImages = prod.product_images.map(img => ({
         ...img,
         image_url: getFullUrl(img.image_url),
       }));
 
+      //ส่วนที่ส่งไป
       return {
-        ...prod,
-        price: prod.price ? Number(prod.price) : minVariantPrice, // 👈 ตรงนี้เลย
+        ...prod, // ... คือทุกค่า ของ prod ออกมา
+        price: prod.price ? Number(prod.price) : minVariantPrice, // บอกว่าเอาราคาจาก
         image: mainImage,
         product_variants: variants,
         product_images: productImages,

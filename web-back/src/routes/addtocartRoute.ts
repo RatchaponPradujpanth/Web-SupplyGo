@@ -64,10 +64,11 @@ addtocartRoute.post("/addtocart", authenticateToken, async (req: Request, res: R
     if (!variant) throw new Error("ไม่พบ variant");
 
     console.log("✅ เจอ variant:", variant);
+//ต้องกลับมาแก้กันเพิ่มสินค้าลงตะกร้าเกินจำนวน
+//      if (variant.total_stock !== null && quantity > variant.total_stock) {
+//   throw new Error("จำนวนสินค้าเกินจำนวนในสต็อก");
+// }
 
-    if (variant.stock_quantity !== null && quantity > variant.stock_quantity) {
-      throw new Error("จำนวนสินค้าเกินจำนวนในสต็อก");
-    }
 
     if (variant.product.status !== "active") {
       throw new Error("สินค้าไม่พร้อมจำหน่าย");

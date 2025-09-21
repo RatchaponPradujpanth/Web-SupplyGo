@@ -1,22 +1,23 @@
 import axios from 'axios';
 import type { userpoint } from '@/types/type';
 
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export const loadbalance = async (token : string): Promise<{balance : number}> =>{
-    try {
-        const response = await axios.get<{balance : number}>(
-            `${API_URL}/api/loadbalance`,
-            {
-                headers : {
-                    Authorization : `Bearer ${token}`,
-                },
-            }
-        );
-        return response.data;
-    } catch (error) {
-        console.error("Load store name error:", error);
-        throw error;
-    }
-}
+export const loadbalance = async (token: string): Promise<{ balance: number }> => {
+  try {
+    console.log("📤 Sending request to load balance with token:", token);
+
+    const response = await axios.get<{ balance: number }>(`${API_URL}/api/loadbalance`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("📥 Response from loadbalance API:", response.data);
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Load balance error:", error.response?.data || error.message);
+    throw error;
+  }
+};

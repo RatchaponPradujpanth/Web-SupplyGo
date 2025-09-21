@@ -8,7 +8,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showMessage, setShowMessage] = useState<string | null>(null);
-  const router = useRouter();
+
 
   const handleLogin = async () => {
     try {
