@@ -1,10 +1,8 @@
 import axios, { AxiosError } from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function joingroup(
+export async function leavegroup(
   group_buying_id: number,
-  balance: number,
-  address_id: number,
 ) {
   try {
     const token = localStorage.getItem("token");
@@ -13,8 +11,8 @@ export async function joingroup(
     }
 
     const response = await axios.post(
-      `${API_URL}/api/join-group`,
-      { group_buying_id, balance , address_id },
+      `${API_URL}/api/leave-group`,
+      { group_buying_id, },
       {
         headers: {
           "Content-Type": "application/json",
@@ -27,7 +25,7 @@ export async function joingroup(
   } catch (error: unknown) {
     const err = error as AxiosError<{ message?: string }>;
     const errorMsg =
-      err.response?.data?.message || err.message || "join group failed";
+      err.response?.data?.message || err.message || "leave-group failed";
 
     console.error("Join group error:", errorMsg);
     throw new Error(errorMsg);

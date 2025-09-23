@@ -3,11 +3,11 @@ import type { GroupBuying } from '@/types/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export const loadgroupbuy = async (): Promise<GroupBuying[]> => {
+export const loadgroupbuy = async (token: string): Promise<GroupBuying[]> => {
   try {
     const response = await axios.get<{ groups: GroupBuying[] }>(`${API_URL}/api/loadgroup`, {
       headers: {
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 

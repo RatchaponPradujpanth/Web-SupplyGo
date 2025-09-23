@@ -286,7 +286,7 @@ export interface userpoint {
 // GroupBuying Type
 export interface GroupBuying {
   group_buying_id: number;
-  points_per_member:number;
+  points_per_member: number;
   shop_id: number;
   product_id: number;
   required_members: number;
@@ -307,7 +307,13 @@ export interface GroupBuying {
     user_id: number;
     username?: string;
   }[];
+
+  // property ใหม่จาก backend
+  user_in_group?: boolean;       // ตรวจสอบว่า user อยู่ใน group หรือยัง
+  current_members?: number;      // จำนวนสมาชิกปัจจุบัน
+  is_full?: boolean;             // ครบจำนวนสมาชิกหรือยัง
 }
+
 // ===== เพิ่ม type ที่ยังขาด =====
 
 export interface users {

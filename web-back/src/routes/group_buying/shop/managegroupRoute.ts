@@ -58,6 +58,7 @@ manageGroupsRoute.get(
             },
           },
           members: {
+            where: { left_at: null },
             select: {
               group_members_id: true,
               joined_at: true,

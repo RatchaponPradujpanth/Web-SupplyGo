@@ -1,11 +1,8 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError } from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function joingroup(
-  group_buying_id: number,
-  balance: number,
-  address_id: number,
-) {
+// ✅ เปลี่ยนชื่อเป็น confirmGroupOrder จะตรงความหมายกว่า
+export async function confirmGroupOrder(group_buying_id: number) {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -13,12 +10,12 @@ export async function joingroup(
     }
 
     const response = await axios.post(
-      `${API_URL}/api/join-group`,
-      { group_buying_id, balance , address_id },
+      `${API_URL}/api/confirm-group-order`,
+      { group_buying_id },
       {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -27,9 +24,9 @@ export async function joingroup(
   } catch (error: unknown) {
     const err = error as AxiosError<{ message?: string }>;
     const errorMsg =
-      err.response?.data?.message || err.message || "join group failed";
+      err.response?.data?.message || err.message || "confirm-group-order failed";
 
-    console.error("Join group error:", errorMsg);
+    console.error("Confirm group order error:", errorMsg);
     throw new Error(errorMsg);
   }
 }

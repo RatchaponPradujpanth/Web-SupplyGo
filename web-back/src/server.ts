@@ -37,6 +37,8 @@ import topuppointRoute from "./routes/group_buying/topuppointRoute";
 import creategroupRoute from "./routes/group_buying/shop/creategroupRoute";
 import manageGroupsRoute from "./routes/group_buying/shop/managegroupRoute";
 import joingroupRoute from "./routes/group_buying/customer/joingroupRoute";
+import leaveGroupRoute from "./routes/group_buying/customer/leaveGroupRoute";
+import confirmgrouporderRoute from "./routes/group_buying/shop/confirmgrouporderRoute";
 
 dotenv.config(); // โหลดค่า .env
 
@@ -81,6 +83,9 @@ app.use("/api",topuppointRoute)
 app.use("/api",creategroupRoute)
 app.use("/api",manageGroupsRoute)
 app.use("/api",joingroupRoute)
+app.use("/api",leaveGroupRoute)
+app.use("/api",confirmgrouporderRoute)
+
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });

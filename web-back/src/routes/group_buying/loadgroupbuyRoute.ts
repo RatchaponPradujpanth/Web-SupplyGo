@@ -1,30 +1,56 @@
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-
+import { authenticateToken } from "../../middleware/authMiddleware";
 const loadgroupbuyRoute = Router();
 const prisma = new PrismaClient();
 
-loadgroupbuyRoute.get("/loadgroup", async (req: Request, res: Response): Promise<void> => {
+loadgroupbuyRoute.get("/loadgroup",authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
+    // รับ user_id จาก query
+    const userId = req.user?.user_id
+
     const groups = await prisma.group_buying.findMany({
       include: {
         product: {
           include: {
             product_images: true
           }
+        },
+        members: {
+          where: {
+            left_at: null  // เฉพาะสมาชิกที่ยังอยู่ในกลุ่ม
+          },
+          include: {
+            user: {
+              select: {
+                user_id: true,
+                username: true
+              }
+            }
+          }
+        },
+        shop: {
+          select: {
+            shop_id: true,
+            shop_name: true
+          }
         }
+      },
+      orderBy: {
+        created_at: 'desc'  // เรียงลำดับจากใหม่ไปเก่า
       }
     });
 
     if (groups.length === 0) {
-      res.status(404).json({ message: "Group not found" });
+      res.status(200).json({ groups: [] });
       return;
     }
 
     // ประกอบ URL ของรูปให้สมบูรณ์
     const protocol = req.protocol;
     const host = req.headers.host;
-    const groupsWithFullImages = groups.map(group => {
+
+    const groupsWithFullData = groups.map(group => {
       const product = group.product;
       if (product && product.product_images) {
         product.product_images = product.product_images.map(img => ({
@@ -34,11 +60,36 @@ loadgroupbuyRoute.get("/loadgroup", async (req: Request, res: Response): Promise
             : `${protocol}://${host}${img.image_url}`
         }));
       }
-      return { ...group, product };
+
+      // ตรวจสอบและอัพเดท status ของกลุ่มอัตโนมัติ
+      const currentMembers = group.members?.length || 0;
+      let updatedStatus = group.status;
+
+      if (currentMembers >= group.required_members && group.status === 'open') {
+        updatedStatus = 'closed';
+        prisma.group_buying.update({
+          where: { group_buying_id: group.group_buying_id },
+          data: { status: 'closed' }
+        }).catch(err => console.error('Error updating group status:', err));
+      }
+
+      // ✅ ตรวจสอบว่า user อยู่ใน group หรือยัง
+      const user_in_group = userId
+        ? group.members?.some(m => m.user.user_id === userId) || false
+        : false;
+
+      return { 
+        ...group, 
+        product,
+        status: updatedStatus,
+        current_members: currentMembers,
+        is_full: currentMembers >= group.required_members,
+        user_in_group
+      };
     });
 
-    console.log("Loaded groups with full images:", groupsWithFullImages);
-    res.json({ groups: groupsWithFullImages });
+    console.log(`Loaded ${groupsWithFullData.length} groups with members data`);
+    res.json({ groups: groupsWithFullData });
   } catch (error) {
     console.error('Error loading groups:', error);
     res.status(500).json({ message: 'Internal server error' });
