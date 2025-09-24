@@ -52,7 +52,7 @@ loginRoute.post("/login", async (req: Request, res: Response): Promise<void> => 
       console.log(`ℹ️ ผู้ใช้ ${user.user_id} ไม่ใช่ร้านค้า หรือไม่มีร้าน`);
     }
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "23h" });
     res.status(200).json({ message: "Login successful", token });
   } catch (err) {
     console.error("Error during login:", err);

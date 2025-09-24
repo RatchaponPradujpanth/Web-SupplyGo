@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { managegroup, ManageGroupsResponse } from '@/service/api/groupsharing/managegroup';
 import { confirmGroupOrder } from '@/service/api/groupsharing/confirmgrouporder';
+import { cancelgroup } from '@/service/api/groupsharing/cancelgroup';
 import type { GroupBuyingResult } from "@/types/type";
 
 export default function ManageGroupsPage() {
@@ -37,13 +38,25 @@ export default function ManageGroupsPage() {
 
   const handleConfirmOrder = async (group_buying_id: number) => {
     try {
-      await confirmGroupOrder(group_buying_id);  // ✅ เรียก API confirm order
+      await confirmGroupOrder(group_buying_id);
       alert('สร้างออเดอร์เรียบร้อย 🎉');
 
-      const data: ManageGroupsResponse = await managegroup(token); // reload
+      const data: ManageGroupsResponse = await managegroup(token);
       setGroups(data.groups);
     } catch (err: any) {
       alert(err.message || 'สร้างออเดอร์ไม่สำเร็จ ❌');
+    }
+  };
+
+  const handleCancelOrder = async (group_buying_id: number) => {
+    try {
+      await cancelgroup(group_buying_id);
+      alert('ยกเลิกออเดอร์เรียบร้อย ❌');
+
+      const data: ManageGroupsResponse = await managegroup(token);
+      setGroups(data.groups);
+    } catch (err: any) {
+      alert(err.message || 'ยกเลิกออเดอร์ไม่สำเร็จ 🚫');
     }
   };
 
@@ -92,18 +105,34 @@ export default function ManageGroupsPage() {
                   </div>
                 )}
 
-                <div className="mt-4">
-                  {isFull ? (
-                    <button
-                      onClick={() => handleConfirmOrder(group.group_buying_id)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition"
-                    >
-                      สร้างออเดอร์
-                    </button>
-                  ) : (
-                    <span className="text-sm text-gray-500">ยังไม่ครบสมาชิก</span>
-                  )}
-                </div>
+                <div className="mt-4 flex gap-2">
+  {/* ปุ่ม Confirm */}
+  {isFull ? (
+    <button
+      onClick={() => handleConfirmOrder(group.group_buying_id)}
+      className={`flex-1 py-2 rounded transition ${
+        group.status === "confirmed" || group.status === "cancelled"
+          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+          : "bg-blue-600 hover:bg-blue-700 text-white"
+      }`}
+      disabled={group.status === "confirmed" || group.status === "cancelled"}
+    >
+      {group.status === "confirmed" ? "สร้างออเดอร์แล้ว" : "สร้างออเดอร์"}
+    </button>
+  ) : (
+    <span className="flex-1 text-sm text-gray-500">ยังไม่ครบสมาชิก</span>
+  )}
+
+  {/* ปุ่ม Cancel */}
+  {group.status !== "cancelled" && group.status !== "closed" && (
+    <button
+      onClick={() => handleCancelOrder(group.group_buying_id)}
+      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded transition"
+    >
+      ยกเลิก
+    </button>
+  )}
+</div>
               </div>
             );
           })}

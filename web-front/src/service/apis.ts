@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-export const API_URL = "http://192.168.1.42:5000";  
+export const API_URL = "http://192.168.1.10:5000";  
 
 
 export type Shop = {

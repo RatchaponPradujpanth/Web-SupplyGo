@@ -9,8 +9,8 @@ joingroupRoute.post("/join-group", authenticateToken, async (req: Request, res: 
   const user_id = req.user?.user_id;
   const { group_buying_id, address_id } = req.body;
 
-  if (!user_id) { res.status(401).json({ error: "ผู้ใช้ไม่ได้เข้าสู่ระบบ" });return}
-  if (!group_buying_id || !address_id) { res.status(400).json({ error: "group_buying_id หรือ address_id หาย" }); return}
+  if (!user_id) { res.status(401).json({ error: "ผู้ใช้ไม่ได้เข้าสู่ระบบ" }); return; }
+  if (!group_buying_id || !address_id) { res.status(400).json({ error: "group_buying_id หรือ address_id หาย" }); return; }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -26,7 +26,7 @@ joingroupRoute.post("/join-group", authenticateToken, async (req: Request, res: 
       // ดึงข้อมูลกลุ่ม
       const group = await tx.group_buying.findUnique({
         where: { group_buying_id },
-        select: { required_members: true, points_per_member: true, shop_id: true },
+        select: { required_members: true, points_per_member: true, shop_id: true, status: true },
       });
       if (!group) throw new Error("ไม่พบกลุ่มนี้");
       if (activeMembersCount >= group.required_members) throw new Error("กลุ่มเต็มแล้ว");
@@ -45,7 +45,7 @@ joingroupRoute.post("/join-group", authenticateToken, async (req: Request, res: 
         data: {
           group_member_id: newMember.group_members_id,
           address_id,
-          group_buying_id, // ต้องใส่ตาม schema
+          group_buying_id,
         },
       });
 
@@ -70,6 +70,14 @@ joingroupRoute.post("/join-group", authenticateToken, async (req: Request, res: 
           points: -group.points_per_member,
           type: "redeem",
         },
+      });
+
+      // ✅ อัปเดต status ของกลุ่มตามจำนวนสมาชิก
+      const updatedMembersCount = activeMembersCount + 1;
+      const newStatus = updatedMembersCount >= group.required_members ? 'full' : 'open';
+      await tx.group_buying.update({
+        where: { group_buying_id },
+        data: { status: newStatus },
       });
 
       return newMember;

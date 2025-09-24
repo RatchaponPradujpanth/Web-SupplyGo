@@ -11,13 +11,13 @@ leaveGroupRoute.post("/leave-group", authenticateToken, async (req: Request, res
 
   if (!user_id || typeof user_id !== "number") {
     res.status(401).json({ error: "ผู้ใช้ไม่ได้เข้าสู่ระบบหรือ user_id ไม่ถูกต้อง" });
-    return
-}
+    return;
+  }
 
   if (!group_buying_id) {
     res.status(400).json({ error: "group_buying_id หาย" });
-    return
-}
+    return;
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -27,10 +27,10 @@ leaveGroupRoute.post("/leave-group", authenticateToken, async (req: Request, res
       });
       if (!member) throw new Error("คุณไม่ได้อยู่ในกลุ่มนี้");
 
-      // 2️⃣ ดึงข้อมูล group เพื่อรู้ shop_id และ points_per_member
+      // 2️⃣ ดึงข้อมูล group เพื่อรู้ shop_id, points_per_member และ required_members
       const group = await tx.group_buying.findUnique({
         where: { group_buying_id },
-        select: { shop_id: true, points_per_member: true },
+        select: { shop_id: true, points_per_member: true, required_members: true },
       });
       if (!group) throw new Error("ไม่พบกลุ่มนี้");
 
@@ -60,6 +60,17 @@ leaveGroupRoute.post("/leave-group", authenticateToken, async (req: Request, res
           points: group.points_per_member, // คืน point +ve
           type: "refund",
         },
+      });
+
+      // 7️⃣ อัปเดต status ของกลุ่มตามจำนวนสมาชิกหลังออก
+      const remainingMembersCount = await tx.group_members.count({
+        where: { group_buying_id, left_at: null }
+      });
+
+      const newStatus = remainingMembersCount >= group.required_members ? 'full' : 'open';
+      await tx.group_buying.update({
+        where: { group_buying_id },
+        data: { status: newStatus },
       });
 
       return { message: "ออกจากกลุ่มสำเร็จ 🎉" };

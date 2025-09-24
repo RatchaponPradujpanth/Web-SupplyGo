@@ -50,8 +50,9 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
       return;
     }
 
-    if (group.status !== "open") {
-      res.status(400).json({ message: "Group already confirmed or closed" });
+    // เช็ก status: allow "open" หรือ "full" ก่อนสร้างออเดอร์
+    if (group.status === "confirmed" || group.status === "cancelled") {
+      res.status(400).json({ message: "Group already confirmed or cancelled" });
       return;
     }
 
@@ -102,7 +103,7 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
             create: [
               {
                 product_id: group.product_id,
-                quantity: group.items_per_member * memberCount, // จำนวนรวมของทุกคน
+                quantity: group.items_per_member * memberCount,
                 price_per_unit: group.points_per_member,
               },
             ],
@@ -119,7 +120,7 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
         },
       });
 
-      // อัพเดทสถานะ group_buying
+      // อัพเดทสถานะ group_buying เป็น confirmed
       await prisma.group_buying.update({
         where: { group_buying_id },
         data: { 
