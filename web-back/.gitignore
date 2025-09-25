@@ -8,4 +8,5 @@ migrations/
 =======
 >>>>>>> ae51ecd241888f21f9c4a9c39a89b634b0f4c224
 generated/
-migrations/
+migrations
+web-back/src/server.ts
