@@ -1,15 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getOrderHistory } from '@/service/api/orderHistory' 
-import type { OrderHistoryResponse } from '@/types/type'; 
+import { getOrderHistory } from '@/service/api/orderHistory'
+import { historygroup } from '@/service/api/groupsharing/historygroup'
+import type { OrderHistoryResponse, GroupBuying } from '@/types/type'
 
 export default function OrderHistoryPage() {
   const [orderData, setOrderData] = useState<OrderHistoryResponse | null>(null)
+  const [groupData, setGroupData] = useState<GroupBuying[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'orders' | 'groups'>('orders') // ✅ state สำหรับสลับแท็บ
 
   useEffect(() => {
-    const fetchOrderHistory = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem('token')
       if (!token) {
         console.warn('❌ ไม่พบ token')
@@ -18,34 +21,54 @@ export default function OrderHistoryPage() {
       }
 
       try {
-        const res = await getOrderHistory(token)
-        setOrderData(res)
+        const [orders, groups] = await Promise.all([
+          getOrderHistory(token),
+          historygroup(token),
+        ])
+        setOrderData(orders)
+        setGroupData(groups)
       } catch (err) {
-        console.error('❌ ดึงประวัติการสั่งซื้อไม่สำเร็จ', err)
+        console.error('❌ ดึงข้อมูลไม่สำเร็จ', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchOrderHistory()
+    fetchData()
   }, [])
 
   if (loading) return <div className="p-4">⏳ กำลังโหลด...</div>
-  if (!orderData) return <div className="p-4">🚫 ไม่มีข้อมูล</div>
+  if (!orderData && groupData.length === 0) return <div className="p-4">🚫 ไม่มีข้อมูล</div>
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-4">ประวัติคำสั่งซื้อ</h1>
+      <h1 className="text-2xl font-bold mb-4">ประวัติคำสั่งซื้อ & Group Buying</h1>
 
-      {orderData.orders.map((order) => {
+      {/* Nav Bar */}
+      <div className="flex gap-4 mb-4">
+        <button
+          onClick={() => setActiveTab('orders')}
+          className={`px-4 py-2 rounded ${activeTab === 'orders' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'}`}
+        >
+          Order History
+        </button>
+        <button
+          onClick={() => setActiveTab('groups')}
+          className={`px-4 py-2 rounded ${activeTab === 'groups' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-black'}`}
+        >
+          Group Buying History
+        </button>
+      </div>
+
+      {/* แสดง content ตามแท็บ */}
+      {activeTab === 'orders' && orderData?.orders.map((order, orderIdx) => {
         const orderShops = order.order_shops || [];
-        const address = order.address;  // ใช้ address จาก order โดยตรง
+        const address = order.address;
 
         return (
-          <div key={order.order_id} className="border p-4 rounded-lg shadow space-y-4">
+          <div key={`order-${order.order_id}-${orderIdx}`} className="border p-4 rounded-lg shadow space-y-4">
             <div className="text-lg font-semibold text-blue-700">คำสั่งซื้อ #{order.order_id}</div>
 
-            {/* แสดงชื่อผู้รับ + ที่อยู่ จาก order.address */}
             {address ? (
               <div className="text-sm text-gray-600">
                 ที่อยู่จัดส่ง: {address.firstname} {address.lastname}, {address.house_number}, {address.street}, {address.sub_district}, {address.district}, {address.province}, {address.postal_code}<br />
@@ -55,11 +78,11 @@ export default function OrderHistoryPage() {
               <div className="text-sm text-gray-600">ไม่พบข้อมูลที่อยู่จัดส่ง</div>
             )}
 
-            {orderShops.map(shop => {
-              const items = shop.order_items || [];
+            {orderShops.map((shop, shopIdx) => {
+              const items = shop.order_items || []
 
               return (
-                <div key={shop.order_shop_id} className="border-t pt-4 mt-4">
+                <div key={`order-${order.order_id}-shop-${shop.order_shop_id}-${shopIdx}`} className="border-t pt-4 mt-4">
                   <div className="font-medium text-purple-700">
                     ร้านค้า: {shop.shops?.shop_name || shop.shop_id}
                   </div>
@@ -69,8 +92,8 @@ export default function OrderHistoryPage() {
 
                   {items.length > 0 ? (
                     <div className="mt-2 space-y-2">
-                      {items.map((item, index) => (
-                        <div key={`${item.product_id}-${index}`} className="text-sm border-b pb-2">
+                      {items.map((item, itemIdx) => (
+                        <div key={`order-${order.order_id}-shop-${shop.order_shop_id}-item-${item.product_id}-${itemIdx}`} className="text-sm border-b pb-2">
                           <div>{item.products?.product_name ?? 'ไม่พบชื่อสินค้า'}</div>
 
                           {item.variant_option ? (
@@ -99,6 +122,37 @@ export default function OrderHistoryPage() {
           </div>
         )
       })}
+
+      {activeTab === 'groups' && groupData.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-purple-700 mb-4">ประวัติ Group Buying</h2>
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {groupData.map((group, groupIdx) => (
+              <div key={`group-${group.group_buying_id}-${groupIdx}`} className="bg-white bg-opacity-80 text-black rounded-lg p-4 shadow flex flex-col">
+                <p><strong>Group:</strong> {group.group_name || 'No Name'}</p>
+                <p><strong>Product ID:</strong> {group.product_id}</p>
+                <p><strong>Required Members:</strong> {group.required_members}</p>
+                <p><strong>Current Members:</strong> {group.current_members}</p>
+                <p><strong>Status:</strong> {group.status}</p>
+                <p><strong>Points per Member:</strong> {group.points_per_member}</p>
+
+                {group.product?.product_images?.length ? (
+                  <div className="flex gap-2 overflow-x-auto mt-2">
+                    {group.product.product_images.map((img, imgIdx) => (
+                      <img
+                        key={`group-${group.group_buying_id}-img-${imgIdx}`}
+                        src={img.image_url}
+                        alt={`Product ${imgIdx + 1}`}
+                        className="w-24 h-24 object-cover rounded flex-shrink-0"
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

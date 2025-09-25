@@ -292,14 +292,20 @@ export interface GroupBuying {
   required_members: number;
   total_items: number;
   status: 'open' | 'success' | 'closed';
-  created_at: string; // DateTime จาก API จะมาเป็น string
+  created_at: string;
+
+  // ฟิลด์ใหม่จาก API/UI
+  group_name?: string | null;
+  description?: string | null;
+  expire_at?: string | null;
+  variant_id?: number | null;
 
   // ความสัมพันธ์ (optional)
   shop?: {
     shop_name?: string;
   };
   product?: {
-    product_id: number; // <-- เพิ่มตรงนี้
+    product_id: number;
     product_name?: string;
     product_images?: { image_url: string }[];
   };
@@ -313,6 +319,7 @@ export interface GroupBuying {
   current_members?: number;      // จำนวนสมาชิกปัจจุบัน
   is_full?: boolean;             // ครบจำนวนสมาชิกหรือยัง
 }
+
 
 // ===== เพิ่ม type ที่ยังขาด =====
 

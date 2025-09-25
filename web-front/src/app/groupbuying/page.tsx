@@ -129,66 +129,73 @@ export default function GroupBuyingPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {groups.map(group => {
-          const isJoining = joiningIds.includes(group.group_buying_id);
-          const isLeaving = leavingIds.includes(group.group_buying_id);
+  {groups.map(group => {
+    const isJoining = joiningIds.includes(group.group_buying_id);
+    const isLeaving = leavingIds.includes(group.group_buying_id);
 
-          return (
-            <div key={group.group_buying_id} className="bg-white bg-opacity-80 text-black rounded-lg p-4 shadow flex flex-col">
-              {/* แสดงรูปสินค้าหลายรูป */}
-              {group.product?.product_images?.length ? (
-                <div className="flex gap-2 overflow-x-auto mb-2">
-                  {group.product.product_images.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img.image_url}
-                      alt={`Product ${idx + 1}`}
-                      className="w-24 h-24 object-cover rounded flex-shrink-0"
-                    />
-                  ))}
-                </div>
-              ) : null}
+    return (
+      <div key={group.group_buying_id} className="bg-white bg-opacity-80 text-black rounded-lg p-4 shadow flex flex-col">
+        {/* แสดงรูปสินค้าหลายรูป */}
+        {group.product?.product_images?.length ? (
+          <div className="flex gap-2 overflow-x-auto mb-2">
+            {group.product.product_images.map((img, idx) => (
+              <img
+                key={idx}
+                src={img.image_url}
+                alt={`Product ${idx + 1}`}
+                className="w-24 h-24 object-cover rounded flex-shrink-0"
+              />
+            ))}
+          </div>
+        ) : null}
 
-              <p><strong>Product ID:</strong> {group.product_id}</p>
-              <p><strong>Required Members:</strong> {group.required_members}</p>
-              <p><strong>Current Members:</strong> {group.current_members}</p>
-              <p><strong>Status:</strong> {group.status}</p>
-               <p><strong>Points per Member:</strong> {group.points_per_member}</p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setModalGroupId(group.group_buying_id)}
-                  disabled={isJoining || group.status !== 'open' || group.is_full || group.user_in_group}
-                  className={`flex-1 py-2 rounded text-white transition ${
-                    isJoining || group.status !== 'open' || group.is_full || group.user_in_group
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                >
-                  {isJoining
-                    ? 'กำลังเข้ากลุ่ม...'
-                    : group.is_full
-                    ? 'เต็มแล้ว'
-                    : group.user_in_group
-                    ? 'คุณอยู่ในกลุ่มแล้ว'
-                    : 'Join Group'}
-                </button>
+        <p><strong>Group Name:</strong> {group.group_name ?? '-'}</p>
+        <p><strong>Description:</strong> {group.description ?? '-'}</p>
+        <p><strong>Expire At:</strong> {group.expire_at ? new Date(group.expire_at).toLocaleString() : '-'}</p>
+        <p><strong>Variant ID:</strong> {group.variant_id ?? '-'}</p>
 
-                <button
-                  onClick={() => handleLeaveGroup(group.group_buying_id)}
-                  disabled={isLeaving || !group.user_in_group}
-                  className={`flex-1 py-2 rounded text-white transition ${
-                    isLeaving || !group.user_in_group
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
-                >
-                  {isLeaving ? 'กำลังออก...' : 'Leave Group'}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        <p><strong>Product ID:</strong> {group.product_id}</p>
+        <p><strong>Required Members:</strong> {group.required_members}</p>
+        <p><strong>Current Members:</strong> {group.current_members}</p>
+        <p><strong>Status:</strong> {group.status}</p>
+        <p><strong>Points per Member:</strong> {group.points_per_member}</p>
+
+        <div className="mt-2 flex gap-2">
+          <button
+            onClick={() => setModalGroupId(group.group_buying_id)}
+            disabled={isJoining || group.status !== 'open' || group.is_full || group.user_in_group}
+            className={`flex-1 py-2 rounded text-white transition ${
+              isJoining || group.status !== 'open' || group.is_full || group.user_in_group
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            {isJoining
+              ? 'กำลังเข้ากลุ่ม...'
+              : group.is_full
+              ? 'เต็มแล้ว'
+              : group.user_in_group
+              ? 'คุณอยู่ในกลุ่มแล้ว'
+              : 'Join Group'}
+          </button>
+
+          <button
+            onClick={() => handleLeaveGroup(group.group_buying_id)}
+            disabled={isLeaving || !group.user_in_group}
+            className={`flex-1 py-2 rounded text-white transition ${
+              isLeaving || !group.user_in_group
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-red-600 hover:bg-red-700'
+            }`}
+          >
+            {isLeaving ? 'กำลังออก...' : 'Leave Group'}
+          </button>
+        </div>
       </div>
+    );
+  })}
+</div>
+
 
       {/* Modal เลือกที่อยู่ */}
       {modalGroupId && (

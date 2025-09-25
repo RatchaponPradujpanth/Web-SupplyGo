@@ -286,6 +286,9 @@ model group_members {
   user               users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   member_addresses   group_member_addresses[]
 
+  // array ฝั่งตรงข้าม relation
+  member_orders group_member_orders[] @relation(name: "GroupMember_MemberOrders")
+
   @@unique([group_buying_id, user_id, left_at])
 }
 
@@ -312,8 +315,10 @@ model group_order {
 
   group              group_buying      @relation(fields: [group_buying_id], references: [group_buying_id])
   items              group_order_item[]
-}
 
+  // array ฝั่งตรงข้าม relation
+  member_orders group_member_orders[] @relation(name: "GroupOrder_MemberOrders")
+}
 model group_order_item {
   group_order_item_id Int            @id @default(autoincrement())
   group_order_id      Int
@@ -365,4 +370,18 @@ model store_withdrawals {
   created_at DateTime @default(now())
 
   store shops @relation(fields: [shop_id], references: [shop_id])
+}
+
+model group_member_orders {
+  group_member_order_id Int @id @default(autoincrement())
+  group_order_id        Int
+  group_member_id       Int
+  status                String @default("pending") // pending, shipped, delivered
+  tracking_number       String?
+  created_at            DateTime @default(now())
+
+  group_order   group_order   @relation(fields: [group_order_id], references: [group_order_id], name: "GroupOrder_MemberOrders")
+  group_member  group_members @relation(fields: [group_member_id], references: [group_members_id], name: "GroupMember_MemberOrders")
+
+  @@unique([group_order_id, group_member_id])
 }
