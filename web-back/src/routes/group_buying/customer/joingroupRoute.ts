@@ -33,7 +33,7 @@ joingroupRoute.post("/join-group", authenticateToken, async (req: Request, res: 
 
       // ตรวจสอบยอด point ของผู้ใช้
       const userPoints = await tx.user_points.findUnique({ where: { user_id } });
-      if (!userPoints || userPoints.balance < group.points_per_member) throw new Error("คุณมี point ไม่เพียงพอ");
+      if (!userPoints || userPoints.points < group.points_per_member) throw new Error("คุณมี point ไม่เพียงพอ");
 
       // เพิ่มสมาชิกใหม่
       const newMember = await tx.group_members.create({
@@ -52,14 +52,14 @@ joingroupRoute.post("/join-group", authenticateToken, async (req: Request, res: 
       // หัก point ของผู้ใช้
       await tx.user_points.update({
         where: { user_id },
-        data: { balance: { decrement: group.points_per_member } },
+        data: { points: { decrement: group.points_per_member } },
       });
 
       // โอน point ให้ร้านค้า
       await tx.store_wallets.upsert({
         where: { shop_id: group.shop_id },
-        update: { balance: { increment: group.points_per_member } },
-        create: { shop_id: group.shop_id, balance: group.points_per_member },
+        update: { points: { increment: group.points_per_member } },
+        create: { shop_id: group.shop_id, points: group.points_per_member },
       });
 
       // บันทึก transaction

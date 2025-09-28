@@ -34,7 +34,7 @@ cancelgrouporderRoute.post("/cancel-group-order", authenticateToken, authstore, 
       for (const member of group.members) {
         await tx.user_points.update({
           where: { user_id: member.user_id },
-          data: { balance: { increment: group.points_per_member } },
+          data: { points: { increment: group.points_per_member } },
         });
 
         await tx.user_point_transactions.create({
@@ -56,7 +56,7 @@ cancelgrouporderRoute.post("/cancel-group-order", authenticateToken, authstore, 
       // 3️⃣ หัก point ของร้าน
       await tx.store_wallets.update({
         where: { shop_id: group.shop_id },
-        data: { balance: { decrement: group.points_per_member * group.members.length } },
+        data: { points: { decrement: group.points_per_member * group.members.length } },
       });
 
       // 4️⃣ อัปเดตสถานะกลุ่ม

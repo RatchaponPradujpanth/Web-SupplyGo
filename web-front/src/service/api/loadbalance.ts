@@ -3,11 +3,11 @@ import type { userpoint } from '@/types/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export const loadbalance = async (token: string): Promise<{ balance: number }> => {
+export const loadbalance = async (token: string): Promise<{ points: number }> => {
   try {
     console.log("📤 Sending request to load balance with token:", token);
 
-    const response = await axios.get<{ balance: number }>(`${API_URL}/api/loadbalance`, {
+    const response = await axios.get<{ points: number }>(`${API_URL}/api/loadbalance`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

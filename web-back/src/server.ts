@@ -1,5 +1,6 @@
 import express from "express";
 import "dotenv/config";
+//import dotenv from 'dotenv'
 import loginRoute from "./routes/loginRoute";
 import registerRoute from "./routes/registerRoute";
 import cors from "cors";
@@ -41,6 +42,7 @@ import leaveGroupRoute from "./routes/group_buying/customer/leaveGroupRoute";
 import confirmgrouporderRoute from "./routes/group_buying/shop/confirmgrouporderRoute";
 import cancelgrouporderRoute from "./routes/group_buying/shop/cancelgroupRoute";
 import historygroupRoute from "./routes/group_buying/customer/historygroupRoute";
+import withdrawRoute from "./routes/group_buying/shop/withdrawRoute";
 
 // dotenv.config({path:".env"}); // โหลดค่า .env
 
@@ -89,7 +91,8 @@ app.use("/api",leaveGroupRoute)
 app.use("/api",confirmgrouporderRoute)
 app.use("/api",cancelgrouporderRoute)
 app.use("/api",historygroupRoute)
+app.use("/api",withdrawRoute)
 
-app.listen(5001, () => {
-  console.log("Server is running on port 5001");
+app.listen(5000, () => {
+  console.log("Server is running on port 5000");
 });

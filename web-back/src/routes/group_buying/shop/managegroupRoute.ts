@@ -25,7 +25,7 @@ manageGroupsRoute.get(
         where: { shop_id: shopId },
       });
 
-      const storeBalance = storeWallet?.balance || 0; // ถ้าไม่มี record ให้ default 0
+      const storeBalance = storeWallet?.points || 0; // ถ้าไม่มี record ให้ default 0
 
       // ดึง group_buying ของร้านค้าที่ login อยู่
       const groups = await prisma.group_buying.findMany({

@@ -42,7 +42,7 @@ confirmTopupRoute.post("/confirm-topup/:transactionId", authenticateToken, async
   await prisma.user_points.update({
   where: { user_id: userId },
   data: {
-    balance: { increment: topup.points } // ใช้ชื่อ field จริง
+    points: { increment: topup.points } // ใช้ชื่อ field จริง
   }
 });
 

@@ -239,12 +239,13 @@ model users {
   shops              shops[]
   user_points        user_points?
   user_point_txs     user_point_transactions[]
+  approved_withdrawals store_withdrawals[] @relation("AdminApproval")
 }
 
 model user_points {
   user_points_id Int   @id @default(autoincrement())
   user_id        Int   @unique
-  balance        Int   @default(0)
+  points        Int   @default(0)
 
   user           users @relation(fields: [user_id], references: [user_id])
 }
@@ -356,21 +357,27 @@ model user_point_transactions {
 
 model store_wallets {
   shop_id  Int   @id
-  balance  Int   @default(0)
+  points  Int   @default(0)
 
   shop     shops @relation(fields: [shop_id], references: [shop_id])
 }
 
 model store_withdrawals {
-  id         Int      @id @default(autoincrement())
-  shop_id    Int
-  amount     Int
-  status     String   // "pending", "completed", "failed"
-  stripe_tx  String?
-  created_at DateTime @default(now())
+  id                    Int      @id @default(autoincrement())
+  shop_id               Int
+  points                Int
+  status                String   // "pending", "approved", "rejected", "completed"
+  requested_at          DateTime @default(now())
+  approved_at           DateTime?
+  approved_by_user_id   Int?     // user_id ของ admin
+  completed_at          DateTime?
+  stripe_tx             String?
 
   store shops @relation(fields: [shop_id], references: [shop_id])
+  admin  users? @relation("AdminApproval", fields: [approved_by_user_id], references: [user_id])
 }
+
+
 
 model group_member_orders {
   group_member_order_id Int @id @default(autoincrement())

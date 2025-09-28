@@ -43,13 +43,13 @@ leaveGroupRoute.post("/leave-group", authenticateToken, async (req: Request, res
       // 4️⃣ คืน point ให้ผู้ใช้
       await tx.user_points.update({
         where: { user_id },
-        data: { balance: { increment: group.points_per_member } },
+        data: { points: { increment: group.points_per_member } },
       });
 
       // 5️⃣ หัก point ของร้านออก
       await tx.store_wallets.update({
         where: { shop_id: group.shop_id },
-        data: { balance: { decrement: group.points_per_member } },
+        data: { points: { decrement: group.points_per_member } },
       });
 
       // 6️⃣ บันทึก transaction ของผู้ใช้

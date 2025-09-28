@@ -3,7 +3,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function joingroup(
   group_buying_id: number,
-  balance: number,
+  points: number,
   address_id: number,
 ) {
   try {
@@ -14,7 +14,7 @@ export async function joingroup(
 
     const response = await axios.post(
       `${API_URL}/api/join-group`,
-      { group_buying_id, balance , address_id },
+      { group_buying_id, points , address_id },
       {
         headers: {
           "Content-Type": "application/json",

@@ -12,19 +12,19 @@ loadbalanceRoute.get("/loadbalance", authenticateToken, async (req: Request, res
         // หา balance ของ user
         let userPoint = await prisma.user_points.findUnique({
             where: { user_id: userId },
-            select: { balance: true },
+            select: { points: true },
         });
 
         // ถ้าไม่มี row สำหรับ user นี้ ให้สร้างใหม่ balance = 0
         if (!userPoint) {
             userPoint = await prisma.user_points.create({
-                data: { user_id: userId!, balance: 0 },
-                select: { balance: true },
+                data: { user_id: userId!, points: 0 },
+                select: { points: true },
             });
         }
 
-        console.log(`balance for user ${userId}:`, userPoint.balance);
-        res.json({ balance: userPoint.balance });
+        console.log(`balance for user ${userId}:`, userPoint.points);
+        res.json({ balance: userPoint.points });
     } catch (error) {
         console.error('Error loading balance:', error);
         res.status(500).json({ message: 'Internal server error' });
