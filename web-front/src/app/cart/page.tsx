@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cartUser } from '@/service/api/loadcart';
 import type { CartItemWithExtra } from '@/types/type';
-import { removefromcart } from '@/service/api/removefromcart';  // 👈 ตรวจสอบให้แน่ใจว่า import ถูกต้อง
+import { removefromcart } from '@/service/api/removefromcart';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItemWithExtra[]>([]);
@@ -40,123 +40,189 @@ export default function CartPage() {
     fetchCart();
   }, [router]);
 
-const handleRemoveItem = async (item: CartItemWithExtra) => {
-  try {
-    // Debug logging
-    console.log("📦 Debug - Full item object:", JSON.stringify(item, null, 2));
-    console.log("🔑 Debug - product_id type:", typeof item.product_id);
-    
-    if (!item || typeof item !== 'object') {
-      throw new Error("Invalid item object");
+  const handleRemoveItem = async (item: CartItemWithExtra) => {
+    try {
+      if (!item?.product_id) throw new Error('Missing product_id');
+
+      await removefromcart(
+        Number(item.product_id),
+        item.variant_id ? Number(item.variant_id) : undefined,
+        item.variant_option_ids
+      );
+
+      setCartItems(prev =>
+        prev.filter(i => i.cart_item_id !== item.cart_item_id)
+      );
+
+      setTotal(prev => prev - Number(item.total_price));
+    } catch (error) {
+      console.error('❌ ลบสินค้าไม่สำเร็จ:', error);
+      alert('ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง');
     }
+  };
 
-    if (!item.product_id) {
-      console.error("❌ Product ID is missing from item:", item);
-      throw new Error("Missing product_id");
-    }
+  const handleQuantityChange = (itemId: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
 
-    // เรียก API
-    await removefromcart(
-      Number(item.product_id),
-      item.variant_id ? Number(item.variant_id) : undefined,
-      item.variant_option_ids
-    );
-    
-    // ถ้าลบสำเร็จค่อยอัพเดท UI
-    setCartItems(prev => prev.filter(i => i.cart_item_id !== item.cart_item_id));
-    setTotal(prev => prev - Number(item.total_price));
-    
-  } catch (error) {
-    console.error("❌ ลบสินค้าไม่สำเร็จ:", error);
-    alert("ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง");
-  }
-};
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">
-          🛒 ตะกร้าสินค้าของคุณ
-        </h1>
+    setCartItems(prev => {
+      const updated = prev.map(item => {
+        if (item.cart_item_id === itemId) {
+          const newTotalPrice = Number(item.price_per_unit) * newQuantity;
+          return { ...item, quantity: newQuantity, total_price: newTotalPrice };
+        }
+        return item;
+      });
 
-        {loading ? (
-          <p className="text-gray-600">⏳ กำลังโหลด...</p>
-        ) : cartItems.length === 0 ? (
-          <p className="text-gray-500">ยังไม่มีสินค้าที่อยู่ในตะกร้า</p>
-        ) : (
-          <div className="space-y-4">
-            {cartItems.map((item) => (
-  <div
-    key={item.cart_item_id}
-    className="flex items-center bg-gray-50 p-4 rounded-lg shadow-sm"
-  >
-    <div className="flex-shrink-0">
-      {item.image ? (
-        <img
-          src={item.image}
-          alt={item.product_name}
-          className="w-40 h-40 object-cover rounded"
-        />
-      ) : (
-        <div className="w-40 h-40 bg-gray-200 rounded flex items-center justify-center">
-          <span className="text-gray-400">No image</span>
-        </div>
-      )}
-    </div>
+      const newTotal = updated.reduce(
+        (acc, item) => acc + Number(item.total_price),
+        0
+      );
+      setTotal(newTotal);
 
-    <div className="ml-6 flex-grow">
-      <h3 className="text-lg font-semibold text-gray-800">
-        {item.product_name}
-      </h3>
+      return updated;
+    });
+  };
 
-      {item.variant_info && (
-        <p className="text-sm text-gray-600 mt-1">
-          {item.variant_info}
-        </p>
-      )}
-
-      <p className="text-sm text-gray-500 mt-1">
-        ร้าน: {item.shop_name}
-      </p>
-
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-blue-600 font-medium">
-          ฿{Number(item.price_per_unit).toLocaleString()}
-        </span>
-        <span className="text-gray-600">
-          จำนวน: {item.quantity}
-        </span>
-        <span className="text-blue-700 font-semibold">
-          รวม: ฿{Number(item.total_price).toLocaleString()}
-        </span>
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen">
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+          <p className="text-center py-10 text-gray-600">กำลังโหลด...</p>
+        </main>
       </div>
+    );
+  }
 
-      {/* 🔻 ปุ่มลบ */}
-      <button
-        className="mt-2 text-red-600 text-sm hover:underline"
-        onClick={() => handleRemoveItem(item)}
-      >
-        ❌ ลบสินค้าออก
-      </button>
-    </div>
-  </div>
-))}
+  const subtotal = total;
+  const shipping = 0; // Free shipping
+  const finalTotal = subtotal + shipping;
 
+  return (
+    <div className="bg-gray-50 min-h-screen font-inter text-gray-800">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        <h1 className="text-2xl font-semibold mb-4">Cart</h1>
 
-            <div className="mt-6 text-right text-xl font-bold text-blue-700">
-              ยอดรวมทั้งหมด: ฿{total.toFixed(2)}
+        {cartItems.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <p className="text-gray-600">ไม่มีสินค้าในตะกร้า</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Cart Items Table */}
+            <div className="md:col-span-2 bg-white rounded-lg shadow-sm">
+              <table className="w-full text-sm">
+                <thead className="text-left text-gray-600">
+                  <tr>
+                    <th className="p-4">Item</th>
+                    <th className="p-4">Price</th>
+                    <th className="p-4">Qty</th>
+                    <th className="p-4">Subtotal</th>
+                    <th className="p-4">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cartItems.map((item, index) => (
+                    <tr key={item.cart_item_id} className={index > 0 ? 'border-t' : ''}>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.product_name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-200 rounded"></div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium">{item.product_name}</div>
+                            <div className="text-gray-600 text-xs">SKU: {item.product_id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">฿{Number(item.price_per_unit).toLocaleString()}</td>
+                      <td className="p-4">
+                        <div className="inline-flex items-center border rounded-full overflow-hidden">
+                          {/* ปุ่มลด */}
+                          <button
+                            className="px-3 py-1 hover:bg-gray-50"
+                            onClick={() =>
+                              handleQuantityChange(item.cart_item_id, item.quantity - 1)
+                            }
+                          >
+                            -
+                          </button>
+
+                          {/* input จำนวน */}
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value, 10);
+                              if (!isNaN(value) && value > 0) {
+                                handleQuantityChange(item.cart_item_id, value);
+                              }
+                            }}
+                            className="w-12 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+
+                          {/* ปุ่มเพิ่ม */}
+                          <button
+                            className="px-3 py-1 hover:bg-gray-50"
+                            onClick={() =>
+                              handleQuantityChange(item.cart_item_id, item.quantity + 1)
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+                      <td className="p-4 font-semibold">฿{Number(item.total_price).toLocaleString()}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleRemoveItem(item)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            <div className="text-right">
+            {/* Summary Sidebar */}
+            <aside className="bg-white rounded-lg shadow-sm p-5 h-max">
+              <h2 className="font-semibold text-lg">Summary</h2>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>฿{subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span className="text-green-600 font-medium">Free</span>
+                </div>
+                <hr className="my-2" />
+                <div className="flex justify-between font-semibold text-base">
+                  <span>Total</span>
+                  <span>฿{finalTotal.toLocaleString()}</span>
+                </div>
+              </div>
               <button
-                className="mt-4 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
                 onClick={() => router.push('/checkout')}
+                className="block mt-4 w-full text-center rounded-full bg-blue-600 text-white py-3 hover:bg-blue-700 transition-colors"
               >
-                ➡ ไปหน้าชำระเงิน
+                Proceed to Checkout
               </button>
-            </div>
+            </aside>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
