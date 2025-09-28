@@ -1,4 +1,5 @@
-"use client";
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -8,12 +9,8 @@ import {
   fetchUserRole,
   loadproduct,
 } from '@/service/apis';
-import dotenv from 'dotenv';
-// Import interface จาก src/types/product.ts
-import type {
-  Product,
-} from '@/types/product';
 import { primarypicture } from '@/service/api/setprimarypicture';
+import type { Product } from '@/types/product';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -49,20 +46,21 @@ export default function StoreDashboardPage() {
 
       const fixedProductList: Product[] = productList.map((p: any) => ({
         product_id: p.product_id,
-        product_name: p.product_name ?? null,
-        product_description: p.product_description ?? null,
-        price: p.price !== null && p.price !== undefined ? Number(p.price) : null,
-        status: p.status ?? null,
+        product_name: p.product_name ?? '',
+        product_description: p.product_description ?? '',
+        price: p.price != null ? Number(p.price) : null,
+        status: p.status ?? '',
         image: p.image ?? null,
-        product_variants: (p.product_variants ?? []).map((variant: any) => ({
-          variant_id: variant.variant_id,
-          sku: variant.sku,
-          price: variant.price ?? null,
-          stock_quantity: variant.stock_quantity ?? null,
-          image: variant.image,
-          variant_options: (variant.variant_options ?? []).map((vo: any) => ({
-            option_name: vo.option_name,
-            value: vo.value,
+        total_stock: p.total_stock ?? 0,
+        product_variants: (p.product_variants ?? []).map((v: any) => ({
+          variant_id: v.variant_id,
+          sku: v.sku ?? '',
+          price: v.price != null ? Number(v.price) : null,
+          total_stock: v.total_stock ?? 0,
+          image: v.image ?? null,
+          variant_options: (v.variant_options ?? []).map((vo: any) => ({
+            option_name: vo.option_name ?? '',
+            value: vo.value ?? '',
           })),
         })),
         product_images: (p.product_images ?? []).map((img: any) => ({
@@ -77,7 +75,7 @@ export default function StoreDashboardPage() {
 
       setProducts(fixedProductList);
 
-      // เซ็ต primaryImages state
+      // เซ็ต primaryImages
       const mapPrimary: Record<number, string | null> = {};
       fixedProductList.forEach((p) => {
         const primaryImg =
@@ -100,11 +98,10 @@ export default function StoreDashboardPage() {
       await primarypicture(productId, imageId);
       alert('ตั้งรูปหลักสำเร็จ');
 
-      // อัปเดตรูปหลักใน state ทันที
       const product = products.find((p) => p.product_id === productId);
       if (!product) return;
 
-      const newPrimaryImageUrl = product.product_images.find(img => img.id === imageId)?.image_url || null;
+      const newPrimaryImageUrl = product.product_images?.find(img => img.id === imageId)?.image_url || null;
       if (newPrimaryImageUrl) {
         setPrimaryImages(prev => ({ ...prev, [productId]: newPrimaryImageUrl }));
       }
@@ -115,176 +112,131 @@ export default function StoreDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-8 flex flex-col items-center">
-      <h1 className="text-4xl font-extrabold mb-8 drop-shadow-lg">📦 Store Dashboard</h1>
-
-      <div className="bg-white bg-opacity-90 text-black rounded-xl shadow-xl p-8 w-full max-w-5xl mb-8 text-center">
-        <p className="text-2xl font-semibold">
-          👋 ยินดีต้อนรับคุณ <span className="text-indigo-700">{username}</span>
-        </p>
-        <p className="text-xl mt-3">
-          🏪 ร้าน: <span className="font-semibold">{storeName}</span>
-        </p>
-        <p className="text-md mt-1 text-gray-700">🆔 Shop ID: {shopId}</p>
-
-        {stripeConnected ? (
-          <p className="text-green-600 mt-6 font-semibold text-lg">✅ เชื่อมต่อ Stripe แล้ว</p>
-        ) : (
+    <div className="min-h-screen bg-bgpage text-textmain px-6 py-8 grid md:grid-cols-4 gap-6">
+      {/* Sidebar */}
+      <aside className="md:col-span-1 bg-white rounded-card shadow-card p-4 sticky top-4 h-fit">
+        <nav className="space-y-2 text-sm">
           <button
-            onClick={() => regisstripe(localStorage.getItem('token')!)}
-            className="mt-6 px-8 py-3 bg-green-600 hover:bg-green-700 transition rounded-lg font-semibold shadow-md"
+            onClick={() => router.push('/store-dashboard')}
+            className="w-full text-left block px-3 py-2 rounded-pill bg-primary text-white shadow hover:bg-primary/90 transition"
           >
-            ➕ เชื่อมบัญชี Stripe
+            Dashboard
           </button>
-        )}
-      </div>
+          <button
+            onClick={() => router.push('/store-products')}
+            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
+          >
+            Products
+          </button>
+          <button
+            onClick={() => router.push('/store-orders')}
+            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
+          >
+            Orders
+          </button>
+          <button
+            onClick={() => router.push('/addproduct')}
+            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
+          >
+            เพิ่มสินค้า
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-red-600 hover:text-white transition"
+          >
+            🚪 Logout
+          </button>
+        </nav>
+      </aside>
 
-      <div className="w-full max-w-5xl bg-white bg-opacity-90 text-black rounded-xl p-8 shadow-xl overflow-x-auto">
-        <h2 className="text-3xl font-semibold mb-6 border-b border-gray-300 pb-2">📋 รายการสินค้า</h2>
-
-        {products.length > 0 ? (
-          <ul className="space-y-10">
-            {products.map((product) => (
-              <li
-                key={product.product_id}
-                className="bg-white rounded-xl p-6 shadow-lg border border-gray-200"
+      {/* Main content */}
+      <section className="md:col-span-3 space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-card shadow-card p-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">📦 Store Dashboard</h1>
+            <p className="text-textmuted">👋 ยินดีต้อนรับคุณ <span className="font-semibold">{username}</span></p>
+            <p className="text-textmuted">🏪 ร้าน: <span className="font-semibold">{storeName}</span> | 🆔 Shop ID: {shopId}</p>
+          </div>
+          <div>
+            {stripeConnected ? (
+              <p className="text-green-600 font-semibold">✅ เชื่อมต่อ Stripe แล้ว</p>
+            ) : (
+              <button
+                onClick={() => regisstripe(localStorage.getItem('token')!)}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition"
               >
-                <div className="md:flex md:space-x-6">
-                  {/* รูปหลักใหญ่ */}
-                  {primaryImages[product.product_id] ? (
-                    <img
-                      src={primaryImages[product.product_id]!}
-                      alt={product.product_name ?? ''}
-                      className="w-56 h-56 object-cover rounded-xl mb-4 border-4 border-indigo-500 shadow-lg flex-shrink-0"
-                    />
-                  ) : (
-                    product.image && (
-                      <img
-                        src={product.image}
-                        alt={product.product_name ?? ''}
-                        className="w-56 h-56 object-cover rounded-xl mb-4 border-4 border-indigo-300 shadow-md flex-shrink-0"
-                      />
-                    )
-                  )}
+                ➕ เชื่อมบัญชี Stripe
+              </button>
+            )}
+          </div>
+        </div>
 
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-indigo-700">{product.product_name}</h3>
-                    <p className="italic text-gray-600 mt-1">{product.product_description}</p>
-                    <p className="mt-3 font-semibold text-green-700 text-lg">
-                      💰 ราคา:{' '}
-                      {product.price != null && !isNaN(Number(product.price))
-                        ? `฿${Number(product.price).toFixed(2)}`
-                        : 'N/A'}
-                    </p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white rounded-card shadow-card p-4 text-center">
+            <p className="text-sm text-textmuted">Total Products</p>
+            <p className="text-2xl font-bold">{products.length}</p>
+          </div>
+          <div className="bg-white rounded-card shadow-card p-4 text-center">
+            <p className="text-sm text-textmuted">Low Stock Items</p>
+            <p className="text-2xl font-bold">{products.filter(p => p.total_stock <= 5).length}</p>
+          </div>
+          <div className="bg-white rounded-card shadow-card p-4 text-center">
+            <p className="text-sm text-textmuted">Hot Deal Items</p>
+            <p className="text-2xl font-bold">{products.filter(p => p.status === 'hot').length}</p>
+          </div>
+        </div>
 
-                    {/* รูปหลายรูป product_images */}
-                    {product.product_images && product.product_images.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="font-semibold mb-3 text-lg">🖼️ รูปภาพเพิ่มเติม</h4>
-                        <div className="flex flex-wrap gap-3">
-                          {product.product_images.map((img, idx) => {
-                            const isPrimaryNow = primaryImages[product.product_id] === img.image_url;
+        {/* Products List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {products.length > 0 ? products.map((p) => (
+            <div key={p.product_id} className="bg-white rounded-card shadow-card p-4 hover:shadow-xl transition relative">
+              {p.total_stock <= 5 && (
+                <span className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded-full font-semibold shadow">
+                  Low Stock
+                </span>
+              )}
+              <div className="flex flex-col md:flex-row gap-4">
+                <img
+                  src={primaryImages[p.product_id] ?? undefined}
+                  alt={p.product_name ?? undefined}
+                  className="w-full md:w-48 h-48 object-cover rounded-card border border-gray-200 shadow-md transition-transform hover:scale-105"
+                />
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-primary">{p.product_name}</h2>
+                  <p className="text-textmuted mt-1 italic">{p.product_description}</p>
+                  <p className="mt-2 font-bold text-accent">💰 {p.price != null ? `฿${p.price.toFixed(2)}` : 'N/A'}</p>
 
-                            return (
-                              <div
-                                key={`${img.id}-${idx}`}
-                                className="relative group rounded-lg overflow-hidden border border-gray-300 shadow-sm"
-                              >
-                                <img
-                                  src={img.image_url}
-                                  alt={`รูปสินค้า ${product.product_name}`}
-                                  className={`w-24 h-24 object-cover transition-transform duration-200 group-hover:scale-105`}
-                                />
-                                {/* ปุ่มตั้งรูปหลัก */}
-                                {!isPrimaryNow && (
-                                  <button
-                                    onClick={() => handleSetPrimary(product.product_id, img.id)}
-                                    className="absolute bottom-1 left-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 rounded opacity-90 group-hover:opacity-100 transition"
-                                  >
-                                    ตั้งเป็นรูปหลัก
-                                  </button>
-                                )}
-                                {/* ติด Badge ถ้าเป็นรูปหลัก */}
-                                {isPrimaryNow && (
-                                  <div className="absolute top-0 right-0 bg-green-600 text-white text-xs px-2 py-0.5 rounded-bl font-semibold">
-                                    รูปหลัก
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* ตาราง Variants แสดงแค่ SKU, ราคา, สต็อก */}
-                {product.product_variants && product.product_variants.length > 0 && (
-                  <div className="mt-8 overflow-auto rounded-lg border border-gray-300">
-                    <h4 className="font-semibold mb-4 text-lg bg-gray-100 p-3 rounded-t-lg text-gray-700">
-                      🎛️ ตัวเลือกย่อย (Variants)
-                    </h4>
-                    <table className="min-w-full text-sm table-auto">
-                      <thead className="bg-gray-200 text-gray-700">
+                  {/* Variants */}
+                  {p.product_variants && p.product_variants.length > 0 && (
+                    <table className="w-full mt-4 text-sm table-auto border border-gray-200 rounded">
+                      <thead className="bg-bgpage font-semibold">
                         <tr>
-                          <th className="border border-gray-300 px-3 py-2 text-left">SKU</th>
-                          <th className="border border-gray-300 px-3 py-2 text-left">ราคา</th>
-                          <th className="border border-gray-300 px-3 py-2 text-left">สต็อก</th>
+                          <th className="border px-2 py-1 text-left">SKU</th>
+                          <th className="border px-2 py-1 text-left">ราคา</th>
+                          <th className="border px-2 py-1 text-left">สต็อก</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {product.product_variants.map((variant) => (
-                          <tr
-                            key={variant.variant_id}
-                            className="odd:bg-white even:bg-gray-50 hover:bg-indigo-50"
-                          >
-                            <td className="border border-gray-300 px-3 py-2">{variant.sku ?? '-'}</td>
-                            <td className="border border-gray-300 px-3 py-2">
-                              ฿
-                              {variant.price != null && !isNaN(Number(variant.price))
-                                ? Number(variant.price).toFixed(2)
-                                : '-'}
-                            </td>
-                            <td className="border border-gray-300 px-3 py-2">{variant.stock_quantity ?? '-'}</td>
+                        {p.product_variants.map((v) => (
+                          <tr key={v.variant_id} className="odd:bg-white even:bg-bgpage hover:bg-primary/10 transition">
+                            <td className="border px-2 py-1">{v.sku}</td>
+                            <td className="border px-2 py-1">{v.price != null ? `฿${v.price.toFixed(2)}` : '-'}</td>
+                            <td className="border px-2 py-1">{v.total_stock}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="italic text-gray-600 text-center py-20 text-lg">
-            ยังไม่มีสินค้าในร้าน
-          </p>
-        )}
-      </div>
-
-      <div className="mt-10 flex flex-col sm:flex-row gap-6 justify-center w-full max-w-5xl">
-        <button
-          onClick={() => router.push('/addproduct')}
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-8 py-3 rounded-lg shadow-md transition"
-        >
-          ➕ เพิ่มสินค้า
-        </button>
-
-        <button
-          onClick={() => router.push('/shop-order')}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-md transition"
-        >
-          📦 จัดการออเดอร์
-        </button>
-      </div>
-
-      <button
-        onClick={handleLogout}
-        className="mt-10 px-10 py-4 bg-red-600 hover:bg-red-700 rounded-lg transition text-white font-semibold shadow-lg"
-      >
-        🚪 Logout / ออกจากระบบ
-      </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )) : (
+            <p className="italic text-textmuted col-span-full text-center py-20">ยังไม่มีสินค้าในร้าน</p>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
