@@ -42,7 +42,7 @@ withdrawRoute.post(
         return;
       }
 
-      if (wallet.balance < points) {
+      if (wallet.points < points) {
         res.status(400).json({ message: "ยอด point ไม่พอ" });
         return;
       }
@@ -51,7 +51,7 @@ withdrawRoute.post(
       const withdrawal = await prisma.store_withdrawals.create({
         data: {
           shop_id,
-          amount: points, // ✅ map points -> amount
+          points: points, // ✅ map points -> amount
           status: "pending",
         },
       });
@@ -63,7 +63,7 @@ withdrawRoute.post(
       // ลด point ใน wallet
       await prisma.store_wallets.update({
         where: { shop_id },
-        data: { balance: { decrement: points } },
+        data: { points: { decrement: points } },
       });
 
       // อัปเดต withdrawal เป็น completed (mock)
@@ -85,7 +85,7 @@ withdrawRoute.post(
 
       // fallback: log failed withdrawal
       await prisma.store_withdrawals.create({
-        data: { shop_id: shop_id!, amount: points, status: "failed" }, // ✅ ใช้ points
+        data: { shop_id: shop_id!, points: points, status: "failed" }, // ✅ ใช้ points
       });
 
       res.status(500).json({ error: "ถอนเงินไม่สำเร็จ" });
