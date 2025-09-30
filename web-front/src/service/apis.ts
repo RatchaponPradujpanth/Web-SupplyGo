@@ -1,10 +1,7 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-<<<<<<< HEAD
-export const API_URL = "http://192.168.1.49:5000";  
-=======
-export const API_URL = "http://192.168.1.50:5001";  
->>>>>>> 2731646 (ทดสอบ)
+//export const API_URL = "http://192.168.1.49:5000";  
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 
 export type Shop = {
@@ -303,21 +300,6 @@ export const cartUser = async (token: string): Promise<CartResponse> => {
   }
 };
 
-// export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
-//   try {
-//     const response = await axios.get<CheckoutSummary>(`${API_URL}/api/cartsummary`, {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//         "Content-Type": "application/json",
-//       },
-//     });
-
-//     return response.data;
-//   } catch (error: any) {
-//     console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
-//     throw error;
-//   }
-// };
 
 export type ShopPaymentIntent = {
   shop_id: number;
@@ -340,27 +322,6 @@ export type ShopPaymentIntent = {
   }>;
 };
 
-// export const createMultiVendorPayment = async (
-//   token: string,
-//   orderId: number
-// ): Promise<{ paymentIntents: ShopPaymentIntent[]; order_id: number }> => {
-//   try {
-//     const response = await axios.post(
-//       `${API_URL}/api/payment-multivendor`,
-//       { orderId },  // <-- ส่ง orderId แทน cartId
-//       {
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-//     return response.data;
-//   } catch (error: any) {
-//     const msg = error.response?.data?.message || "ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้";
-//     throw new Error(msg);
-//   }
-// };
 
 export async function uploadImages(images: File[]) {
   console.log("🚀 [uploadImages] เริ่มส่งไฟล์จำนวน:", images.length);
@@ -461,33 +422,13 @@ export async function fetchUserRole(token: string): Promise<string> {
   }
 }
 
-// export const loaduserproduct = async (): Promise<Product[]> => {
-//   try {
-//     const response = await axios.get<Product[]>(`${API_URL}/api/loaduserproduct`, {
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//     });
-
-//     console.log("✅ Products fetched:", response.data);
-//     return response.data;
-//   } catch (error: unknown) {
-//     const err = error as AxiosError<{ message?: string }>;
-//     const errorMsg =
-//       err.response?.data?.message || err.message || "Failed to load products";
-
-//     console.error("Error fetching products:", errorMsg);
-//     throw new Error(errorMsg);
-//   }
-// };
-
 export const submitOrder = async (
   token: string,
   cartId: number,
   address_id: number
 ): Promise<{ order_id: number; message: string }> => {
   try {
-    const response = await axios.post(
+     const response = await axios.post(
       `${API_URL}/api/order-success`,
       { cartId, address_id },
       {
@@ -571,45 +512,7 @@ export const loadaddress = async (token: string): Promise<Address[]> => {
   }
 };
 
-// export async function addtocart(product_id: number, quantity: number) {
-//   try {
-//     const token = localStorage.getItem("token");
 
-//     const res = await axios.post(
-//       `${API_URL}/api/addtocart`,
-//       { product_id, quantity, variant_id, option_value_ids },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-
-//     return res.data; // ข้อมูลที่ backend ตอบกลับ
-//   } catch (error: unknown) {
-//     const err = error as AxiosError<{ message?: string }>;
-//     const errorMsg =
-//       err.response?.data?.message || err.message || "Add to cart failed";
-
-//     console.error("Add to cart error:", errorMsg);
-//     throw new Error(errorMsg);
-//   }
-// }
-
-// export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
-//   try {
-//     const response = await axios.get<OrderHistoryResponse>(`${API_URL}/api/orderhistory`, {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//         "Content-Type": "application/json",
-//       },
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     console.error("❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:", error.message);
-//     throw error;
-//   }
-// };
 
 
 export interface ShopOrderResponse {

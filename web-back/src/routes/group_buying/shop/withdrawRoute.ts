@@ -1,3 +1,4 @@
+
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import Stripe from "stripe";
@@ -13,7 +14,7 @@ withdrawRoute.post(
   authenticateToken,
   authstore,
   async (req: Request, res: Response) => {
-    const { points } = req.body; // เปลี่ยนจาก amount -> points
+    const { points } = req.body; // client ส่ง points มา
     const shop_id = req.user?.shop_id;
     const user_id = req.user?.user_id;
 
@@ -22,10 +23,14 @@ withdrawRoute.post(
     console.log("Requested points:", points);
 
     if (!shop_id || !user_id) {
-      res.status(401).json({ message: "Unauthorized" }); return; }
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
 
     if (!points || points <= 0) {
-      res.status(400).json({ message: "ไม่มีจำนวนเงินที่ถูกต้อง" }); return; }
+      res.status(400).json({ message: "ไม่มีจำนวนเงินที่ถูกต้อง" });
+      return;
+    }
 
     try {
       // หา shop และ wallet
@@ -34,19 +39,19 @@ withdrawRoute.post(
 
       if (!shop || !wallet) {
         res.status(400).json({ message: "ร้านค้า/Wallet ไม่พบ" });
-        return 
+        return;
       }
 
-      if (wallet.points < points) {
+      if (wallet.balance < points) {
         res.status(400).json({ message: "ยอด point ไม่พอ" });
-        return 
+        return;
       }
 
       // สร้าง withdrawal แบบ pending
       const withdrawal = await prisma.store_withdrawals.create({
         data: {
           shop_id,
-          points,
+          amount: points, // ✅ map points -> amount
           status: "pending",
         },
       });
@@ -58,7 +63,7 @@ withdrawRoute.post(
       // ลด point ใน wallet
       await prisma.store_wallets.update({
         where: { shop_id },
-        data: { points: { decrement: points } },
+        data: { balance: { decrement: points } },
       });
 
       // อัปเดต withdrawal เป็น completed (mock)
@@ -66,7 +71,7 @@ withdrawRoute.post(
         where: { id: withdrawal.id },
         data: {
           status: "completed",
-          completed_at: new Date(),
+          
           stripe_tx: "MOCK_TX_" + withdrawal.id, // mock id
         },
       });
@@ -80,7 +85,7 @@ withdrawRoute.post(
 
       // fallback: log failed withdrawal
       await prisma.store_withdrawals.create({
-        data: { shop_id: shop_id!, points, status: "failed" },
+        data: { shop_id: shop_id!, amount: points, status: "failed" }, // ✅ ใช้ points
       });
 
       res.status(500).json({ error: "ถอนเงินไม่สำเร็จ" });
@@ -88,5 +93,5 @@ withdrawRoute.post(
   }
 );
 
-
 export default withdrawRoute;
+
