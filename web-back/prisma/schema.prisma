@@ -344,7 +344,7 @@ model point_transactions {
 }
 
 model user_point_transactions {
-  id         Int      @id @default(autoincrement())
+  user_point_transactions_id         Int      @id @default(autoincrement())
   user_id    Int
   shop_id    Int
   points     Int      // จำนวน point (+ve ได้ point, -ve ใช้ point)
@@ -356,14 +356,15 @@ model user_point_transactions {
 }
 
 model store_wallets {
-  shop_id  Int   @id
+  store_wallets_id Int @id @default(autoincrement())
+  shop_id  Int   @unique
   points  Int   @default(0)
 
   shop     shops @relation(fields: [shop_id], references: [shop_id])
 }
 
 model store_withdrawals {
-  id                    Int      @id @default(autoincrement())
+  store_withdrawals_id  Int @id @default(autoincrement())
   shop_id               Int
   points                Int
   status                String   // "pending", "approved", "rejected", "completed"

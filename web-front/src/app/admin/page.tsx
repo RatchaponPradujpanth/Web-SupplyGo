@@ -1,156 +1,184 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { admindashboard } from "@/service/api/adminDashboard";
-import type { AdminDashboardApiResponse } from "@/types/type";
+import React, { useEffect, useState } from 'react';
+import { getPendingWithdrawals } from '@/service/api/groupsharing/admin/getPendingWithdrawals';
+import { approveWithdrawal } from '@/service/api/groupsharing/admin/approvewithdraw';
+import { useRouter } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-export default function AdminDashboardPage() {
-  const [data, setData] = useState<AdminDashboardApiResponse | null>(null);
+interface Withdrawal {
+  store_withdrawals_id: number;
+  shop_id: number;
+  points: number;
+  status: string;
+  requested_at: string;
+  store: {
+    shop_name: string;
+    stripe_account_id: string;
+  };
+}
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+export default function AdminWithdrawPage() {
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentWithdrawal, setCurrentWithdrawal] = useState<Withdrawal | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    const t = localStorage.getItem('token');
+    if (!t) {
+      router.push('/login');
+      return;
+    }
+    setToken(t);
+
+    const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setError("No token found");
-          setLoading(false);
-          return;
-        }
-        const res = await admindashboard(token);
-        setData(res);
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch dashboard");
+        const res = await getPendingWithdrawals(t);
+        setWithdrawals(res.withdrawals || []);
+      } catch (error) {
+        console.error("โหลด pending withdrawals ล้มเหลว:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboard();
-  }, []);
+    fetchData();
+  }, [router]);
 
-  if (loading) return <div className="p-6 text-gray-600">Loading dashboard...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
-  if (!data) return <div className="p-6 text-gray-600">No data available</div>;
+  const openModal = (w: Withdrawal) => {
+    setCurrentWithdrawal(w);
+    setModalOpen(true);
+  };
 
-  const { dashboard } = data;
+  const closeModal = () => {
+    setCurrentWithdrawal(null);
+    setModalOpen(false);
+  };
+
+  if (loading) return <div className="p-6">⏳ กำลังโหลด...</div>;
 
   return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="p-4 bg-white rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Users</h2>
-          <p className="text-2xl font-semibold">{dashboard?.totalUsers ?? 0}</p>
-        </div>
-
-        <div className="p-4 bg-white rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Shops</h2>
-          <p className="text-2xl font-semibold">{dashboard?.totalStores ?? 0}</p>
-        </div>
-
-        <div className="p-4 bg-white rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Products</h2>
-          <p className="text-2xl font-semibold">{dashboard?.totalProducts ?? 0}</p>
-        </div>
-
-        <div className="p-4 bg-white rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Orders</h2>
-          <p className="text-2xl font-semibold">{dashboard?.totalOrders ?? 0}</p>
-        </div>
-      </div>
-
-      {/* Recent Orders Table */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Recent Orders</h2>
-        <div className="overflow-x-auto bg-white rounded-xl shadow">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
-              <tr>
-                <th className="px-4 py-2">Order ID</th>
-                <th className="px-4 py-2">User</th>
-                <th className="px-4 py-2">Total Amount</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Order Date</th>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">คำร้องถอนเงินที่รออนุมัติ</h1>
+      {withdrawals.length === 0 ? (
+        <p>ไม่มีคำร้องรออนุมัติ</p>
+      ) : (
+        <table className="min-w-full border border-gray-200">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border px-4 py-2">ร้าน</th>
+              <th className="border px-4 py-2">จำนวน (points)</th>
+              <th className="border px-4 py-2">วันที่ร้องขอ</th>
+              <th className="border px-4 py-2">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {withdrawals.map(w => (
+              <tr key={w.store_withdrawals_id}>
+                <td className="border px-4 py-2">{w.store.shop_name}</td>
+                <td className="border px-4 py-2">{w.points}</td>
+                <td className="border px-4 py-2">{new Date(w.requested_at).toLocaleString()}</td>
+                <td className="border px-4 py-2">
+                  <button
+                    onClick={() => openModal(w)}
+                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                  >
+                    อนุมัติ
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {dashboard?.recentOrders?.map((o) => (
-                <tr key={o.order_id} className="border-b">
-                  <td className="px-4 py-2">{o.order_id}</td>
-                  <td className="px-4 py-2">
-                    {Array.isArray(o.users) && o.users.length > 0
-                      ? o.users.map(u => u.username).join(", ")
-                      : "-"
-                    }
-                  </td>
-                  <td className="px-4 py-2">{o.total_amount ?? "-"}</td>
-                  <td className="px-4 py-2">{o.status ?? "-"}</td>
-                  <td className="px-4 py-2">
-                    {o.order_date 
-                      ? new Date(o.order_date).toLocaleString()
-                      : "-"
-                    }
-                  </td>
-                </tr>
-              )) ?? null}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {modalOpen && currentWithdrawal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-lg font-bold mb-4">กรอกบัตรเพื่อจ่ายเงิน</h2>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm 
+                withdrawal={currentWithdrawal} 
+                token={token!} 
+                onSuccess={() => {
+                  setWithdrawals(prev => prev.filter(w => w.store_withdrawals_id !== currentWithdrawal.store_withdrawals_id));
+                  closeModal();
+                }} 
+              />
+            </Elements>
+            <button onClick={closeModal} className="mt-4 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ยกเลิก</button>
+          </div>
         </div>
-      </div>
-      {/* Recent Products Table */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Recent Products</h2>
-        <div className="overflow-x-auto bg-white rounded-xl shadow">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
-              <tr>
-                <th className="px-4 py-2">Product ID</th>
-                <th className="px-4 py-2">Product Name</th>
-                <th className="px-4 py-2">Price</th>
-                <th className="px-4 py-2">Shop(s)</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard?.recentProducts?.map((p) => (
-                <tr key={p.product_id} className="border-b">
-                  <td className="px-4 py-2">{p.product_id}</td>
-                  <td className="px-4 py-2">{p.product_name}</td>
-                  <td className="px-4 py-2">
-                    {p.price ? `฿${Number(p.price).toLocaleString()}` : "-"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.product_owners?.length > 0
-                      ? p.product_owners.map(owner => owner.shops.shop_name).join(", ")
-                      : "-"
-                    }
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      p.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {p.status || "-"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.created_date 
-                      ? new Date(p.created_date).toLocaleDateString()
-                      : "-"
-                    }
-                  </td>
-                </tr>
-              )) ?? null}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
+
+interface CheckoutFormProps {
+  withdrawal: Withdrawal;
+  token: string;
+  onSuccess: () => void;
+}
+
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ withdrawal, token, onSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setLoading(true);
+    try {
+      // 1️⃣ สร้าง PaymentIntent ผ่าน backend
+      const res = await approveWithdrawal(token, withdrawal.store_withdrawals_id);
+      const clientSecret = res.clientSecret;
+      if (!clientSecret) throw new Error("clientSecret ไม่ถูกส่งมา");
+
+      // 2️⃣ confirm PaymentIntent ด้วย CardElement
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error("CardElement ไม่พบ");
+
+      const paymentResult = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement },
+      });
+
+      if (paymentResult.error) {
+        throw new Error(paymentResult.error.message);
+      }
+
+      // ✅ สำเร็จ
+      onSuccess();
+      alert("✅ จ่ายเงินและอนุมัติสำเร็จ");
+
+    } catch (err: any) {
+      console.error(err);
+      alert("❌ ล้มเหลว: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="border p-2 rounded mb-4">
+        <CardElement options={{ hidePostalCode: true }} />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+      >
+        {loading ? 'กำลังทำรายการ...' : `จ่าย ${withdrawal.points} บาท`}
+      </button>
+    </form>
+  );
+};
