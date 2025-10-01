@@ -45,6 +45,7 @@ export interface Product {
   batches?: ProductBatch[];     // batch ของสินค้าหลัก
   product_variants?: ProductVariant[];  // มีหรือไม่มี variant ก็ได้
   product_images?: ProductImage[];
+  
 }
 
 
@@ -339,76 +340,84 @@ export interface product_batches {
 }
 
 // ========================
-// Group Buying
+// Group Buying Types
 // ========================
-export interface group_members {
-  id: number;
-  group_id: number;
+
+export interface GroupBuyingMember {
+  group_members_id: number;   // ตรงกับ Prisma
   user_id: number;
+  username?: string | null;
+  email?: string | null;
   joined_at: string;
+  left_at?: string | null;
+  addresses?: Address[];      // ถ้าใช้ member addresses
+}
+
+export interface GroupBuyingProduct {
+  product_id: number;
+  product_name?: string | null;
+  product_images?: ProductImage[];
 }
 
 export interface GroupBuying {
   group_buying_id: number;
-  points_per_member: number;
   shop_id: number;
   product_id: number;
+  variant_id?: number | null;
   required_members: number;
   total_items: number;
-  status: 'open' | 'success' | 'closed';
+  status: string;              // ใช้ string ให้ตรงกับ DB
+  points_per_group: number;
+  points_per_member: number;
+  items_per_member: number;
   created_at: string;
+  updated_at: string;
 
   group_name?: string | null;
   description?: string | null;
   expire_at?: string | null;
-  variant_id?: number | null;
 
   shop?: { shop_name?: string };
-  product?: {
-    product_id: number;
-    product_name?: string;
-    product_images?: { image_url: string }[];
-  };
-  members?: { user_id: number; username?: string }[];
+  product?: GroupBuyingProduct;
+  variant?: ProductVariant | null;
+  members?: GroupBuyingMember[];
 
+  // ✅ frontend helpers
   user_in_group?: boolean;
   current_members?: number;
   is_full?: boolean;
+  time_left?: number | null;   // ⏳ เพิ่มอันนี้
 }
 
-export interface GroupBuyingMember {
-  id: number;
-  joined_at: string;
-  user_id: number;
-  username: string | null;
-  email: string | null;
-}
-
-export interface GroupBuyingProduct {
-  product_name: string | null;
-  image: string | null;
-  secondary_images?: string[];
-}
 
 export interface GroupBuyingResult {
   group_buying_id: number;
-  group_name?: string | null;
-  description?: string | null;
-  expire_at?: string | null;
+  group_name: string | null;
+  description: string | null;
+  expire_at: string | null;
   product_id: number;
   variant_id?: number | null;
-  product_name: string | null;
-  product_image: string | null;
-  secondary_images: string[];
-  total_items: number;
+  product_name?: string | null;
+  product_image?: string | null;
+  secondary_images?: string[];
+  total_items?: number;
   required_members: number;
   status: string;
-  created_at: string;
-  points_per_group: number;
+  created_at?: string;
+  updated_at?: string;
+  points_per_group?: number;
   points_per_member: number;
+  items_per_member?: number;
   member_count: number;
   members: GroupBuyingMember[];
+
+  // helper fields
+  is_full: boolean;
+  user_in_group: boolean;
 }
+
+// ถ้าใช้ `members` ต้องมี type ด้วย
+
 
 // ========================
 // Admin Dashboard
@@ -425,7 +434,7 @@ export interface AdminDashboardApiResponse {
       status: string;
       total_amount: number;
       order_date: string;
-      users: { username: string }[];
+      users: { username: string };
     }[];
     recentProducts: {
       product_id: number;
@@ -435,8 +444,16 @@ export interface AdminDashboardApiResponse {
       created_date: string;
       product_owners: { shops: { shop_name: string } }[];
     }[];
+    allUsers: {
+      user_id: number;
+      username: string | null;
+      email: string | null;
+      registration_date: string | null;
+      role: string | null;
+    }[];
   };
 }
+
 
 // ========================
 // Other
@@ -445,3 +462,120 @@ export interface userpoint {
   balance: number;
 }
 
+export interface PaymentHistoryOrder {
+  order_id: number;
+  user_id: number;
+  order_date?: string | null;
+  total_amount?: number | null;
+  status?: string | null;
+  users: {
+    user_id: number;
+    username?: string | null;
+    email?: string | null;
+  };
+  address?: {
+    address_id: number;
+    firstname?: string | null;
+    lastname?: string | null;
+    phone_number?: number | null;
+    house_number?: string | null;
+    street?: string | null;
+    sub_district?: string | null;
+    district?: string | null;
+    province?: string | null;
+    postal_code?: number | null;
+    address_type?: string | null;
+  } | null;
+  order_shops: {
+    order_shop_id: number;
+    shop_id: number;
+    subtotal?: number | null;
+    status?: string | null;
+    tracking_number?: string | null;
+    transaction_id?: string | null;
+    charge_id?: string | null;
+    shops: {
+      shop_id: number;
+      shop_name?: string | null;
+    };
+    order_items: {
+      order_item_id: number;
+      product_id: number;
+      quantity?: number | null;
+      price_per_unit?: number | null;
+      total_price?: number | null;
+      products: {
+        product_id: number;
+        product_name?: string | null;
+        product_images?: { image_url: string }[];
+      };
+      variant_option?: {
+        variant_option_id: number;
+        value: string;
+        option?: { name: string };
+      } | null;
+    }[];
+  }[];
+}
+
+export interface PaymentHistoryResponse {
+  success: boolean;
+  data: PaymentHistoryOrder[];
+}
+
+
+export interface AdminOrderHistoryOrder {
+  order_id: number;
+  user_id: number;
+  order_date?: string | null;
+  total_amount?: number | null;
+  status?: string | null;
+  address?: {
+    address_id: number;
+    firstname?: string | null;
+    lastname?: string | null;
+    phone_number?: number | null;
+    house_number?: string | null;
+    street?: string | null;
+    sub_district?: string | null;
+    district?: string | null;
+    province?: string | null;
+    postal_code?: number | null;
+    address_type?: string | null;
+  } | null;
+  order_shops: {
+    order_shop_id: number;
+    shop_id: number;
+    subtotal?: number | null;
+    status?: string | null;
+    tracking_number?: string | null;
+    transaction_id?: string | null;
+    charge_id?: string | null;
+    shops: {
+      shop_id: number;
+      shop_name?: string | null;
+    };
+    order_items: {
+      order_item_id: number;
+      product_id: number;
+      quantity?: number | null;
+      price_per_unit?: number | null;
+      total_price?: number | null;
+      products: {
+        product_id: number;
+        product_name?: string | null;
+        product_images?: { image_url: string }[];
+      };
+      variant_option?: {
+        variant_option_id: number;
+        value: string;
+        option?: { name: string };
+      } | null;
+    }[];
+  }[];
+}
+
+export interface AdminOrderHistoryResponse {
+  success: boolean;
+  data: AdminOrderHistoryOrder[];
+}

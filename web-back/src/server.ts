@@ -45,6 +45,9 @@ import historygroupRoute from "./routes/group_buying/customer/historygroupRoute"
 import withdrawRoute from "./routes/group_buying/shop/withdrawRoute";
 import approvewithdrawRoute from "./routes/group_buying/admin/approvewithdrawRoute";
 import loadwithdrawRoute from "./routes/group_buying/admin/loadwithdrawRoute";
+import paymenthistoryRoute from "./routes/admin/paymenthistoryRoute";
+import allOrderHistoryRoute from "./routes/admin/allOrderHistoryRoute";
+import checkjoingroupRoute from "./routes/group_buying/customer/checkjoingroupRoute";
 
 // dotenv.config({path:".env"}); // โหลดค่า .env
 
@@ -96,7 +99,10 @@ app.use("/api",historygroupRoute)
 app.use("/api",withdrawRoute)
 app.use("/api",approvewithdrawRoute)
 app.use("/api",loadwithdrawRoute)
+app.use("/api",paymenthistoryRoute);
+app.use("/api",allOrderHistoryRoute)
+app.use("/api",checkjoingroupRoute)
 
-app.listen(5001, () => {
+app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });

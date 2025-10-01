@@ -29,10 +29,10 @@ export const authenticateToken = (
     //console.log("✅ Decoded token payload:", decoded);
     req.user = decoded;
 
-    console.log("🔍 authenticateToken - decoded user:", req.user);
-    console.log("🔍 user.role:", req.user.role);
-    console.log("🔍 user.shop_id:", req.user.shop_id);
-    console.log("🔍 user.user_id:", req.user.user_id);
+    // console.log("🔍 authenticateToken - decoded user:", req.user);
+    // console.log("🔍 user.role:", req.user.role);
+    // console.log("🔍 user.shop_id:", req.user.shop_id);
+    // console.log("🔍 user.user_id:", req.user.user_id);
     
     next();//บอกให้ทำ middle ถัดไป ถ้าไม่มีก็ทำ route ถัดไป
     //เมื่อคุณเรียก next(), Express จะ ส่ง req (และ res) ตัวเดิม ไปยัง middleware หรือ route ถัดไป

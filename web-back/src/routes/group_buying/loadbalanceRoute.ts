@@ -24,7 +24,7 @@ loadbalanceRoute.get("/loadbalance", authenticateToken, async (req: Request, res
         }
 
         console.log(`balance for user ${userId}:`, userPoint.points);
-        res.json({ balance: userPoint.points });
+        res.json(userPoint.points);
     } catch (error) {
         console.error('Error loading balance:', error);
         res.status(500).json({ message: 'Internal server error' });

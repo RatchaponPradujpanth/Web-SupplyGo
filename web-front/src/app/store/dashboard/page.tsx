@@ -10,7 +10,7 @@ import {
   loadproduct,
 } from '@/service/apis';
 import { primarypicture } from '@/service/api/setprimarypicture';
-import type { Product } from '@/types/product';
+import type { Product } from '@/types/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
