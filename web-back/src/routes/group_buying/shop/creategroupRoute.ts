@@ -8,22 +8,7 @@ const prisma = new PrismaClient();
 creategroupRoute.post("/create-group", authenticateToken, authstore, async (req: Request, res: Response) => {
   const userId = req.user?.user_id;
   const shop_id = req.user?.shop_id;
-  const {
-    group_name,
-    description,
-    expire_at,
-    product_id,
-    variant_id,
-    required_members,
-    total_items,
-    items_per_member,
-    status,
-    points_per_group,
-    points_per_member
-  } = req.body;
-
-  console.log("📝 Request body:", req.body);
-  console.log("👤 User ID:", userId, "Shop ID:", shop_id);
+  const { group_name,description,expire_at,product_id,variant_id,required_members,total_items,items_per_member,status,points_per_group,points_per_member} = req.body;
 
   if (!shop_id || !userId || !product_id || !required_members || !total_items || !items_per_member) {
     console.log("❌ ข้อมูลไม่ครบ");
@@ -77,9 +62,7 @@ creategroupRoute.post("/create-group", authenticateToken, authstore, async (req:
           expire_at: expire_at ? new Date(expire_at) : null,
         }
       });
-      console.log(`✅ Group created - ID: ${newGroup.group_buying_id}`);
 
-      console.log(`🔄 Reserving stock - Batch ID: ${batch.batch_id}, Quantity: ${total_items}`);
       await tx.product_batches.update({
         where: { batch_id: batch.batch_id },
         data: { quantity: { decrement: total_items } },

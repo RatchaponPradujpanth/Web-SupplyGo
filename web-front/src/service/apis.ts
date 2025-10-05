@@ -129,26 +129,26 @@ export interface OrderHistoryResponse {
 }
 
 
-export const RegisterUser = async (
-  username: string,
-  password: string,
-  email: string
-): Promise<void> => {
-  try {
-    const response = await axios.post(`${API_URL}/api/register`, {
-      username,
-      password,
-      email,
-    });
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Register error";
+// export const RegisterUser = async (
+//   username: string,
+//   password: string,
+//   email: string
+// ): Promise<void> => {
+//   try {
+//     const response = await axios.post(`${API_URL}/api/register`, {
+//       username,
+//       password,
+//       email,
+//     });
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Register error";
 
-    console.error("Register error:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Register error:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const loginUser = async (
   username: string,
@@ -193,32 +193,32 @@ export const loadUsername = async (token: string): Promise<string> => {
   }
 };
 
-export const loadproduct = async (token: string): Promise<Product[]> => {
-  if (!token) throw new Error("No token provided");
-  try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+// export const loadproduct = async (token: string): Promise<Product[]> => {
+//   if (!token) throw new Error("No token provided");
+//   try {
+//     const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
+//   headers: {
+//     Authorization: `Bearer ${token}`,
+//   },
+// });
 
-    console.log("✅ Products fetched:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Failed to load products";
+//     console.log("✅ Products fetched:", response.data);
+//     return response.data;
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Failed to load products";
 
-    // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
-    if (errorMsg === "No products found") {
-      console.warn("⚠️ No products found, returning empty list.");
-      return [];
-    }
+//     // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
+//     if (errorMsg === "No products found") {
+//       console.warn("⚠️ No products found, returning empty list.");
+//       return [];
+//     }
 
-    console.error("Error fetching products:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Error fetching products:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const loadstorename = async (
   token: string
@@ -398,15 +398,15 @@ export const addproduct = async (
 
 
 
-export const getCategories = async (): Promise<Category[]> => {
-  try {
-    const response = await axios.get<Category[]>(`${API_URL}/api/categories`);
-    return response.data;
-  } catch (error) {
-    console.error("❌ ดึง category ไม่สำเร็จ:", error);
-    return [];
-  }
-};
+// export const getCategories = async (): Promise<Category[]> => {
+//   try {
+//     const response = await axios.get<Category[]>(`${API_URL}/api/categories`);
+//     return response.data;
+//   } catch (error) {
+//     console.error("❌ ดึง category ไม่สำเร็จ:", error);
+//     return [];
+//   }
+// };
 
 export async function fetchUserRole(token: string): Promise<string> {
   try {

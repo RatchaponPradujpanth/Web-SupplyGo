@@ -6,9 +6,9 @@ const registerRoute = Router();
 const prisma = new PrismaClient();
 
 registerRoute.post("/register", async (req: Request, res: Response): Promise<void> => {
-  const { username, password, email } = req.body;
+  const { username, password, email , role} = req.body;
 
-  if (!username || !password || !email) {
+  if (!username || !password || !email || !role) {
     res.status(400).json({ message: "Username, password and email are required" });
     return;
   }
@@ -20,7 +20,8 @@ registerRoute.post("/register", async (req: Request, res: Response): Promise<voi
       data : {
         username, 
         password: hashedPassword,
-        email
+        email,
+        role,
       }
     })
 

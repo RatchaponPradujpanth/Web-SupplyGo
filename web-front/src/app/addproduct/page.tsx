@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { addproduct, getCategories } from '@/service/apis';
+import { addproduct } from '@/service/apis';
+import { getCategories } from '@/service/api/category';
 
 interface Category {
   category_id: number;

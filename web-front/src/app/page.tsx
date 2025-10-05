@@ -1,209 +1,220 @@
 'use client';
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginUser, RegisterUser } from "@/service/apis";
-import { motion, AnimatePresence } from "framer-motion";
+import { loadUsername, fetchUserRole } from '@/service/apis';
+import { loadPublicProducts, loadShopProducts } from '@/service/api/loadproduct';
+import { addtocart } from '@/service/api/addtocart';
+import { getCategories } from '@/service/api/category';
+import type { Product, Category } from '@/types/type';
+import ProductCard from '@/components/customer/ProductCard';
+import ProductDetail from '@/components/customer/ProductDetail';
 
-function LoginForm({ onSuccess }: { onSuccess: () => void }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showMessage, setShowMessage] = useState<string | null>(null);
+export default function UserDashboardPage() {
+  const [username, setUsername] = useState('');
+  const [role, setRole] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  const router = useRouter();
 
-  const handleLogin = async () => {
-    try {
-      const token = await loginUser(username, password);
-      localStorage.setItem('token', token);
+  // Mapping icon สำหรับ category (frontend)
+  const categoryIcons: Record<string, string> = {
+    Electronics: '🔌',
+    Fashion: '👕',
+    'Home & Kitchen': '🍳',
+    Beauty: '🧴',
+    Sports: '🏋️',
+    Furniture: '🛋️',
+    Baby: '🍼',
+    Tools: '🧰',
+  };
 
-      setShowMessage("✅ เข้าสู่ระบบสำเร็จ! กำลังนำทาง...");
-      setTimeout(() => {
-        setShowMessage(null);
-        onSuccess();
-      }, 2000);
-    } catch (error) {
-      setShowMessage("❌ เข้าสู่ระบบไม่สำเร็จ");
-      setTimeout(() => setShowMessage(null), 3000);
+  // ฟังก์ชัน format ราคา
+  const formatPrice = (price: number | null | undefined) => {
+    if (price == null) return 'ติดต่อร้านค้า';
+    return new Intl.NumberFormat('th-TH', {
+      style: 'currency',
+      currency: 'THB',
+      minimumFractionDigits: 2,
+    }).format(price);
+  };
+
+  const getDisplayPrice = (product: Product, variantId?: number | null) => {
+    if (product.product_variants && product.product_variants.length > 0) {
+      if (variantId) {
+        const selectedVariant = product.product_variants.find(v => v.variant_id === variantId);
+        return formatPrice(selectedVariant?.price);
+      } else {
+        const prices = product.product_variants
+          .map(v => v.price)
+          .filter((p): p is number => p !== null);
+        if (prices.length === 0) return 'ติดต่อร้านค้า';
+        if (prices.length === 1) return formatPrice(prices[0]);
+        return `${formatPrice(Math.min(...prices))} - ${formatPrice(Math.max(...prices))}`;
+      }
+    } else {
+      return formatPrice(product.price);
     }
   };
 
-  return (
-    <>
-      <AnimatePresence>
-        {showMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -30 }}
-            transition={{ duration: 0.5 }}
-            className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50"
-          >
-            {showMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+  // โหลดข้อมูล user + products + categories
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const token = localStorage.getItem('token');
 
-      <div className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="username" className="text-gray-700 font-medium">Username</label>
-          <input
-            type="text"
-            id="username"
-            placeholder="Enter your username"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-          />
-        </div>
+        if (token) {
+          const userRole = await fetchUserRole(token);
+          setRole(userRole);
 
-        <div>
-          <label htmlFor="password" className="text-gray-700 font-medium">Password</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="Enter your password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-        </div>
+          if (userRole === 'store') {
+            router.push('/dashboard');
+            return;
+          }
 
-        <button
-          onClick={handleLogin}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300"
-        >
-          Login
-        </button>
-      </div>
-    </>
-  );
-}
+          const name = await loadUsername(token);
+          setUsername(name);
 
-function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
-  const [showMessage, setShowMessage] = useState<string | null>(null);
+          const userProducts = await loadShopProducts(token);
+          setProducts(userProducts);
+        } else {
+          const publicProducts = await loadPublicProducts();
+          setProducts(publicProducts);
+        }
 
-  const handleRegister = async () => {
-    try {
-      await RegisterUser(username, password, email);
-      setShowMessage("🎉 สมัครสำเร็จ! กรุณาล็อกอินอีกครั้ง...");
-      setTimeout(() => {
-        setShowMessage(null);
-        onSuccess();
-        setUsername("");
-        setPassword("");
-        setEmail("");
-      }, 2000);
-    } catch (error) {
-      setShowMessage("❌ การสมัครไม่สำเร็จ, โปรดลองใหม่อีกครั้ง.");
-      setTimeout(() => setShowMessage(null), 3000);
+        // ดึง categories จาก API
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (err) {
+        console.error('🚫 Error loading dashboard:', err);
+        router.push('/');
+      }
+    };
+
+    loadData();
+  }, [router]);
+
+  // ฟังก์ชัน login check
+  const requireLogin = (action: () => void) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('⚠️ กรุณาเข้าสู่ระบบก่อนทำรายการ');
+      router.push('/login');
+      return;
     }
+    action();
   };
 
-  return (
-    <>
-      <AnimatePresence>
-        {showMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -30 }}
-            transition={{ duration: 0.5 }}
-            className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50"
-          >
-            {showMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+  // เพิ่มสินค้าในตะกร้า
+  const handleAddToCart = async (productId: number, quantity: number, variantId?: number, optionValueIds?: number[]) => {
+    requireLogin(async () => {
+      try {
+        await addtocart(productId, quantity, variantId, optionValueIds);
+        alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
+      } catch (error) {
+        console.error("❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้:", error);
+        alert('เกิดข้อผิดพลาดขณะเพิ่มสินค้า');
+      }
+    });
+  };
 
-      <div className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="username" className="text-gray-700 font-medium">Username</label>
-          <input
-            type="text"
-            id="username"
-            placeholder="Enter your username"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-          />
-        </div>
+  const handleProductCardClick = (product: Product) => {
+    setSelectedProduct(product);
+  };
 
-        <div>
-          <label htmlFor="password" className="text-gray-700 font-medium">Password</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="Enter your password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-        </div>
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/');
+  };
 
-        <div>
-          <label htmlFor="email" className="text-gray-700 font-medium">Email</label>
-          <input
-            type="email"
-            id="email"
-            placeholder="you@example.com"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
-        </div>
+  const handleCategoryClick = async (categoryName: string) => {
+    // ไปหน้า /category/[slug] หรือดึง products ตาม category
+    router.push(`/category/${categoryName.toLowerCase().replace(/\s+/g, '-')}`);
+  };
 
-        <button
-          onClick={handleRegister}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300"
-        >
-          Register
-        </button>
-      </div>
-    </>
-  );
-}
-
-export default function Home() {
-  const [isRegister, setIsRegister] = useState(false);
+  if (selectedProduct) {
+    return (
+      <ProductDetail
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={handleAddToCart}
+        getDisplayPrice={getDisplayPrice}
+      />
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center px-4 relative">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
-          {isRegister ? "Register to Pond" : "Login"}
-        </h1>
+    <div className="min-h-screen flex flex-col items-center justify-start bg-bgpage text-textmain p-6">
+      
+      {/* ----- Section: Top Categories ----- */}
+      <section className="w-full max-w-7xl bg-white rounded-card shadow-card p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-6">Shop from Top Categories</h2>
+        <div className="grid grid-cols-3 md:grid-cols-8 gap-4">
+          {categories.map((cat) => (
+            <button
+              key={cat.category_name}
+              onClick={() => handleCategoryClick(cat.category_name)}
+              className="bg-white rounded-card shadow-card p-4 flex flex-col items-center hover:shadow-md transition"
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                {categoryIcons[cat.category_name] || '📦'}
+              </div>
+              <span className="mt-2 text-sm font-medium text-center">{cat.category_name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
-        {isRegister ? (
-          <RegisterForm onSuccess={() => setIsRegister(false)} />
+      {/* ----- Section: Products ----- */}
+      <section className="w-full max-w-7xl bg-white rounded-card shadow-card p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-semibold mb-6">สินค้า</h2>
+        {products.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {products.map((product) => (
+              <ProductCard
+                key={product.product_id}
+                product={product}
+                onSelect={handleProductCardClick}
+                getDisplayPrice={getDisplayPrice}
+              />
+            ))}
+          </div>
         ) : (
-          <LoginForm onSuccess={() => window.location.href = '/role-redirect'} />
+          <p className="italic text-textmuted text-center">ยังไม่มีสินค้าในร้าน</p>
         )}
+      </section>
 
-        <p className="text-center text-gray-600 text-sm mt-4">
-          {isRegister ? (
-            <>
-              Already have an account?{" "}
-              <span
-                onClick={() => setIsRegister(false)}
-                className="text-blue-500 cursor-pointer underline"
-              >
-                Login here
-              </span>
-            </>
-          ) : (
-            <>
-              Don’t have an account?{" "}
-              <span
-                onClick={() => setIsRegister(true)}
-                className="text-blue-500 cursor-pointer underline"
-              >
-                Register
-              </span>
-            </>
-          )}
-        </p>
+      {/* ----- Buttons ----- */}
+      <div className="flex flex-wrap gap-4 justify-center w-full max-w-7xl mb-8">
+        <button
+          onClick={() => requireLogin(() => router.push('/cart'))}
+          className="rounded-pill px-6 py-2 bg-secondary text-textmain font-medium hover:bg-secondary/80 transition"
+        >
+          🛒 ไปดูตะกร้าสินค้า
+        </button>
+
+        <button
+          onClick={() => requireLogin(() => router.push('/orderhistory'))}
+          className="rounded-pill px-6 py-2 bg-primary text-white font-medium hover:bg-primary/80 transition"
+        >
+          📦 ดูประวัติคำสั่งซื้อ
+        </button>
+
+        <button
+          onClick={() => router.push('/topup')}
+          className="rounded-pill px-6 py-2 bg-accent text-white font-medium hover:bg-accent/80 transition"
+        >
+          🤝 ไปหน้า Group Buying
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="rounded-pill px-6 py-2 border border-gray-200 text-textmuted hover:border-primary/40 hover:text-primary transition"
+        >
+          Logout / Clear Token
+        </button>
       </div>
     </div>
   );
