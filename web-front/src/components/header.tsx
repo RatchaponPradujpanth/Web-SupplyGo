@@ -9,7 +9,6 @@ export default function Header() {
   const [role, setRole] = useState<string | null>(null);
   const router = useRouter();
 
-  // โหลดข้อมูลผู้ใช้ตอน mount
   useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem('token');
@@ -23,6 +22,9 @@ export default function Header() {
         setUsername(name);
       } catch (err) {
         console.error('Error loading header user info:', err);
+        // ถ้าเกิด error ให้ล้าง state ด้วย เผื่อ token หมดอายุ
+        setUsername(null);
+        setRole(null);
       }
     };
 
@@ -31,6 +33,8 @@ export default function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setUsername(null); // 🔹 รีเซ็ต username
+    setRole(null);     // 🔹 รีเซ็ต role
     router.push('/');
   };
 
