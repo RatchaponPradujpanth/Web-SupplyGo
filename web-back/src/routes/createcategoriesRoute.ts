@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authadmin, authenticateToken } from '../middleware/authMiddleware';
 import { Prisma, PrismaClient } from "@prisma/client";
-import cartRoute from './cartRoute';
 
 const createcategoriesRoute = Router();
 const prisma = new PrismaClient();

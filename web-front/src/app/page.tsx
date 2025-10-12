@@ -62,21 +62,33 @@ export default function UserDashboardPage() {
   // โหลดข้อมูล user + products + categories
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const token = localStorage.getItem('token');
+      let token = localStorage.getItem('token');
+      let userRole = null;
 
-        if (token) {
-          const userRole = await fetchUserRole(token);
+      // ตรวจสอบ token และ role
+      if (token) {
+        try {
+          userRole = await fetchUserRole(token);
           setRole(userRole);
+        } catch (err) {
+          console.warn("⚠️ Token invalid or expired, loading public products...");
+          localStorage.removeItem('token');
+          token = null; // reset token
+          setRole(null);
+        }
+      }
 
-          if (userRole === 'store') {
-            router.push('/dashboard');
-            return;
-          }
+      // ถ้าเป็น store redirect ออกไป
+      if (userRole === 'store') {
+        router.push('/dashboard');
+        return;
+      }
 
+      // โหลด products และ categories (ไม่ว่าจะมี token หรือไม่)
+      try {
+        if (token && userRole !== null) {
           const name = await loadUsername(token);
           setUsername(name);
-
           const userProducts = await loadShopProducts(token);
           setProducts(userProducts);
         } else {
@@ -84,17 +96,16 @@ export default function UserDashboardPage() {
           setProducts(publicProducts);
         }
 
-        // ดึง categories จาก API
         const cats = await getCategories();
         setCategories(cats);
       } catch (err) {
         console.error('🚫 Error loading dashboard:', err);
-        router.push('/');
       }
     };
 
     loadData();
   }, [router]);
+
 
   // ฟังก์ชัน login check
   const requireLogin = (action: () => void) => {

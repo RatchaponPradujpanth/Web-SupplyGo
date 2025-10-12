@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { admindashboard } from "@/service/api/adminDashboard";
-import { loaduserproduct } from "@/service/api/loaduserproduct";
+import { loadShopProducts } from "@/service/api/loadproduct";
 import { paymentHistory } from "@/service/api/groupsharing/admin/paymenthistory";
 import { allOrderHistory } from "@/service/api/groupsharing/admin/allorderhistory";
 import { getPendingWithdrawals } from "@/service/api/groupsharing/admin/getPendingWithdrawals";
@@ -64,7 +64,13 @@ export default function AdminDashboardPage() {
     if (activeSidebar === "products") {
       const fetchProducts = async () => {
         try {
-          const res = await loaduserproduct();
+          const token = localStorage.getItem("token");
+        if (!token) {
+          setError("No token found");
+          setLoading(false);
+          return;
+        }
+          const res = await loadShopProducts(token);
           setProducts(res);
         } catch (err: any) {
           setError(err.message || "Failed to load products");
