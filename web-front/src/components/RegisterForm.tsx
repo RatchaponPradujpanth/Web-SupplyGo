@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RegisterUser } from '@/service/api/register';
+import { useRouter } from 'next/navigation';
 
 type RoleType = 'customer' | 'store' | 'admin';
 
@@ -18,6 +19,7 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<RoleType>(defaultRole);
   const [showMessage, setShowMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleRegister = async () => {
     if (password !== confirmPassword) {
@@ -27,19 +29,28 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
     }
 
     try {
-      await RegisterUser(username, password, email, role);
-      setShowMessage('🎉 สมัครสำเร็จ! กรุณาล็อกอิน...');
-      setTimeout(() => {
-        setShowMessage(null);
-        onSuccess();
-        setUsername('');
-        setPassword('');
-        setConfirmPassword('');
-        setEmail('');
-        setRole(defaultRole);
-      }, 2000);
-    } catch (error) {
-      setShowMessage('❌ การสมัครไม่สำเร็จ, โปรดลองใหม่อีกครั้ง.');
+      const result = await RegisterUser(username, password, email, role);
+      
+      if (result.email) {
+        setShowMessage('📧 ส่ง OTP ไปยังอีเมลแล้ว กรุณาตรวจสอบ');
+        setTimeout(() => {
+          router.push(`/verify-otp?email=${encodeURIComponent(result.email)}`);
+        }, 2000);
+      } else {
+        setShowMessage('🎉 สมัครสำเร็จ! กรุณาล็อกอิน...');
+        setTimeout(() => {
+          setShowMessage(null);
+          onSuccess();
+          setUsername('');
+          setPassword('');
+          setConfirmPassword('');
+          setEmail('');
+          setRole(defaultRole);
+        }, 2000);
+      }
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'การสมัครไม่สำเร็จ, โปรดลองใหม่อีกครั้ง';
+      setShowMessage(`❌ ${errorMsg}`);
       setTimeout(() => setShowMessage(null), 3000);
     }
   };

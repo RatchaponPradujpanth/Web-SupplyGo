@@ -7,7 +7,7 @@ export default function LoginPage() {
 
       {/* Main */}
       <main className="flex-1 flex items-center justify-center p-6">
-        <LoginForm onSuccess={() => (window.location.href = "/role-redirect")} />
+        <LoginForm onSuccess={() => window.location.assign("/role-redirect")} />
       </main>
 
       

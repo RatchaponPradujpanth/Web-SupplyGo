@@ -1,6 +1,5 @@
-import express from "express";
-import "dotenv/config";
-//import dotenv from 'dotenv'
+import express ,{Request,Response} from "express";
+import dotenv from 'dotenv';
 import loginRoute from "./routes/loginRoute";
 import registerRoute from "./routes/registerRoute";
 import cors from "cors";
@@ -49,9 +48,11 @@ import paymenthistoryRoute from "./routes/admin/paymenthistoryRoute";
 import allOrderHistoryRoute from "./routes/admin/allOrderHistoryRoute";
 import checkjoingroupRoute from "./routes/group_buying/customer/checkjoingroupRoute";
 import categoryproductRoute from "./routes/categoryproductRoute";
+import otpRoute from './routes/otpRoute';
 
-// dotenv.config({path:".env"}); // โหลดค่า .env
+dotenv.config();
 
+const PORT = process.env.PORT || 4000;
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -104,7 +105,8 @@ app.use("/api",paymenthistoryRoute);
 app.use("/api",allOrderHistoryRoute)
 app.use("/api",checkjoingroupRoute)
 app.use("/api",categoryproductRoute)
+app.use('/api', otpRoute);
 
-app.listen(5001, () => {
-  console.log("Server is running on port 5000");
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

@@ -36,7 +36,7 @@ export default function DashboardPage() {
         if (decoded.role === 'store') {
           const store = await loadstorename(token);
           console.log("🏪 store:", store);
-          setStoreName(store.shopname);
+          setStoreName(store.shop_name);
           setShopId(store.shop_id);
           // ตรวจสอบ stripe_account_id ว่ามีไหม
           setStripeConnected(Boolean(store.stripe_account_id));

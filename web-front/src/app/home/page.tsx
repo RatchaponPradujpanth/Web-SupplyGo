@@ -140,7 +140,7 @@ export default function UserDashboardPage() {
     </button>
 
     <button
-      onClick={() => router.push('/orderhistory')}
+      onClick={() => router.push('/order')}
       className="rounded-pill px-6 py-2 bg-primary text-white font-medium hover:bg-primary/80 transition"
     >
       📦 ดูประวัติคำสั่งซื้อ
