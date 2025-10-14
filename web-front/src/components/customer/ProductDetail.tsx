@@ -16,7 +16,6 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
   const [quantity, setQuantity] = useState<number>(1);
   const [mainImage, setMainImage] = useState<string | null>(null);
 
-  // Reset selections when product changes
   useEffect(() => {
     setSelectedVariantId(null);
     setSelectedOptions({});
@@ -33,16 +32,65 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
 
   const handleAddToCart = () => {
     if (!canAddToCart()) return;
-    
-    let option_value_ids: number[] | undefined;
 
+    // ส่ง variant_option_ids ตาม schema ที่มี cart_item_variant_options
+    let option_value_ids: number[] | undefined;
     if (selectedVariantId) {
-      const selectedVariant = product.product_variants?.find(v => v.variant_id === selectedVariantId);
-      option_value_ids = selectedVariant?.variant_options?.map(vo => vo.variant_option_id);
+      // เก็บ variant_option_id ที่เลือก
+      option_value_ids = Object.values(selectedOptions);
     }
 
     onAddToCart(product.product_id, quantity, selectedVariantId ?? undefined, option_value_ids);
     onClose();
+  };
+
+  const handleOptionClick = (optionId: number, variantOptionId: number) => {
+    const newSelectedOptions = {
+      ...selectedOptions,
+      [optionId]: variantOptionId
+    };
+    setSelectedOptions(newSelectedOptions);
+
+    // หา variant ที่ตรงกับ options ทั้งหมดที่เลือก
+    if (Object.keys(newSelectedOptions).length === product.product_options?.length) {
+      const selectedOptionIds = Object.values(newSelectedOptions);
+      
+      const matchingVariant = product.product_variants?.find(variant => {
+        const variantOptionIds = variant.variant_options.map(vo => vo.variant_option_id);
+        return selectedOptionIds.every(id => variantOptionIds.includes(id));
+      });
+
+      setSelectedVariantId(matchingVariant?.variant_id || null);
+    }
+  };
+
+  // Helper function to get stock for a specific variant option
+  const getStockForOption = (optionId: number, variantOptionId: number): number | string => {
+    // หา variants ที่มี option นี้
+    const variantsWithThisOption = product.product_variants?.filter(v =>
+      v.variant_options.some(vo => vo.variant_option_id === variantOptionId)
+    );
+
+    if (!variantsWithThisOption || variantsWithThisOption.length === 0) return '-';
+
+    // ถ้าเลือก option อื่นๆ แล้ว ให้แสดง stock ของ variant ที่ match
+    const otherSelectedOptions = Object.entries(selectedOptions)
+      .filter(([key]) => Number(key) !== optionId)
+      .map(([, value]) => value);
+
+    if (otherSelectedOptions.length > 0) {
+      const matchingVariant = variantsWithThisOption.find(v => {
+        const variantOptionIds = v.variant_options.map(vo => vo.variant_option_id);
+        return otherSelectedOptions.every(id => variantOptionIds.includes(id));
+      });
+      
+      // ✅ ใช้ total_stock แทน stock_quantity
+      return matchingVariant?.total_stock ?? 0;
+    }
+
+    // ถ้ายังไม่ได้เลือก option อื่น ให้แสดง stock สูงสุด
+    const maxStock = Math.max(...variantsWithThisOption.map(v => v.total_stock || 0));
+    return maxStock;
   };
 
   return (
@@ -51,8 +99,8 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-semibold">{product.product_name}</h2>
-          <button 
-            className="text-gray-500 hover:text-gray-700 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100" 
+          <button
+            className="text-gray-500 hover:text-gray-700 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
             onClick={onClose}
           >
             ✕
@@ -62,7 +110,6 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
           {/* Gallery Section */}
           <div>
-            {/* Main Image */}
             {mainImage ? (
               <img
                 src={mainImage}
@@ -75,14 +122,13 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
               </div>
             )}
 
-            {/* Thumbnails */}
             {product.product_images && product.product_images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {product.product_images.map((img, idx) => (
                   <img
-                    key={idx}
+                    key={`product-img-${product.product_id}-${img.id || img.product_images_id || idx}`}
                     src={img.image_url}
-                    alt={`Thumbnail ${idx + 1}`}
+                    alt={img.image_url}
                     className={`w-full aspect-square object-cover rounded-lg cursor-pointer border-2 transition ${
                       mainImage === img.image_url ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -93,64 +139,39 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
             )}
           </div>
 
-          {/* Product Info Section */}
+          {/* Info */}
           <div className="flex flex-col">
-            {/* Description */}
             <p className="text-gray-600 mb-4">{product.product_description}</p>
 
-            {/* Price */}
             <div className="mb-6">
               <span className="text-3xl font-bold text-green-600">
                 {getDisplayPrice(product, selectedVariantId)}
               </span>
             </div>
 
-            {/* Variant Selector */}
-            {product.product_variants && product.product_variants.length > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-3">เลือกตัวเลือก (Variant):</label>
-                <select
-                  className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={selectedVariantId ?? ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedVariantId(val ? Number(val) : null);
-                  }}
-                >
-                  <option value="">-- เลือกตัวเลือก --</option>
-                  {product.product_variants.map((variant) => (
-                    <option key={variant.variant_id} value={variant.variant_id}>
-                      {variant.sku} - {variant.price ? `฿${variant.price.toLocaleString()}` : 'ติดต่อร้านค้า'} - สต็อก: {variant.stock_quantity ?? '-'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* Product Options */}
             {product.product_options?.map((option) => (
               <div key={option.option_id} className="mb-6">
                 <label className="block text-sm font-medium mb-3">{option.name}:</label>
                 <div className="flex flex-wrap gap-2">
-                  {option.variant_options.map((vo) => (
-                    <button
-                      key={vo.variant_option_id}
-                      type="button"
-                      className={`px-4 py-2 rounded-lg border transition ${
-                        selectedOptions[option.option_id] === vo.variant_option_id
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                      }`}
-                      onClick={() => {
-                        setSelectedOptions(prev => ({ 
-                          ...prev, 
-                          [option.option_id]: vo.variant_option_id 
-                        }));
-                      }}
-                    >
-                      {vo.value}
-                    </button>
-                  ))}
+                  {option.variant_options.map((vo) => {
+                    const stock = getStockForOption(option.option_id, vo.variant_option_id);
+
+                    return (
+                      <button
+                        key={vo.variant_option_id}
+                        type="button"
+                        className={`px-4 py-2 rounded-lg border text-sm transition ${
+                          selectedOptions[option.option_id] === vo.variant_option_id
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                        }`}
+                        onClick={() => handleOptionClick(option.option_id, vo.variant_option_id)}
+                      >
+                        {vo.value} (คงเหลือ: {stock})
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -192,7 +213,7 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
                 onClick={handleAddToCart}
                 disabled={!canAddToCart()}
               >
-                ➕ Add to Cart
+                ➕ เพิ่มลงตะกร้า
               </button>
               <button
                 className="py-3 px-6 rounded-lg border border-gray-400 text-gray-700 font-medium hover:bg-gray-50 transition"
@@ -202,11 +223,8 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
               </button>
             </div>
 
-            {/* Error Message */}
             {!canAddToCart() && (product.product_variants?.length || product.product_options?.length) && (
-              <p className="text-red-500 text-sm mt-3 text-center">
-                กรุณาเลือกตัวเลือกให้ครบถ้วน
-              </p>
+              <p className="text-red-500 text-sm mt-3 text-center">กรุณาเลือกตัวเลือกให้ครบถ้วน</p>
             )}
           </div>
         </div>

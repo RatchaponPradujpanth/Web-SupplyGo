@@ -11,7 +11,7 @@ import {
 import { loadShopProducts } from '@/service/api/loadproduct';
 import { primarypicture } from '@/service/api/setprimarypicture';
 import type { Product } from '@/types/type';
-
+import { loadShopProducts } from '@/service/api/loadproduct';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StoreDashboardPage() {

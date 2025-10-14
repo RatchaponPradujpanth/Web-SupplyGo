@@ -10,8 +10,14 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onSelect, getDisplayPrice }: ProductCardProps) {
-  const mainImage = product.image ?? '/placeholder.png';
-  const hoverImage = product.secondary_images?.[0] ?? mainImage;
+  // ✅ เลือกภาพหลักและภาพ hover จาก product_images
+  const primaryImage = product.product_images?.find(img => img.is_primary);
+  const secondaryImage = product.product_images?.find(img => !img.is_primary);
+  const mainImage = primaryImage?.image_url ?? '/placeholder.png';
+  const hoverImage = secondaryImage?.image_url ?? mainImage;
+
+  // ✅ ดึงชื่อร้านหลายร้านและ join ด้วยคอมม่า
+  const shopNames = product.shop?.map(s => s.shop_name).filter(Boolean).join(", ") ?? 'ไม่ทราบชื่อร้าน';
 
   return (
     <div
@@ -32,10 +38,13 @@ export default function ProductCard({ product, onSelect, getDisplayPrice }: Prod
         />
       </div>
 
-      {/* ชื่อ */}
+      {/* ชื่อสินค้า */}
       <h3 className="font-medium leading-tight line-clamp-2 h-10 overflow-hidden">
         {product.product_name}
       </h3>
+
+      {/* ชื่อร้านหลายร้าน */}
+      <h4 className="text-sm text-gray-600 line-clamp-1">{shopNames}</h4>
 
       {/* ราคา */}
       <div className="mt-2 flex items-center gap-2 text-sm">

@@ -127,7 +127,7 @@ model product_categories {
 }
 
 model product_owners {
-  id         Int      @id @default(autoincrement())
+  product_owners_id         Int      @id @default(autoincrement())
   shop_id    Int
   product_id Int
 
@@ -142,7 +142,6 @@ model products {
   price               Decimal?            @db.Decimal(10, 2)
   category_id         Int?
   status              String?
-  image               String?
   created_date        DateTime?           @default(now()) @db.Timestamp(6)
   updated_date        DateTime?           @default(now()) @db.Timestamp(6)
 
@@ -160,7 +159,7 @@ model products {
 }
 
 model product_images {
-  id         Int      @id @default(autoincrement())
+  product_images_id         Int      @id @default(autoincrement())
   product_id Int
   image_url  String
   is_primary Boolean  @default(false)

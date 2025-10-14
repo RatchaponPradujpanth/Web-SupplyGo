@@ -5,8 +5,10 @@
 // src/types/product.ts
 
 export interface VariantOption {
+  variant_option_id: number;  // ✅ เพิ่ม
   value: string;
   option_name: string;
+  option_id: number;          // ✅ เพิ่ม
 }
 
 export interface ProductBatch {
@@ -21,14 +23,13 @@ export interface ProductVariant {
   variant_id: number;
   sku: string;
   price: number | null;
-  total_stock: number;          // stock ของ variant
-  batches?: ProductBatch[];     // batch ของ variant
-  image: string | null;
-  variant_options: VariantOption[];
+  total_stock: number;          // ✅ รวม quantity จาก batches
+  batches?: ProductBatch[];     
+  variant_options: VariantOption[];  // ✅ เอา image ออก
 }
 
 export interface ProductImage {
-  id: number;
+  product_images_id: number;
   image_url: string;
   is_primary?: boolean;
   sort_order?: number | null;
@@ -39,13 +40,19 @@ export interface Product {
   product_name: string | null;
   product_description: string | null;
   price: number | null;
-  status?: string | null;
   image: string | null;
-  total_stock: number;          // stock ของสินค้าหลัก (ไม่มี variant)
-  batches?: ProductBatch[];     // batch ของสินค้าหลัก
-  product_variants?: ProductVariant[];  // มีหรือไม่มี variant ก็ได้
+  total_stock?: number;
+  shop?: Shop[];
+  shop_name?: string;
+  shop_id?: number;
+  secondary_images?: string[];
+
+  // ✅ เพิ่มพวกนี้
   product_images?: ProductImage[];
-  
+  product_variants?: ProductVariant[];
+  product_options?: ProductOption[];
+  product_batches?: ProductBatch[];
+  category_name?: string | null;
 }
 
 
