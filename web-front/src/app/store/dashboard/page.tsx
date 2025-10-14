@@ -8,6 +8,7 @@ import {
   regisstripe,
   fetchUserRole,
 } from '@/service/apis';
+import { loadShopProducts } from '@/service/api/loadproduct';
 import { primarypicture } from '@/service/api/setprimarypicture';
 import type { Product } from '@/types/type';
 import { loadShopProducts } from '@/service/api/loadproduct';
