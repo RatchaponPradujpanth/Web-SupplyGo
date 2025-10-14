@@ -78,18 +78,11 @@ export default function UserDashboardPage() {
         }
       }
 
-<<<<<<< HEAD
-          if (userRole === 'store') {
-            router.push('/store/dashboard');
-            return;
-          }
-=======
       // ถ้าเป็น store redirect ออกไป
       if (userRole === 'store') {
-        router.push('/dashboard');
+        router.push('/store/dashboard');
         return;
       }
->>>>>>> 2075439981cbf122f1a364e9f4aa6223e1d5dcf8
 
       // โหลด products และ categories (ไม่ว่าจะมี token หรือไม่)
       try {
