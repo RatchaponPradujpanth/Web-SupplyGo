@@ -12,7 +12,6 @@ admindashboardRoute.get(
     const userId = req.user?.user_id;
     const role = req.user?.role;
 
-    console.log("🔹 Incoming request from user:", userId, "role:", role);
 
     try {
       if (!userId) {

@@ -52,7 +52,6 @@ export const authstore = (
   res: Response,
   next: NextFunction
 ): void => {
-  console.log("🔍 authstore - checking user:", req.user);
   
   // ตรวจสอบว่ามี user data หรือไม่
   if (!req.user) {
@@ -85,7 +84,7 @@ export const authadmin = (
   res: Response,
   next: NextFunction
 ) : void => {
-  console.log("authadmin - checking user:", req.user);
+
 
   if (!req.user) {
     console.log("❌ ไม่มี user data");

@@ -46,6 +46,7 @@ export interface Product {
   shop_name?: string;
   shop_id?: number;
   secondary_images?: string[];
+  status : string;
 
   // ✅ เพิ่มพวกนี้
   product_images?: ProductImage[];

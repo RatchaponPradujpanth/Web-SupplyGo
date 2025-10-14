@@ -49,10 +49,13 @@ import paymenthistoryRoute from "./routes/admin/paymenthistoryRoute";
 import allOrderHistoryRoute from "./routes/admin/allOrderHistoryRoute";
 import checkjoingroupRoute from "./routes/group_buying/customer/checkjoingroupRoute";
 import categoryproductRoute from "./routes/categoryproductRoute";
+import updatestatusRoute from "./routes/shop/updatestatusRoute";
+import webhookRoute from "./stripe/stripeWebhook";
 
 // dotenv.config({path:".env"}); // โหลดค่า .env
 
 const app = express();
+app.use('/stripe-webhook', webhookRoute);
 app.use(express.json());
 app.use(cors());
 app.use('/upload', express.static(path.join(__dirname, '../uploads')));
@@ -104,6 +107,8 @@ app.use("/api",paymenthistoryRoute);
 app.use("/api",allOrderHistoryRoute)
 app.use("/api",checkjoingroupRoute)
 app.use("/api",categoryproductRoute)
+app.use("/api",updatestatusRoute);
+
 
 app.listen(5001, () => {
   console.log("Server is running on port 5000");

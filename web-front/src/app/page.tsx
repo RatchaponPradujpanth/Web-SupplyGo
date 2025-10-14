@@ -80,7 +80,7 @@ export default function UserDashboardPage() {
 
       // ถ้าเป็น store redirect ออกไป
       if (userRole === 'store') {
-        router.push('/dashboard');
+        router.push('/store/dashboard');
         return;
       }
 

@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import { authadmin, authenticateToken } from '../../../middleware/authMiddleware';
 
 dotenv.config();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!,);
 
 const approvewithdrawRoute = Router();
 
@@ -20,7 +20,7 @@ approvewithdrawRoute.post(
 
     if (!store_withdrawals_id) {
       res.status(400).json({ success: false, message: "store_withdrawals_id หาย" });
-      return;
+      return
     }
 
     try {
@@ -35,20 +35,21 @@ approvewithdrawRoute.post(
 
       const amountInSatang = withdrawal.points * 100;
 
-      // 🔹 สร้าง PaymentIntent แต่ยังไม่ confirm
+      // 🔹 สร้าง PaymentIntent
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInSatang,
         currency: 'thb',
         description: `ถอนเงินร้าน ${withdrawal.store.shop_name} (withdrawal_id: ${withdrawal.store_withdrawals_id})`,
         transfer_data: { destination: withdrawal.store.stripe_account_id },
         metadata: {
-          withdrawal_id: String(withdrawal.store_withdrawals_id),
+          type: 'withdraw',  // important!
+          store_withdrawals_id: String(withdrawal.store_withdrawals_id),
           shop_id: String(withdrawal.store.shop_id),
           approved_by_user_id: String(adminUserId),
         },
       });
 
-      // ❌ ยังไม่อัปเดตเป็น approved รอ confirm ก่อน
+      // บันทึก paymentIntent.id ไว้จับคู่ webhook
       await prisma.store_withdrawals.update({
         where: { store_withdrawals_id },
         data: { stripe_tx: paymentIntent.id },
@@ -57,15 +58,14 @@ approvewithdrawRoute.post(
       res.status(200).json({
         success: true,
         message: "สร้าง PaymentIntent สำเร็จ รอ admin ใส่บัตรเพื่อ confirm",
-        clientSecret: paymentIntent.client_secret, // ✅ ส่งให้ frontend ไป confirm
-        withdrawal: withdrawal,
+        clientSecret: paymentIntent.client_secret,
+        withdrawal,
       });
     } catch (error: any) {
       console.error("❌ Approve withdrawal failed:", error);
-      res.status(500).json({ success: false, message: error.message || "อนุมัติคำร้องถอนเงินล้มเหลว" });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 );
-
 
 export default approvewithdrawRoute;

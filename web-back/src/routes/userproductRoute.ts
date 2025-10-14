@@ -9,7 +9,7 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
 
   try {
     const foundproduct = await prisma.products.findMany({
-      include: {
+      include: {  
         product_variants: {
           include: {
             variant_options: {
@@ -131,6 +131,7 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
         product_description: prod.product_description,
         price: prod.price ? Number(prod.price) : minVariantPrice,
         image: mainImage,
+        status : prod.status,
         total_stock: productTotalStock, // ✅ stock รวมของ product
         product_images: productImages,
         product_variants: variants,
