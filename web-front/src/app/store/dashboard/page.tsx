@@ -7,8 +7,8 @@ import {
   loadstorename,
   regisstripe,
   fetchUserRole,
-  loadproduct,
 } from '@/service/apis';
+import { loadShopProducts } from '@/service/api/loadproduct';
 import { primarypicture } from '@/service/api/setprimarypicture';
 import type { Product } from '@/types/type';
 
@@ -42,7 +42,7 @@ export default function StoreDashboardPage() {
       setShopId(store.shop_id);
       setStripeConnected(Boolean(store.stripe_account_id));
 
-      const productList = await loadproduct(token);
+      const productList = await loadShopProducts(token);
 
       const fixedProductList: Product[] = productList.map((p: any) => ({
         product_id: p.product_id,

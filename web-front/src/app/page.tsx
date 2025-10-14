@@ -70,7 +70,7 @@ export default function UserDashboardPage() {
           setRole(userRole);
 
           if (userRole === 'store') {
-            router.push('/dashboard');
+            router.push('/store/dashboard');
             return;
           }
 
