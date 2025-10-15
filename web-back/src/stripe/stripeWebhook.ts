@@ -20,7 +20,7 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
   } catch (err: any) {
     console.log('⚠️ Webhook signature verification failed.', err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
+    return
   }
 
   console.log(`💡 Webhook received: ${event.type}`);
@@ -30,15 +30,18 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const metadata = paymentIntent.metadata;
 
-      // ✅ Case 1: Withdraw
+      // 🔥 DEBUG: แสดง metadata ทั้งหมด
+      console.log('📦 Metadata:', JSON.stringify(metadata, null, 2));
+
+      // ✅ Case: Withdraw
       if (metadata.type === 'withdraw') {
         const withdrawalId = metadata.store_withdrawals_id;
         const approvedByUserId = metadata.approved_by_user_id;
 
         if (!withdrawalId || !approvedByUserId) {
-          console.log('❌ Metadata withdrawal_id or approved_by_user_id missing');
+          console.log('❌ Missing withdrawal metadata');
           res.status(400).send('Missing metadata');
-          return;
+          return
         }
 
         await prisma.store_withdrawals.update({
@@ -50,28 +53,26 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
             approved_at: new Date(),
           },
         });
-        console.log('✅ Withdrawal updated to completed');
+        console.log('✅ Withdrawal completed');
       }
 
-      // ✅ Case 2: Order Payment
+      // ✅ Case: Order payment
       else if (metadata.type === 'order') {
         const orderShopId = metadata.order_shop_id;
         const orderId = metadata.order_id;
 
         if (!orderShopId) {
-          console.log('❌ Metadata order_shop_id missing');
+          console.log('❌ Missing order_shop_id');
           res.status(400).send('Missing metadata');
-          return;
+          return
         }
 
-        // อัปเดตสถานะร้านที่จ่ายสำเร็จ
         await prisma.order_shops.update({
           where: { order_shop_id: Number(orderShopId) },
-          data: { status: 'completed'},
+          data: { status: 'completed' },
         });
-        console.log(`✅ OrderShop ${orderShopId} marked as completed`);
+        console.log(`✅ OrderShop ${orderShopId} completed`);
 
-        // ถ้าทุกร้านใน order จ่ายครบ -> ปิด order
         const remaining = await prisma.order_shops.count({
           where: { order_id: Number(orderId), status: { not: 'completed' } },
         });
@@ -81,15 +82,73 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
             where: { order_id: Number(orderId) },
             data: { status: 'completed' },
           });
-          console.log(`✅ Order ${orderId} marked as completed`);
+          console.log(`✅ Order ${orderId} fully completed`);
         }
       }
-    }
-  } catch (err: any) {
-    console.error('❌ Error while processing webhook:', err.message);
-  }
 
-  res.status(200).send({ received: true });
+      // ✅ Case: Topup (FIXED VERSION)
+      else if (metadata.type === 'topup') {
+        const userId = Number(metadata.user_id);
+        const points = Number(metadata.points);
+        const transactionId = paymentIntent.id;
+
+        console.log(`🔍 Processing topup: transactionId=${transactionId}, userId=${userId}, points=${points}`);
+
+        if (!userId || !points) {
+          console.log('❌ Missing topup metadata');
+          res.status(400).send('Missing metadata');
+          return
+        }
+
+        // 🔥 ตรวจสอบว่า transaction มีอยู่ไหม
+        const existingTx = await prisma.point_transactions.findUnique({
+          where: { transaction_id: transactionId },
+        });
+
+        console.log(`📊 Existing transaction:`, existingTx);
+
+        if (existingTx) {
+          // ถ้ามีอยู่แล้ว → UPDATE เฉพาะ status
+          const updated = await prisma.point_transactions.update({
+            where: { transaction_id: transactionId },
+            data: { status: 'succeeded' },
+          });
+          console.log(`✅ Transaction updated:`, updated);
+        } else {
+          // ถ้ายังไม่มี → CREATE ใหม่
+          const created = await prisma.point_transactions.create({
+            data: {
+              transaction_id: transactionId,
+              user_id: userId,
+              points,
+              amount: paymentIntent.amount_received / 100,
+              status: 'succeeded',
+            },
+          });
+          console.log(`✅ Transaction created:`, created);
+        }
+
+        // อัปเดต user points
+        const userPoints = await prisma.user_points.upsert({
+          where: { user_id: userId },
+          update: {
+            points: { increment: points },
+          },
+          create: {
+            user_id: userId,
+            points: points,
+          },
+        });
+
+        console.log(`✅ User ${userId} now has ${userPoints.points} points (+${points})`);
+      }
+    }
+
+    res.status(200).send({ received: true });
+  } catch (err: any) {
+    console.error('❌ Error processing webhook:', err.message);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 export default webhookRoute;

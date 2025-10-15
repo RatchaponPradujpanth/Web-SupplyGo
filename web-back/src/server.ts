@@ -33,7 +33,7 @@ import loadgroupbuyRoute from "./routes/group_buying/loadgroupbuyRoute";
 import admindashboardRoute from "./routes/admin/admindashboardRoute";
 import confirmPaymentRoute from "./routes/order/confirmPaymentRoute";
 import cancelorderRoute from "./routes/order/cancelorder";
-import confirmTopupRoute from "./routes/group_buying/confirmTopupRoute";
+import createTopupRoute from "./routes/group_buying/createTopupRoute";
 import topuppointRoute from "./routes/group_buying/topuppointRoute";
 import creategroupRoute from "./routes/group_buying/shop/creategroupRoute";
 import manageGroupsRoute from "./routes/group_buying/shop/managegroupRoute";
@@ -55,7 +55,7 @@ import webhookRoute from "./stripe/stripeWebhook";
 // dotenv.config({path:".env"}); // โหลดค่า .env
 
 const app = express();
-app.use('/stripe-webhook', webhookRoute);
+app.use('/stripe-webhook', express.raw({ type: 'application/json' }), webhookRoute);
 app.use(express.json());
 app.use(cors());
 app.use('/upload', express.static(path.join(__dirname, '../uploads')));
@@ -91,7 +91,7 @@ app.use("/api",admindashboardRoute);
 app.use("/api",confirmPaymentRoute)
 app.use("/api",cancelorderRoute)
 app.use("/api",createorderRoute);
-app.use("/api",confirmTopupRoute)
+app.use("/api",createTopupRoute)
 app.use("/api",topuppointRoute)
 app.use("/api",creategroupRoute)
 app.use("/api",manageGroupsRoute)
@@ -110,6 +110,6 @@ app.use("/api",categoryproductRoute)
 app.use("/api",updatestatusRoute);
 
 
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
+app.listen(5001, () => {
+  console.log("Server is running on port 5001");
 });
