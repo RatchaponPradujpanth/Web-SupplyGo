@@ -30,13 +30,13 @@ primarypictureRoute.patch('/primary-picture', async (req: Request, res: Response
         });
 
         await prisma.product_images.update({
-            where: {
-                id: imageId
-            },
-            data: {
-                is_primary: true,
-            },
-        });
+  where: {
+    product_images_id: imageId,
+  },
+  data: {
+    is_primary: true,
+  },
+});
         
         console.log('✅ Database operations completed');
         res.json({ message: "อัพเดทรูปหลักแล้ว" });

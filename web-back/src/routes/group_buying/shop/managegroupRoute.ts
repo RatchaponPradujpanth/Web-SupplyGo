@@ -47,7 +47,6 @@ manageGroupsRoute.get(
           product: {
             select: {
               product_name: true,
-              image: true,
               product_images: {
                 select: {
                   image_url: true,
@@ -82,9 +81,7 @@ manageGroupsRoute.get(
 
       const result = groups.map((g) => {
         const primaryImageRelative =
-          g.product.product_images.find((img) => img.is_primary)?.image_url ||
-          g.product.image ||
-          null;
+          g.product.product_images.find((img) => img.is_primary)?.image_url
         const primaryImage = primaryImageRelative
           ? `${protocol}://${host}${primaryImageRelative}`
           : null;

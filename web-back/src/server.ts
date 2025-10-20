@@ -51,6 +51,7 @@ import checkjoingroupRoute from "./routes/group_buying/customer/checkjoingroupRo
 import categoryproductRoute from "./routes/categoryproductRoute";
 import updatestatusRoute from "./routes/shop/updatestatusRoute";
 import webhookRoute from "./stripe/stripeWebhook";
+import grouporderRoute from "./routes/group_buying/shop/grouporderRoute";
 
 // dotenv.config({path:".env"}); // โหลดค่า .env
 
@@ -108,7 +109,7 @@ app.use("/api",allOrderHistoryRoute)
 app.use("/api",checkjoingroupRoute)
 app.use("/api",categoryproductRoute)
 app.use("/api",updatestatusRoute);
-
+app.use("/api",grouporderRoute)
 
 app.listen(5001, () => {
   console.log("Server is running on port 5001");

@@ -69,20 +69,20 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
 
         await prisma.order_shops.update({
           where: { order_shop_id: Number(orderShopId) },
-          data: { status: 'completed' },
+          data: { status: 'paid' },
         });
-        console.log(`✅ OrderShop ${orderShopId} completed`);
+        console.log(`✅ OrderShop ${orderShopId} paid`);
 
         const remaining = await prisma.order_shops.count({
-          where: { order_id: Number(orderId), status: { not: 'completed' } },
+          where: { order_id: Number(orderId), status: { not: 'paid' } },
         });
 
         if (remaining === 0) {
           await prisma.order.update({
             where: { order_id: Number(orderId) },
-            data: { status: 'completed' },
+            data: { status: 'paid' },
           });
-          console.log(`✅ Order ${orderId} fully completed`);
+          console.log(`✅ Order ${orderId} fully paid`);
         }
       }
 

@@ -8,11 +8,12 @@ import {
   regisstripe,
   fetchUserRole,
 } from '@/service/apis';
-import { loadShopProducts } from '@/service/api/loadproduct';
 import { primarypicture } from '@/service/api/setprimarypicture';
 import type { Product } from '@/types/type';
 import { loadShopProducts } from '@/service/api/loadproduct';
-import AddProductForm from '@/components/AddProductForm'; // import component
+import AddProductForm from '@/components/AddProductForm';
+import ShopOrderHistory from '@/components/shop/ShopOrderHistory';
+import GroupOrderList from '@/components/shop/GroupOrderList';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StoreDashboardPage() {
@@ -23,7 +24,8 @@ export default function StoreDashboardPage() {
   const [stripeConnected, setStripeConnected] = useState(false);
   const [primaryImages, setPrimaryImages] = useState<Record<number, string | null>>({});
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'add-product'>('dashboard'); // เพิ่ม state สำหรับจัดการ view
+  const [currentView, setCurrentView] = useState<'dashboard' | 'add-product' | 'orders'|'orders-group'>('dashboard');
+
   const router = useRouter();
 
   const getStockStatusColor = (stock: number) => {
@@ -32,6 +34,7 @@ export default function StoreDashboardPage() {
     return 'bg-green-600';
   };
 
+  // ===== Load store info & products =====
   useEffect(() => {
     const loadData = async () => {
       const token = localStorage.getItem('token');
@@ -139,6 +142,7 @@ export default function StoreDashboardPage() {
     setCurrentView('dashboard');
   };
 
+  // ===== Render =====
   return (
     <div className="min-h-screen bg-bgpage text-textmain px-6 py-8 grid md:grid-cols-4 gap-6">
       {/* Sidebar */}
@@ -147,44 +151,39 @@ export default function StoreDashboardPage() {
           <button
             onClick={() => setCurrentView('dashboard')}
             className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === 'dashboard'
-                ? 'bg-primary text-white'
-                : 'hover:bg-primary/10 hover:text-primary'
+              currentView === 'dashboard' ? 'bg-primary text-white' : 'hover:bg-primary/10 hover:text-primary'
             }`}
           >
             Dashboard
           </button>
           <button
-            onClick={() => router.push('/store-products')}
-            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
-          >
-            Products
-          </button>
-          <button
-            onClick={reloadProducts}
-            disabled={loadingProducts}
-            className={`w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition ${
-              loadingProducts ? 'opacity-50 cursor-not-allowed' : ''
+            onClick={() => setCurrentView('orders')}
+            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+              currentView === 'orders' ? 'bg-primary text-white' : 'hover:bg-primary/10 hover:text-primary'
             }`}
-          >
-            {loadingProducts ? 'กำลังโหลด...' : '🔄 Reload Products'}
-          </button>
-          <button
-            onClick={() => router.push('/store-orders')}
-            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
           >
             Orders
           </button>
           <button
             onClick={() => setCurrentView('add-product')}
             className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === 'add-product'
-                ? 'bg-primary text-white'
-                : 'hover:bg-primary/10 hover:text-primary'
+              currentView === 'add-product' ? 'bg-primary text-white' : 'hover:bg-primary/10 hover:text-primary'
             }`}
           >
             เพิ่มสินค้า
           </button>
+
+            <button
+            onClick={() => setCurrentView('orders-group')}
+            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+              currentView === 'orders-group' ? 'bg-primary text-white' : 'hover:bg-primary/10 hover:text-primary'
+            }`}
+          >
+            ออเดอร์ group
+          </button>
+
+
+
           <button
             onClick={handleLogout}
             className="w-full text-left block px-3 py-2 rounded-pill hover:bg-red-600 hover:text-white transition"
@@ -194,11 +193,10 @@ export default function StoreDashboardPage() {
         </nav>
       </aside>
 
-      {/* Main content */}
+      {/* Main Content */}
       <section className="md:col-span-3 space-y-6">
-        {currentView === 'dashboard' ? (
+        {currentView === 'dashboard' && (
           <>
-            {/* Header */}
             <div className="bg-white rounded-card shadow-card p-6 flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold mb-1">📦 Store Dashboard</h1>
@@ -206,8 +204,7 @@ export default function StoreDashboardPage() {
                   👋 ยินดีต้อนรับคุณ <span className="font-semibold">{username}</span>
                 </p>
                 <p className="text-textmuted">
-                  🏪 ร้าน: <span className="font-semibold">{storeName}</span> | 🆔 Shop ID:{' '}
-                  {shopId}
+                  🏪 ร้าน: <span className="font-semibold">{storeName}</span> | 🆔 Shop ID: {shopId}
                 </p>
               </div>
               <div>
@@ -232,28 +229,23 @@ export default function StoreDashboardPage() {
               </div>
               <div className="bg-white rounded-card shadow-card p-4 text-center">
                 <p className="text-sm text-textmuted">Low Stock Items</p>
-                <p className="text-2xl font-bold">
-                  {products.filter((p) => (p.total_stock ?? 0) <= 5).length}
-                </p>
+                <p className="text-2xl font-bold">{products.filter((p) => (p.total_stock ?? 0) <= 5).length}</p>
               </div>
               <div className="bg-white rounded-card shadow-card p-4 text-center">
                 <p className="text-sm text-textmuted">Hot Deal Items</p>
-                <p className="text-2xl font-bold">
-                  {products.filter((p) => p.status === 'hot').length}
-                </p>
+                <p className="text-2xl font-bold">{products.filter((p) => p.status === 'hot').length}</p>
               </div>
             </div>
 
             {/* Products List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {products.length > 0 ? (
+              {loadingProducts ? (
+                <p className="italic text-textmuted col-span-full text-center py-20">กำลังโหลดสินค้า...</p>
+              ) : products.length > 0 ? (
                 products.map((p) => {
                   const totalStock = p.total_stock ?? 0;
                   return (
-                    <div
-                      key={p.product_id}
-                      className="bg-white rounded-card shadow-card p-4 hover:shadow-xl transition relative"
-                    >
+                    <div key={p.product_id} className="bg-white rounded-card shadow-card p-4 hover:shadow-xl transition relative">
                       {totalStock <= 5 && (
                         <span className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded-full font-semibold shadow">
                           Low Stock
@@ -268,86 +260,35 @@ export default function StoreDashboardPage() {
                         <div className="flex-1">
                           <h2 className="text-xl font-semibold text-primary">{p.product_name}</h2>
                           <p className="text-textmuted mt-1 italic">{p.product_description}</p>
-                          <p className="mt-2 font-bold text-accent">
-                            💰 {p.price != null ? `฿${p.price.toFixed(2)}` : 'N/A'}
-                          </p>
-
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="text-sm font-semibold">รวมสต็อก:</span>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${getStockStatusColor(
-                                totalStock
-                              )}`}
-                            >
-                              {totalStock} ชิ้น
-                            </span>
-                          </div>
-
-                          <div className="mt-1">
-                            <span
-                              className={`text-sm font-medium ${
-                                p.status === 'active'
-                                  ? 'text-green-600'
-                                  : p.status === 'inactive'
-                                  ? 'text-red-500'
-                                  : 'text-gray-500'
-                              }`}
-                            >
-                              {p.status ?? 'ไม่ระบุ'}
-                            </span>
-                          </div>
-
-                          {p.product_variants && p.product_variants.length > 0 && (
-                            <table className="w-full mt-4 text-sm table-auto border border-gray-200 rounded overflow-hidden">
-                              <thead className="bg-bgpage font-semibold">
-                                <tr>
-                                  <th className="border px-2 py-1 text-left">SKU</th>
-                                  <th className="border px-2 py-1 text-left">ราคา</th>
-                                  <th className="border px-2 py-1 text-left">สต็อก</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {p.product_variants.map((v) => (
-                                  <tr
-                                    key={v.variant_id}
-                                    className="odd:bg-white even:bg-bgpage hover:bg-primary/10 transition"
-                                  >
-                                    <td className="border px-2 py-1">{v.sku}</td>
-                                    <td className="border px-2 py-1">
-                                      {v.price != null ? `฿${v.price.toFixed(2)}` : '-'}
-                                    </td>
-                                    <td className="border px-2 py-1">
-                                      <span
-                                        className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${getStockStatusColor(
-                                          v.total_stock
-                                        )}`}
-                                      >
-                                        {v.total_stock}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          )}
+                          <p>💰 {p.price != null ? `฿${Number(p.price).toFixed(2)}` : 'N/A'}</p>
                         </div>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <p className="italic text-textmuted col-span-full text-center py-20">
-                  ยังไม่มีสินค้าในร้าน
-                </p>
+                <p className="italic text-textmuted col-span-full text-center py-20">ยังไม่มีสินค้าในร้าน</p>
               )}
             </div>
           </>
-        ) : (
-          <AddProductForm
-            onSuccess={handleAddProductSuccess}
-            onCancel={() => setCurrentView('dashboard')}
-          />
         )}
+
+        {currentView === 'add-product' && (
+          <AddProductForm onSuccess={handleAddProductSuccess} onCancel={() => setCurrentView('dashboard')} />
+        )}
+
+        {currentView === 'orders' && (
+          <ShopOrderHistory />
+        )}
+
+        {currentView === 'orders-group' && (
+<GroupOrderList
+/>
+        )}
+
+
+
+
       </section>
     </div>
   );

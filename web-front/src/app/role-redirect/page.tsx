@@ -27,6 +27,7 @@ export default function RoleRedirect() {
         }
       })
       .catch(() => {
+        console.log("หน้า fetch role มีปัญหา")
         router.push('/');
       });
   }, [router]);
