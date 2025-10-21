@@ -10,10 +10,11 @@ import {
 } from '@/service/apis';
 import { primarypicture } from '@/service/api/setprimarypicture';
 import type { Product } from '@/types/type';
-import { loadShopProducts } from '@/service/api/loadproduct';
 import AddProductForm from '@/components/AddProductForm';
 import ShopOrderHistory from '@/components/shop/ShopOrderHistory';
 import GroupOrderList from '@/components/shop/GroupOrderList';
+import ShopProductsList from '@/components/shop/ShopProductsList';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StoreDashboardPage() {
@@ -24,7 +25,7 @@ export default function StoreDashboardPage() {
   const [stripeConnected, setStripeConnected] = useState(false);
   const [primaryImages, setPrimaryImages] = useState<Record<number, string | null>>({});
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'add-product' | 'orders'|'orders-group'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'add-product' | 'orders'|'orders-group'|'product'>('dashboard');
 
   const router = useRouter();
 
@@ -54,64 +55,13 @@ export default function StoreDashboardPage() {
       setShopId(store.shop_id);
       setStripeConnected(Boolean(store.stripe_account_id));
 
-      await reloadProducts();
+      
     };
 
     loadData();
   }, [router]);
 
-  const reloadProducts = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-      setLoadingProducts(true);
-      const productList = await loadShopProducts(token);
-
-      const fixedProductList: Product[] = productList.map((p: any) => ({
-        product_id: p.product_id,
-        product_name: p.product_name ?? '',
-        product_description: p.product_description ?? '',
-        price: p.price != null ? Number(p.price) : null,
-        status: p.status ?? '',
-        image: p.image ?? null,
-        total_stock: p.total_stock ?? 0,
-        product_variants: (p.product_variants ?? []).map((v: any) => ({
-          variant_id: v.variant_id,
-          sku: v.sku ?? '',
-          price: v.price != null ? Number(v.price) : null,
-          total_stock: v.total_stock ?? 0,
-          image: v.image ?? null,
-          variant_options: (v.variant_options ?? []).map((vo: any) => ({
-            option_name: vo.option_name ?? '',
-            value: vo.value ?? '',
-          })),
-        })),
-        product_images: (p.product_images ?? []).map((img: any) => ({
-          id: img.id,
-          image_url: img.image_url.startsWith('http')
-            ? img.image_url
-            : `${API_URL}${img.image_url.startsWith('/') ? '' : '/'}${img.image_url}`,
-          is_primary: img.is_primary ?? false,
-          sort_order: img.sort_order ?? null,
-        })),
-      }));
-
-      setProducts(fixedProductList);
-
-      const mapPrimary: Record<number, string | null> = {};
-      fixedProductList.forEach((p) => {
-        const primaryImg =
-          p.product_images?.find((img) => img.is_primary)?.image_url || p.image || null;
-        mapPrimary[p.product_id] = primaryImg;
-      });
-      setPrimaryImages(mapPrimary);
-    } catch (error) {
-      console.error('Failed to reload products:', error);
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
+  
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -138,7 +88,6 @@ export default function StoreDashboardPage() {
   };
 
   const handleAddProductSuccess = async () => {
-    await reloadProducts();
     setCurrentView('dashboard');
   };
 
@@ -156,6 +105,15 @@ export default function StoreDashboardPage() {
           >
             Dashboard
           </button>
+<button
+            onClick={() => setCurrentView('product')}
+            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+              currentView === 'product' ? 'bg-primary text-white' : 'hover:bg-primary/10 hover:text-primary'
+            }`}
+          >
+            คลังสินค้า
+          </button>
+
           <button
             onClick={() => setCurrentView('orders')}
             className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
@@ -237,39 +195,7 @@ export default function StoreDashboardPage() {
               </div>
             </div>
 
-            {/* Products List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {loadingProducts ? (
-                <p className="italic text-textmuted col-span-full text-center py-20">กำลังโหลดสินค้า...</p>
-              ) : products.length > 0 ? (
-                products.map((p) => {
-                  const totalStock = p.total_stock ?? 0;
-                  return (
-                    <div key={p.product_id} className="bg-white rounded-card shadow-card p-4 hover:shadow-xl transition relative">
-                      {totalStock <= 5 && (
-                        <span className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded-full font-semibold shadow">
-                          Low Stock
-                        </span>
-                      )}
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <img
-                          src={primaryImages[p.product_id] ?? undefined}
-                          alt={p.product_name ?? undefined}
-                          className="w-full md:w-48 h-48 object-cover rounded-card border border-gray-200 shadow-md transition-transform hover:scale-105"
-                        />
-                        <div className="flex-1">
-                          <h2 className="text-xl font-semibold text-primary">{p.product_name}</h2>
-                          <p className="text-textmuted mt-1 italic">{p.product_description}</p>
-                          <p>💰 {p.price != null ? `฿${Number(p.price).toFixed(2)}` : 'N/A'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="italic text-textmuted col-span-full text-center py-20">ยังไม่มีสินค้าในร้าน</p>
-              )}
-            </div>
+            
           </>
         )}
 
@@ -282,10 +208,12 @@ export default function StoreDashboardPage() {
         )}
 
         {currentView === 'orders-group' && (
-<GroupOrderList
-/>
+          <GroupOrderList/>
         )}
 
+{        currentView === 'product' && (
+          <ShopProductsList />
+        )}
 
 
 

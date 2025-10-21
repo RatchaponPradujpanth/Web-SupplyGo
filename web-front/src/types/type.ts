@@ -524,6 +524,7 @@ export interface GroupOrderUI {
         email?: string;
       };
       tracking_number?: string;
+      status:string;
       addresses?: {
         firstname: string;
         lastname: string;

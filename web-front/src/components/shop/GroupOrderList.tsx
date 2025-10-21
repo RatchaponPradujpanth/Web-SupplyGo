@@ -34,7 +34,7 @@ export default function GroupOrderList() {
   if (groupOrders.length === 0) return <div>ไม่มีคำสั่งซื้อกลุ่ม</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {groupOrders.map((order) => {
         const group = order.group;
 
@@ -81,35 +81,60 @@ export default function GroupOrderList() {
             <h4 className="mt-4 font-semibold">👥 สมาชิก:</h4>
             {group.members && group.members.length > 0 ? (
               <ul className="list-none space-y-3 mt-2">
-                {group.members.map((member) => (
-                  <li
-                    key={member.group_members_id}
-                    className="border border-gray-200 rounded-md p-3 bg-gray-50"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <span className="font-medium">
-                          {member.user?.username || "ไม่ระบุ"}
-                        </span>
-                        {member.user?.email && (
-                          <span className="text-sm text-gray-600">
-                            {" "}
-                            ({member.user.email})
+                {group.members.map((member) => {
+                  // หา member_order ที่ตรงกับ member นี้
+                  const memberOrder = order.member_orders.find(
+                    (mo) => mo.group_member_id === member.group_members_id
+                  );
+
+                  return (
+                    <li
+                      key={member.group_members_id}
+                      className="border border-gray-200 rounded-md p-3 bg-gray-50"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <span className="font-medium">
+                            {member.user?.username || "ไม่ระบุ"}
                           </span>
-                        )}
-                        <span className="text-xs text-gray-500 ml-2">
-                          เข้าร่วม:{" "}
-                          {new Date(member.joined_at).toLocaleString("th-TH")}
-                        </span>
+                          {member.user?.email && (
+                            <span className="text-sm text-gray-600">
+                              {" "}
+                              ({member.user.email})
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-500 ml-2">
+                            เข้าร่วม:{" "}
+                            {new Date(member.joined_at).toLocaleString("th-TH")}
+                          </span>
+                        </div>
+
+                        {/* 🟦 ฟอร์ม Tracking */}
+                        <TrackingInput
+                          groupMemberId={member.group_members_id}
+                          trackingNumber={memberOrder?.tracking_number || null}
+                          onSave={(newTracking) => {
+                            // อัปเดต state หลังบันทึก
+                            setGroupOrders((prev) =>
+                              prev.map((o) => {
+                                if (o.group_order_id !== order.group_order_id)
+                                  return o;
+                                return {
+                                  ...o,
+                                  member_orders: o.member_orders.map((mo) =>
+                                    mo.group_member_id === member.group_members_id
+                                      ? { ...mo, tracking_number: newTracking, status: "shipped" }
+                                      : mo
+                                  ),
+                                };
+                              })
+                            );
+                          }}
+                        />
                       </div>
-                      {/* 🟦 ฟอร์มกรอก Tracking */}
-                      <TrackingInput
-                        groupMemberId={member.group_members_id}
-                        trackingNumber={member.tracking_number || ""}
-                      />
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="text-gray-500">ยังไม่มีสมาชิก</p>
@@ -138,15 +163,18 @@ export default function GroupOrderList() {
   );
 }
 
-/* ✅ ฟอร์มกรอกเลข Tracking Number */
+/* ✅ TrackingInput แบบ conditional + copy */
 function TrackingInput({
   groupMemberId,
   trackingNumber,
+  onSave,
 }: {
   groupMemberId: number;
-  trackingNumber: string;
+  trackingNumber: string | null;
+  onSave?: (newTracking: string) => void;
 }) {
   const [tracking, setTracking] = useState(trackingNumber || "");
+  const [saved, setSaved] = useState(!!trackingNumber);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -155,17 +183,40 @@ function TrackingInput({
       setMessage("⚠️ กรุณากรอกเลขพัสดุ");
       return;
     }
-
     try {
       setSaving(true);
       await updateTrackingNumber(groupMemberId, tracking);
+      setSaved(true);
       setMessage("✅ บันทึกเรียบร้อยแล้ว");
+      if (onSave) onSave(tracking);
     } catch (err: any) {
       setMessage(`❌ ${err.message || "เกิดข้อผิดพลาด"}`);
     } finally {
       setSaving(false);
     }
   };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(tracking);
+    setMessage("📋 คัดลอกเลขพัสดุแล้ว");
+  };
+
+  if (saved && tracking) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-700">
+          เลขพัสดุ: <span className="font-medium">{tracking}</span>
+        </span>
+        <button
+          onClick={handleCopy}
+          className="bg-gray-200 text-gray-800 px-2 py-1 rounded hover:bg-gray-300 text-xs"
+        >
+          Copy
+        </button>
+        {message && <span className="text-xs text-gray-500">{message}</span>}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -183,9 +234,7 @@ function TrackingInput({
       >
         {saving ? "กำลังบันทึก..." : "บันทึก"}
       </button>
-      {message && (
-        <p className="text-sm text-gray-600">{message}</p>
-      )}
+      {message && <p className="text-sm text-gray-600">{message}</p>}
     </div>
   );
 }

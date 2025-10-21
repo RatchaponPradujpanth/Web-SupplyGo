@@ -18,50 +18,39 @@ grouporderRoute.get("/group-order", authenticateToken, authstore, async (req: Re
 
   try {
     const finalData = await prisma.group_order.findMany({
-      where: {
-        group: { shop_id },
-      },
+  where: {
+    group: { shop_id },
+  },
+  include: {
+    group: {
       include: {
-        group: {
+        product: true,
+        variant: true,
+        members: {
           include: {
-            product: true,
-            variant: true,
-            members: {
-              include: {
-                user: {
-                  select: {
-                    username: true,
-                    email: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        member_orders: {
-          include: {
-            group_member: {
-              include: {
-                user: {
-                  select: {
-                    username: true,
-                    email: true,
-                  },
-                },
-                member_addresses: {
-                  include: { address: true },
-                },
-              },
+            user: {
+              select: { username: true, email: true },
             },
           },
         },
       },
-    });
+    },
+    items: {
+      include: { product: true },
+    },
+    member_orders: {
+  include: {
+    group_member: {
+      include: {
+        user: { select: { username: true, email: true } },
+        member_addresses: { include: { address: true } },
+      },
+    },
+  },
+},
+  },
+});
+
 
     if (!finalData.length) {
       res.status(404).json({ message: "No group orders found for this shop." });
@@ -77,6 +66,7 @@ grouporderRoute.get("/group-order", authenticateToken, authstore, async (req: Re
     res.status(500).json({ message: "Internal Server Error", error });
   }
 });
+
 
 grouporderRoute.patch(
   "/group-order/tracking",

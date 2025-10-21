@@ -9,8 +9,6 @@ export async function updateStatus(product_id: number, status: string) {
       throw new Error("Authentication token is missing");
     }
 
-    // console.log("🔔 API call updateStatus with:", { product_id, status });
-
     const response = await axios.post(
       `${API_URL}/api/update-status`,
       {
