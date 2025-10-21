@@ -459,6 +459,7 @@ export interface GroupMember {
   username?: string;
   email?: string;
   addresses?: Address[];
+  tracking_number :string;
 }
 
 // Interfaces
@@ -522,6 +523,7 @@ export interface GroupOrderUI {
         username: string;
         email?: string;
       };
+      tracking_number?: string;
       addresses?: {
         firstname: string;
         lastname: string;
@@ -554,6 +556,7 @@ export interface GroupOrderUI {
   member_orders: any[];
   status: string;                // pending / completed / cancelled
   total_amount: string;
+  
 }
 
 // ========================

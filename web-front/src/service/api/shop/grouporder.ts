@@ -14,7 +14,6 @@ export const getGrouporder = async (token: string): Promise<GroupOrderUI[]> => {
       }
     );
     
-    console.log("✅ Group Orders Response:", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("❌ Error fetching group orders:", error);

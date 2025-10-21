@@ -1,10 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { GroupOrderUI, GroupBuyingMember } from "@/types/type";
+import { GroupOrderUI } from "@/types/type";
 import { getGrouporder } from "@/service/api/shop/grouporder";
+import { updateTrackingNumber } from "@/service/api/shop/statusgrouporder";
 
 export default function GroupOrderList() {
-  const [groupOrders, setGroupOrders] = useState<GroupOrderUI[]>([]); // ✅ เปลี่ยนเป็น GroupOrderUI
+  const [groupOrders, setGroupOrders] = useState<GroupOrderUI[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +18,7 @@ export default function GroupOrderList() {
           return;
         }
 
-        const res: GroupOrderUI[] = await getGrouporder(token); // ✅ เปลี่ยน type
+        const res: GroupOrderUI[] = await getGrouporder(token);
         console.log("API Response:", res);
         setGroupOrders(res);
       } catch (error) {
@@ -35,17 +36,17 @@ export default function GroupOrderList() {
   return (
     <div className="space-y-4">
       {groupOrders.map((order) => {
-        const group = order.group; // ✅ เข้าถึงข้อมูลผ่าน order.group
-        
+        const group = order.group;
+
         return (
           <div
-            key={order.group_order_id} // ✅ ใช้ group_order_id แทน
+            key={order.group_order_id}
             className="border rounded p-4 shadow-sm bg-white"
           >
             <h2 className="text-lg font-semibold">
               🎉 Order #{order.group_order_id} - {group.group_name}
             </h2>
-            
+
             <div className="mt-2 space-y-1">
               <p>สมาชิก: {group.members?.length || 0}/{group.required_members}</p>
               <p>สินค้าทั้งหมด: {group.total_items} ชิ้น</p>
@@ -79,16 +80,34 @@ export default function GroupOrderList() {
 
             <h4 className="mt-4 font-semibold">👥 สมาชิก:</h4>
             {group.members && group.members.length > 0 ? (
-              <ul className="list-disc list-inside space-y-1">
+              <ul className="list-none space-y-3 mt-2">
                 {group.members.map((member) => (
-                  <li key={member.group_members_id}>
-                    <span className="font-medium">{member.user?.username || "ไม่ระบุ"}</span>
-                    {member.user?.email && (
-                      <span className="text-sm text-gray-600"> ({member.user.email})</span>
-                    )}
-                    <span className="text-xs text-gray-500 ml-2">
-                      เข้าร่วม: {new Date(member.joined_at).toLocaleString("th-TH")}
-                    </span>
+                  <li
+                    key={member.group_members_id}
+                    className="border border-gray-200 rounded-md p-3 bg-gray-50"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="font-medium">
+                          {member.user?.username || "ไม่ระบุ"}
+                        </span>
+                        {member.user?.email && (
+                          <span className="text-sm text-gray-600">
+                            {" "}
+                            ({member.user.email})
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500 ml-2">
+                          เข้าร่วม:{" "}
+                          {new Date(member.joined_at).toLocaleString("th-TH")}
+                        </span>
+                      </div>
+                      {/* 🟦 ฟอร์มกรอก Tracking */}
+                      <TrackingInput
+                        groupMemberId={member.group_members_id}
+                        trackingNumber={member.tracking_number || ""}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -96,15 +115,17 @@ export default function GroupOrderList() {
               <p className="text-gray-500">ยังไม่มีสมาชิก</p>
             )}
 
-            {/* แสดงรายการสินค้า (items) ถ้ามี */}
             {order.items && order.items.length > 0 && (
               <div className="mt-4">
                 <h4 className="font-semibold">📋 รายการสินค้า:</h4>
                 <ul className="mt-2 space-y-2">
                   {order.items.map((item: any) => (
                     <li key={item.group_order_item_id} className="text-sm">
-                      {item.product?.product_name} x {item.quantity} 
-                      <span className="text-gray-600"> (฿{item.price_per_unit}/ชิ้น)</span>
+                      {item.product?.product_name} x {item.quantity}
+                      <span className="text-gray-600">
+                        {" "}
+                        (฿{item.price_per_unit}/ชิ้น)
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -113,6 +134,58 @@ export default function GroupOrderList() {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ✅ ฟอร์มกรอกเลข Tracking Number */
+function TrackingInput({
+  groupMemberId,
+  trackingNumber,
+}: {
+  groupMemberId: number;
+  trackingNumber: string;
+}) {
+  const [tracking, setTracking] = useState(trackingNumber || "");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSave = async () => {
+    if (!tracking.trim()) {
+      setMessage("⚠️ กรุณากรอกเลขพัสดุ");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await updateTrackingNumber(groupMemberId, tracking);
+      setMessage("✅ บันทึกเรียบร้อยแล้ว");
+    } catch (err: any) {
+      setMessage(`❌ ${err.message || "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+      <input
+        type="text"
+        value={tracking}
+        onChange={(e) => setTracking(e.target.value)}
+        placeholder="กรอกเลขพัสดุ..."
+        className="border border-gray-300 rounded-md px-3 py-1.5 w-full sm:w-60 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+      />
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50"
+      >
+        {saving ? "กำลังบันทึก..." : "บันทึก"}
+      </button>
+      {message && (
+        <p className="text-sm text-gray-600">{message}</p>
+      )}
     </div>
   );
 }

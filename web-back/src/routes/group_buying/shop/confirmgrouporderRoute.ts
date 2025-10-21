@@ -92,9 +92,9 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
     const totalAmount = memberCount * (group.points_per_member ?? 0);
 
     // Transaction เพื่อสร้าง order และอัพเดท status พร้อมกัน
-    const result = await prisma.$transaction(async (prisma) => {
+    const result = await prisma.$transaction(async (tx) => {
       // สร้าง group_order
-      const newOrder = await prisma.group_order.create({
+      const newOrder = await tx.group_order.create({
         data: {
           group_buying_id: group.group_buying_id,
           total_amount: totalAmount,
@@ -120,8 +120,20 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
         },
       });
 
+      // ✅ สร้าง group_member_orders สำหรับแต่ละ member
+      for (const member of activeMembers) {
+        await tx.group_member_orders.create({
+          data: {
+            group_order_id: newOrder.group_order_id,
+            group_member_id: member.group_members_id,
+            status: "pending",
+            tracking_number: null // รอกรอกทีหลัง
+          }
+        });
+      }
+
       // อัพเดทสถานะ group_buying เป็น confirmed
-      await prisma.group_buying.update({
+      await tx.group_buying.update({
         where: { group_buying_id },
         data: { 
           status: "confirmed",
@@ -129,12 +141,30 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
         },
       });
 
-      return newOrder;
+      // ✅ ดึงข้อมูล member_orders ที่สร้างเสร็จแล้ว
+      const memberOrders = await tx.group_member_orders.findMany({
+        where: { group_order_id: newOrder.group_order_id },
+        include: {
+          group_member: {
+            include: {
+              user: {
+                select: {
+                  user_id: true,
+                  username: true,
+                  email: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      return { newOrder, memberOrders };
     });
 
     // สร้างข้อมูลสรุปสำหรับ response
     const orderSummary = {
-      order_id: result.group_order_id,
+      order_id: result.newOrder.group_order_id,
       group_buying_id: group.group_buying_id,
       group_name: group.group_name,
       product_name: group.product?.product_name,
@@ -142,8 +172,8 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
       total_amount: totalAmount,
       items_per_member: group.items_per_member,
       total_items: group.items_per_member * memberCount,
-      status: result.status,
-      created_at: result.created_at,
+      status: result.newOrder.status,
+      created_at: result.newOrder.created_at,
       member_details: memberAddresses.map(ma => ({
         user_id: ma.group_member.user.user_id,
         username: ma.group_member.user.username,
@@ -152,12 +182,19 @@ confirmgrouporderRoute.post("/confirm-group-order", authenticateToken, authstore
           phone: ma.address.phone_number,
           full_address: `${ma.address.house_number} ${ma.address.street} ${ma.address.sub_district} ${ma.address.district} ${ma.address.province} ${ma.address.postal_code}`
         }
+      })),
+      member_orders: result.memberOrders.map(mo => ({
+        group_member_order_id: mo.group_member_order_id,
+        user_id: mo.group_member.user.user_id,
+        username: mo.group_member.user.username,
+        status: mo.status,
+        tracking_number: mo.tracking_number
       }))
     };
 
     res.json({
       message: "Group order created successfully",
-      order: result,
+      order: result.newOrder,
       summary: orderSummary
     });
 

@@ -58,23 +58,6 @@ shoporderRoute.get("/shoporderhistory", authenticateToken, authstore, async (req
       },
     });
 
-    const groupOrders = await prisma.group_order.findMany({
-      where: { group: { shop_id: shopId } },
-      include: {
-        group: true,
-        items: { include: { product: { include: { product_images: true } } } },
-        member_orders: {
-          include: {
-            group_member: {
-              include: {
-                user: true,
-                member_addresses: { include: { address: true } },
-              },
-            },
-          },
-        },
-      },
-    });
 
     // แปลง normalOrders ให้รวมรูปภาพ full URL
     const normalOrdersWithImages = normalOrders.map((order) => ({
@@ -96,22 +79,9 @@ shoporderRoute.get("/shoporderhistory", authenticateToken, authstore, async (req
   }),
 }));
 
-    // แปลง groupOrders ให้รวมรูปภาพ full URL
-    const groupOrdersWithImages = groupOrders.map((group) => ({
-      ...group,
-      items: (group.items as any[]).map((item) => ({
-        ...item,
-        product: {
-          ...item.product,
-          product_images: (item.product.product_images as any[]).map((img: any) => ({
-            ...img,
-            image_url: getFullUrl(img.image_url),
-          })),
-        },
-      })),
-    }));
+   
 
-    res.json({ normalOrders: normalOrdersWithImages, groupOrders: groupOrdersWithImages });
+    res.json({ normalOrders: normalOrdersWithImages });
   } catch (error) {
     console.error("❌ Error loading shop orders:", error);
     res.status(500).json({ message: "Internal server error" });
