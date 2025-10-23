@@ -721,3 +721,17 @@ export interface AdminOrderHistoryResponse {
   data: AdminOrderHistoryOrder[];
 }
 
+export interface DailySales {
+  [date: string]: number; // '2025-10-20': 1200
+}
+
+export interface ProductSales {
+  product_id: number;
+  product_name: string | null;
+  quantity_sold: number;
+}
+
+export interface GraphSellResponse {
+  dailySales: DailySales;
+  productSales: ProductSales[];
+}

@@ -222,18 +222,29 @@ export const loadUsername = async (token: string): Promise<string> => {
 
 export const loadstorename = async (
   token: string
-): Promise<{ shop_name: string; shop_id: number; stripe_account_id?: string | null }> => {
+): Promise<{
+  shop_name: string;
+  shop_id: number;
+  stripe_account_id?: string | null;
+  points: number;
+}> => {
   try {
-    console.log("📦 loading store with token:", token); // ตรวจ token
-    const response = await axios.get<{ shop_name: string; shop_id: number }>(
-      `${API_URL}/api/loadstorename`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    console.log("✅ ได้idร้าน:", response.data.shop_id);
+    console.log("📦 loading store with token:", token);
+
+    const response = await axios.get<{
+      shop_name: string;
+      shop_id: number;
+      stripe_account_id?: string | null;
+      points: number;
+    }>(`${API_URL}/api/loadstorename`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // ถ้าอยาก map เป็นชื่ออื่น เช่น pointstore
+    // const data = { ...response.data, pointstore: response.data.points };
+
     return response.data;
   } catch (error) {
     console.error("Load store name error:", error);

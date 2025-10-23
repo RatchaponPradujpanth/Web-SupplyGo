@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "http",
-        hostname: "192.168.1.40",
+        hostname: "192.168.1.48", // 👈 แก้ให้ตรงกับ error ที่ขึ้น
         port: "5001",
         pathname: "/upload/products/**",
       },
@@ -14,3 +14,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

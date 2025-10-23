@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { creategroup, CreateGroupRequest, CreateGroupResponse } from "@/service/api/groupsharing/creategroup";
 import { loadproduct } from "@/service/api/shopproduct";
-import type { Product } from "@/types/product";
+import type { Product } from "@/types/type";
 
 export default function CreateGroupPage() {
   const [products, setProducts] = useState<Product[]>([]);

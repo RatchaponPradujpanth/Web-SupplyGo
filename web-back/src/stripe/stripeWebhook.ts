@@ -58,33 +58,51 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
 
       // ✅ Case: Order payment
       else if (metadata.type === 'order') {
-        const orderShopId = metadata.order_shop_id;
-        const orderId = metadata.order_id;
+  const orderShopId = metadata.order_shop_id;
+  const orderId = metadata.order_id;
 
-        if (!orderShopId) {
-          console.log('❌ Missing order_shop_id');
-          res.status(400).send('Missing metadata');
-          return
-        }
+  if (!orderShopId) {
+    console.log('❌ Missing order_shop_id');
+    res.status(400).send('Missing metadata');
+    return;
+  }
 
-        await prisma.order_shops.update({
-          where: { order_shop_id: Number(orderShopId) },
-          data: { status: 'paid' },
-        });
-        console.log(`✅ OrderShop ${orderShopId} paid`);
+  // ใช้เวลาปัจจุบัน แล้วแปลงเป็น UTC+7
+  const now = new Date();
+  const thailandTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
 
-        const remaining = await prisma.order_shops.count({
-          where: { order_id: Number(orderId), status: { not: 'paid' } },
-        });
+  // อัปเดต order_shops เป็น paid พร้อมบันทึกเวลา
+  await prisma.order_shops.update({
+    where: { order_shop_id: Number(orderShopId) },
+    data: {
+      status: 'paid',
+      order: {
+        update: {
+          status: 'paid',
+          order_date: thailandTime, // เวลาชำระเงินแบบ UTC+7
+        },
+      },
+    },
+  });
+  console.log(`✅ OrderShop ${orderShopId} paid at ${thailandTime.toISOString()}`);
 
-        if (remaining === 0) {
-          await prisma.order.update({
-            where: { order_id: Number(orderId) },
-            data: { status: 'paid' },
-          });
-          console.log(`✅ Order ${orderId} fully paid`);
-        }
-      }
+  // ตรวจสอบว่า order ทั้งหมดจ่ายครบหรือยัง
+  const remaining = await prisma.order_shops.count({
+    where: { order_id: Number(orderId), status: { not: 'paid' } },
+  });
+
+  if (remaining === 0) {
+    await prisma.order.update({
+      where: { order_id: Number(orderId) },
+      data: {
+        status: 'paid',
+        order_date: thailandTime,
+      },
+    });
+    console.log(`✅ Order ${orderId} fully paid at ${thailandTime.toISOString()}`);
+  }
+}
+
 
       // ✅ Case: Topup (FIXED VERSION)
       else if (metadata.type === 'topup') {
