@@ -1,6 +1,5 @@
 import axios, { AxiosError } from "axios";
 
-//export const API_URL = "http://192.168.1.49:5000";  
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -81,7 +80,6 @@ interface CartItem {
 
 
 import type { CartResponse } from "@/types/type";
-import { dot } from "node:test/reporters";
 // interface CartResponse {
 //   cart_id: number | null;
 //   items: CartItem[];
@@ -384,7 +382,7 @@ export const addproduct = async (
     formData.append("variants", JSON.stringify(variants));
     formData.append("batches", JSON.stringify(batches)); // <-- เพิ่มตรงนี้
 
-    const response = await axios.post(`${API_URL}/api/add-product`, formData, {
+    const response = await axios.post(`${API_URL}/api/addproduct`, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
@@ -666,5 +664,171 @@ export const createMultiVendorPayment = async (
   } catch (error: any) {
     const msg = error.response?.data?.message || 'ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้';
     throw new Error(msg);
+  }
+};
+
+// ===== Profile APIs =====
+
+export interface UserProfile {
+  user_id: number;
+  username: string;
+  email: string;
+  phone_number?: string;
+  profile_picture?: string;
+  role: string;
+}
+
+// Get user profile
+export const getUserProfile = async (token: string): Promise<UserProfile> => {
+  try {
+    const response = await axios.get(`${API_URL}/api/profile`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    console.error('Error getting user profile:', error);
+    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถดึงข้อมูลโปรไฟล์ได้');
+  }
+};
+
+// Update user profile
+export const updateUserProfile = async (
+  token: string, 
+  profileData: {
+    username?: string;
+    email?: string;
+    phone_number?: string;
+  }
+): Promise<UserProfile> => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/api/profile`,
+      profileData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    console.error('Error updating user profile:', error);
+    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถอัปเดตโปรไฟล์ได้');
+  }
+};
+
+// Upload profile picture
+export const uploadProfilePicture = async (
+  token: string,
+  file: File
+): Promise<{ profile_picture: string }> => {
+  try {
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+
+    const response = await axios.post(
+      `${API_URL}/api/profile/upload-picture`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    console.error('Error uploading profile picture:', error);
+    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถอัปโหลดรูปโปรไฟล์ได้');
+  }
+};
+
+// Delete address
+export const deleteAddress = async (token: string, addressId: number): Promise<void> => {
+  try {
+    await axios.delete(`${API_URL}/api/address/${addressId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    console.error('Error deleting address:', error);
+    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถลบที่อยู่ได้');
+  }
+};
+
+// Update address
+export const updateAddress = async (
+  token: string,
+  addressId: number,
+  addressData: {
+    firstname: string;
+    lastname: string;
+    phone_number: string;
+    house_number: string;
+    street: string;
+    sub_district: string;
+    district: string;
+    province: string;
+    postal_code: string;
+    address_type: string;
+  }
+): Promise<void> => {
+  try {
+    await axios.put(
+      `${API_URL}/api/address/${addressId}`,
+      { address: addressData },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    console.error('Error updating address:', error);
+    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถอัปเดตที่อยู่ได้');
+  }
+};
+
+// Add new address
+export const addAddress = async (
+  token: string,
+  addressData: {
+    firstname: string;
+    lastname: string;
+    phone_number: string;
+    house_number: string;
+    street: string;
+    sub_district: string;
+    district: string;
+    province: string;
+    postal_code: string;
+    address_type: string;
+  }
+): Promise<void> => {
+  try {
+    await axios.post(
+      `${API_URL}/api/add-address`,
+      { address: addressData },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    const axiosError = error as AxiosError<{ message?: string }>;
+    console.error('Error adding address:', error);
+    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถเพิ่มที่อยู่ได้');
   }
 };

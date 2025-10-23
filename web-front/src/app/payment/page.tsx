@@ -8,24 +8,19 @@ import { useRouter } from 'next/navigation';
 import { loadaddress, createMultiVendorPayment } from '@/service/apis';
 import { savetransaction } from '@/service/api/savetranscation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { updatePaymentStatus} from '@/service/api/updatestatus';
 import { cancelorder } from '@/service/api/cancelorder';
+
 const CARD_ELEMENT_OPTIONS = {
   style: {
     base: {
       color: '#1a202c',
       fontSize: '16px',
       fontFamily: '"Poppins", sans-serif',
-      '::placeholder': {
-        color: '#a0aec0',
-      },
+      '::placeholder': { color: '#a0aec0' },
       iconColor: '#4a5568',
       padding: '12px 14px',
     },
-    invalid: {
-      color: '#e53e3e',
-      iconColor: '#e53e3e',
-    },
+    invalid: { color: '#e53e3e', iconColor: '#e53e3e' },
   },
   hidePostalCode: true,
 };
@@ -44,18 +39,14 @@ interface Address {
   address_type: string;
 }
 
-  export interface OrderItemForFrontend {
-    product_id: number;
-    product_name?: string | null;
-    variant_option?: {
-      value: string;
-      option_name: string;
-      sku: string;
-    } | null;
-    quantity?: number | null;
-    price_per_unit?: number | null;
-    total_price?: number | null;
-  }
+export interface OrderItemForFrontend {
+  product_id: number;
+  product_name?: string | null;
+  variant_option?: { value: string; option_name: string; sku: string } | null;
+  quantity?: number | null;
+  price_per_unit?: number | null;
+  total_price?: number | null;
+}
 
 export interface ShopPaymentIntentForFrontend {
   shop_id: number;
@@ -70,13 +61,7 @@ export interface ShopPaymentIntentForFrontend {
 export interface PaymentResponse {
   message: string;
   order_id: number;
-  order_date: string;
   total_amount: number;
-  user_info: {
-    user_id: number;
-    username: string;
-    email: string;
-  };
   total_payment_intents: number;
   paymentIntents: ShopPaymentIntentForFrontend[];
 }
@@ -95,51 +80,43 @@ function PaymentFormContent() {
   const [addressId, setAddressId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'error' | 'success' | 'info'; text: string } | null>(null);
   const [paidSuccess, setPaidSuccess] = useState(false);
-  const [orderInfo, setOrderInfo] = useState<{
-    total_amount: number;
-    user_info: { username: string; email: string };
-  } | null>(null);
+  const [orderInfo, setOrderInfo] = useState<{ total_amount: number } | null>(null);
 
   useEffect(() => {
-  const loadPaymentFlow = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setMessage({ type: 'error', text: 'ไม่พบโทเค็นผู้ใช้ กรุณาเข้าสู่ระบบ' });
-        return;
+    const loadPaymentFlow = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setMessage({ type: 'error', text: 'ไม่พบโทเค็นผู้ใช้ กรุณาเข้าสู่ระบบ' });
+          return;
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderIdFromUrl = urlParams.get('orderId');
+        const orderIdToSend = orderIdFromUrl ? Number(orderIdFromUrl) : undefined;
+
+        const addressList = await loadaddress(token);
+        if (!addressList || addressList.length === 0) {
+          setMessage({ type: 'error', text: 'ไม่พบข้อมูลที่อยู่ กรุณาเพิ่มที่อยู่จัดส่ง' });
+          return;
+        }
+        setAddresses(addressList);
+        setAddressId(addressList[0].address_id);
+
+        const paymentRes: PaymentResponse = await createMultiVendorPayment(token, orderIdToSend);
+
+        setPaymentList(paymentRes.paymentIntents);
+        setOrderId(paymentRes.order_id);
+        setOrderInfo({ total_amount: paymentRes.total_amount });
+
+        setMessage(null);
+      } catch (error: any) {
+        setMessage({ type: 'error', text: error.message || 'โหลดข้อมูลการชำระเงินล้มเหลว' });
       }
+    };
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const orderIdFromUrl = urlParams.get('orderId');
-      const orderIdToSend = orderIdFromUrl ? Number(orderIdFromUrl) : undefined;
-
-      // โหลดที่อยู่จัดส่ง
-      const addressList = await loadaddress(token);
-      if (!addressList || addressList.length === 0) {
-        setMessage({ type: 'error', text: 'ไม่พบข้อมูลที่อยู่ กรุณาเพิ่มที่อยู่จัดส่ง' });
-        return;
-      }
-      setAddresses(addressList);
-      setAddressId(addressList[0].address_id);
-
-      // เรียก API สร้าง PaymentIntents โดยส่ง orderId เฉพาะเมื่อมี
-      const paymentRes: PaymentResponse = await createMultiVendorPayment(token, orderIdToSend);
-
-      setPaymentList(paymentRes.paymentIntents);
-      setOrderId(paymentRes.order_id);
-      setOrderInfo({
-        total_amount: paymentRes.total_amount,
-        user_info: paymentRes.user_info,
-      });
-
-      setMessage(null);
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'โหลดข้อมูลการชำระเงินล้มเหลว' });
-    }
-  };
-
-  loadPaymentFlow();
-}, []);
+    loadPaymentFlow();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,10 +155,7 @@ function PaymentFormContent() {
         await savetransaction(token, payment.shop_id, payment.order_shop_id, paymentIntent.id);
       }
 
-      const confirmRes = await updatePaymentStatus(token , orderId);
-      if (!confirmRes.success) throw new Error('อัปเดตสถานะคำสั่งซื้อไม่สำเร็จ');
-
-      setMessage({ type: 'success', text: '✅ ชำระเงินสำเร็จและอัปเดตสถานะเรียบร้อย!' });
+      setMessage({ type: 'success', text: '✅ ชำระเงินสำเร็จ! ระบบกำลังรอ webhook เพื่ออัปเดตสถานะ' });
       setPaidSuccess(true);
 
       setTimeout(() => {
@@ -195,55 +169,48 @@ function PaymentFormContent() {
     }
   };
 
-
   const handleCancelOrder = async () => {
-  if (!orderId) {
-    setMessage({ type: 'error', text: 'ไม่พบ Order ID' });
-    return;
-  }
-
-  const confirmCancel = window.confirm('คุณแน่ใจหรือว่าต้องการยกเลิกคำสั่งซื้อนี้?');
-  if (!confirmCancel) return;
-
-  setLoading(true);
-
-  try {
-    const token = localStorage.getItem('token');
-    console.log("Token:", token); // ดูว่า token มีค่าไหม
-    if (!token) throw new Error('ไม่พบ token สำหรับการยืนยันตัวตน');
-
-    console.log("กำลังเรียก cancelorder สำหรับ orderId:", orderId);
-    const cancelRes = await cancelorder(token, orderId);
-    console.log("ผลลัพธ์ cancelorder:", cancelRes);
-
-    if (cancelRes.status === 'cancelled') {
-      console.log("ยกเลิกคำสั่งซื้อสำเร็จ");
-      setMessage({ type: 'success', text: 'ยกเลิกคำสั่งซื้อสำเร็จ' });
-      setPaymentList([]); // ลบรายการชำระเงิน
-    } else {
-      console.warn("ไม่สามารถยกเลิกคำสั่งซื้อได้:", cancelRes);
-      setMessage({ type: 'error', text: 'ไม่สามารถยกเลิกคำสั่งซื้อได้' });
+    if (!orderId) {
+      setMessage({ type: 'error', text: 'ไม่พบ Order ID' });
+      return;
     }
-  } catch (error: any) {
-    setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะยกเลิกคำสั่งซื้อ' });
-  } finally {
-    setLoading(false);
-  }
-};
+
+    const confirmCancel = window.confirm('คุณแน่ใจหรือว่าต้องการยกเลิกคำสั่งซื้อนี้?');
+    if (!confirmCancel) return;
+
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('ไม่พบ token สำหรับการยืนยันตัวตน');
+
+      const cancelRes = await cancelorder(token, orderId);
+
+      if (cancelRes.status === 'cancelled') {
+        setMessage({ type: 'success', text: 'ยกเลิกคำสั่งซื้อสำเร็จ' });
+        setPaymentList([]);
+      } else {
+        setMessage({ type: 'error', text: 'ไม่สามารถยกเลิกคำสั่งซื้อได้' });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะยกเลิกคำสั่งซื้อ' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">💳 ชำระเงิน</h1>
 
       {orderInfo && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h2 className="font-semibold text-gray-700 mb-2">ข้อมูลคำสั่งซื้อ</h2>
-          <p>ผู้สั่งซื้อ: {orderInfo.user_info.username}</p>
-          <p>อีเมล: {orderInfo.user_info.email}</p>
-          <p>ยอดรวม: ฿{orderInfo.total_amount?.toLocaleString() || '0'}</p>
-          <p>จำนวนร้านค้า: {paymentList.length} ร้าน</p>
-        </div>
-      )}
+  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+    <h2 className="font-semibold text-gray-700 mb-2">ข้อมูลคำสั่งซื้อ</h2>
+    <p>ยอดรวม: ฿{orderInfo.total_amount?.toLocaleString() || '0'}</p>
+    <p>จำนวนร้านค้า: {paymentList.length} ร้าน</p>
+  </div>
+)}
+
 
       {paymentList.length > 0 && (
         <div className="mb-6">
@@ -309,10 +276,6 @@ function PaymentFormContent() {
         )}
       </AnimatePresence>
 
-      {!paymentList.length && !message && (
-        <p className="text-center text-gray-500 animate-pulse">⏳ กำลังโหลดข้อมูล...</p>
-      )}
-
       {!paidSuccess && paymentList.length > 0 && (
         <>
           <div className="mb-6">
@@ -351,19 +314,18 @@ function PaymentFormContent() {
                 ? 'กำลังชำระเงิน...'
                 : `ชำระเงิน ฿${paymentList.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}`}
             </button>
-
-            
           </form>
         </>
       )}
+
       <button
-    type="button"
-    onClick={handleCancelOrder}
-    disabled={loading || !orderId}
-    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-md font-semibold"
-  >
-    {loading ? 'กำลังยกเลิก...' : 'ยกเลิกคำสั่งซื้อ'}
-  </button>
+        type="button"
+        onClick={handleCancelOrder}
+        disabled={loading || !orderId}
+        className="flex-1 mt-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-md font-semibold"
+      >
+        {loading ? 'กำลังยกเลิก...' : 'ยกเลิกคำสั่งซื้อ'}
+      </button>
     </div>
   );
 }

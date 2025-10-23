@@ -126,25 +126,24 @@
     products      products[]
   }
 
-  model product_owners {
-    id         Int      @id @default(autoincrement())
-    shop_id    Int
-    product_id Int
+model product_owners {
+  id         Int      @id @default(autoincrement())
+  shop_id    Int
+  product_id Int
 
-    products   products @relation(fields: [product_id], references: [product_id])
-    shops      shops    @relation(fields: [shop_id], references: [shop_id])
-  }
+  products   products @relation(fields: [product_id], references: [product_id])
+  shops      shops    @relation(fields: [shop_id], references: [shop_id])
+}
 
-  model products {
-    product_id          Int                 @id @default(autoincrement())
-    product_name        String?
-    product_description String?
-    price               Decimal?            @db.Decimal(10, 2)
-    category_id         Int?
-    status              String?
-    image               String?
-    created_date        DateTime?           @default(now()) @db.Timestamp(6)
-    updated_date        DateTime?           @default(now()) @db.Timestamp(6)
+model products {
+  product_id          Int                 @id @default(autoincrement())
+  product_name        String?
+  product_description String?
+  price               Decimal?            @db.Decimal(10, 2)
+  category_id         Int?
+  status              String?
+  created_date        DateTime?           @default(now()) @db.Timestamp(6)
+  updated_date        DateTime?           @default(now()) @db.Timestamp(6)
 
     cart_items          cart_items[]
     group_buyings       group_buying[]
@@ -159,15 +158,15 @@
     product_categories  product_categories? @relation(fields: [category_id], references: [category_id])
   }
 
-  model product_images {
-    id         Int      @id @default(autoincrement())
-    product_id Int
-    image_url  String
-    is_primary Boolean  @default(false)
-    sort_order Int?
+model product_images {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  image_url  String
+  is_primary Boolean  @default(false)
+  sort_order Int?
 
-    products   products @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
-  }
+  products   products @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+}
 
   model product_options {
     option_id       Int               @id @default(autoincrement())
@@ -228,6 +227,8 @@
     username           String?                  @unique
     password           String?
     email              String?                  @unique
+    phone_number       String?
+    profile_picture    String?
     registration_date  DateTime?                @default(now()) @db.Timestamp(6)
     role               String?
 

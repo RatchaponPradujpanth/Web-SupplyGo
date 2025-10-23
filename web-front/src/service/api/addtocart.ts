@@ -10,10 +10,10 @@ export async function addtocart(
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      throw new Error("Authentication token is missing");
+      throw new Error("กรุณาเข้าสู่ระบบก่อนทำรายการ");
     }
 
-    //console.log("🔔 API call addtocart with:", { product_id, quantity, variant_id, option_value_id });
+    console.log("🔔 API call addtocart with:", { product_id, quantity, variant_id, option_value_id });
 
     const response = await axios.post(
       `${API_URL}/api/addtocart`, 
@@ -33,11 +33,29 @@ export async function addtocart(
 
     return response.data;
   } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Add to cart failed";
+    const err = error as AxiosError<{ message?: string, error?: string }>;
+    
+    // จัดการกรณี token หมดอายุหรือไม่ถูกต้อง
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.removeItem("token");
+      const tokenError = err.response?.data?.message || "Session หมดอายุ กรุณาเข้าสู่ระบบใหม่";
+      console.error("🔐 Token error:", tokenError);
+      throw new Error(tokenError);
+    }
 
-    console.error("Add to cart error:", errorMsg);
+    // จัดการ error อื่นๆ
+    const errorMsg =
+      err.response?.data?.error || 
+      err.response?.data?.message || 
+      err.message || 
+      "ไม่สามารถเพิ่มสินค้าลงตะกร้าได้";
+
+    console.error("❌ Add to cart error:", {
+      status: err.response?.status,
+      message: errorMsg,
+      data: err.response?.data
+    });
+    
     throw new Error(errorMsg);
   }
 }

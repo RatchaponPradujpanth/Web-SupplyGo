@@ -87,33 +87,42 @@ manageproductsRoute.get("/manageproducts", authenticateToken, authstore, async (
     const host = req.headers.host; // เช่น "localhost:5000"
     const protocol = req.protocol; // เช่น "http" หรือ "https"
 
-    const productsWithFullImageUrls = products.map(prod => ({
-      ...prod,
-      // รูปหลักของสินค้า
-      image: prod.image ? `${protocol}://${host}${prod.image}` : null,
-      
-      // ✅ คำนวณ total_stock สำหรับสินค้าหลัก (สำหรับสินค้าที่ไม่มี variant)
-      total_stock: prod.product_batches.reduce((sum, b) => sum + b.quantity, 0),
-      batches: prod.product_batches, // เก็บ batch info ของสินค้าหลัก
-      
-      product_variants: prod.product_variants.map(variant => ({
-        ...variant,
+    const productsWithFullImageUrls = products.map(prod => {
+      // ✅ คำนวณ total_stock รวมจากทั้ง product batches และ variant batches
+      const productBatchesStock = prod.product_batches.reduce((sum, b) => sum + b.quantity, 0);
+      const variantBatchesStock = prod.product_variants.reduce((sum, variant) => {
+        return sum + variant.product_batches.reduce((vSum, b) => vSum + b.quantity, 0);
+      }, 0);
+      const totalStock = productBatchesStock + variantBatchesStock;
+
+      return {
+        ...prod,
+        // รูปหลักของสินค้า
+        image: prod.image ? `${protocol}://${host}${prod.image}` : null,
         
-        variant_options: variant.variant_options.map(vo => ({
-          value: vo.value,
-          option_name: vo.option.name,
+        // ✅ stock รวมจากทุก batches (ทั้งของ product และ variants)
+        total_stock: totalStock,
+        batches: prod.product_batches, // เก็บ batch info ของสินค้าหลัก
+        
+        product_variants: prod.product_variants.map(variant => ({
+          ...variant,
+          
+          variant_options: variant.variant_options.map(vo => ({
+            value: vo.value,
+            option_name: vo.option.name,
+          })),
+          
+          // คำนวณ total_stock สำหรับ variant
+          total_stock: variant.product_batches.reduce((sum, b) => sum + b.quantity, 0),
+          batches: variant.product_batches, // เก็บ batch info ของ variant
         })),
         
-        // คำนวณ total_stock สำหรับ variant
-        total_stock: variant.product_batches.reduce((sum, b) => sum + b.quantity, 0),
-        batches: variant.product_batches, // เก็บ batch info ของ variant
-      })),
-      
-      product_images: prod.product_images.map(img => ({
-        ...img,
-        image_url: img.image_url ? `${protocol}://${host}${img.image_url}` : null,
-      })),
-    }));
+        product_images: prod.product_images.map(img => ({
+          ...img,
+          image_url: img.image_url ? `${protocol}://${host}${img.image_url}` : null,
+        })),
+      };
+    });
 
     res.status(200).json(productsWithFullImageUrls);
   } catch (error) {

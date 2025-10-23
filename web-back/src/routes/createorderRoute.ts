@@ -28,11 +28,28 @@ const camelToSnake = (item: CartItemCamel) => ({
 });
 
 createorderRoute.post("/create-order", authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  console.log("🔍 Starting create-order process...");
+  console.log("📝 Request body:", JSON.stringify(req.body, null, 2));
+  console.log("👤 User from token:", req.user);
 
   const userId = req.user?.user_id;
   const { addressId, totalAmount, cartItems } = req.body;
 
+  console.log("🔧 Extracted data:", {
+    userId,
+    addressId, 
+    totalAmount,
+    cartItemsLength: cartItems?.length
+  });
+
   if (!userId || !addressId || !cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+    console.error("❌ Missing required data:", {
+      hasUserId: !!userId,
+      hasAddressId: !!addressId,
+      hasCartItems: !!cartItems,
+      isArray: Array.isArray(cartItems),
+      length: cartItems?.length
+    });
     res.status(400).json({ message: "ข้อมูลไม่ครบ หรือ cartItems ไม่ถูกต้อง" });
     return;
   }
@@ -173,9 +190,24 @@ createorderRoute.post("/create-order", authenticateToken, async (req: Request, r
 
     console.log(`🎉 Order created successfully - Order ID: ${result.order_id}`);
     res.status(201).json({ message: "สร้างคำสั่งซื้อสำเร็จ", order_id: result.order_id });
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Create order error:", error);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ" });
+    
+    // Log more detailed error information
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    
+    // Check if it's a Prisma error
+    if (error.code) {
+      console.error("Error code:", error.code);
+    }
+    
+    res.status(500).json({ 
+      message: "เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

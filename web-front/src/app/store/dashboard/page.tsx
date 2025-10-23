@@ -7,11 +7,11 @@ import {
   loadstorename,
   regisstripe,
   fetchUserRole,
-  loadproduct,
 } from '@/service/apis';
 import { primarypicture } from '@/service/api/setprimarypicture';
 import type { Product } from '@/types/type';
-
+import { loadShopProducts } from '@/service/api/loadproduct';
+import AddProductForm from '@/components/AddProductForm'; // import component
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function StoreDashboardPage() {
@@ -21,7 +21,15 @@ export default function StoreDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stripeConnected, setStripeConnected] = useState(false);
   const [primaryImages, setPrimaryImages] = useState<Record<number, string | null>>({});
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'add-product'>('dashboard'); // เพิ่ม state สำหรับจัดการ view
   const router = useRouter();
+
+  const getStockStatusColor = (stock: number) => {
+    if (stock <= 0) return 'bg-red-600';
+    if (stock <= 5) return 'bg-yellow-500';
+    return 'bg-green-600';
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -42,7 +50,19 @@ export default function StoreDashboardPage() {
       setShopId(store.shop_id);
       setStripeConnected(Boolean(store.stripe_account_id));
 
-      const productList = await loadproduct(token);
+      await reloadProducts();
+    };
+
+    loadData();
+  }, [router]);
+
+  const reloadProducts = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      setLoadingProducts(true);
+      const productList = await loadShopProducts(token);
 
       const fixedProductList: Product[] = productList.map((p: any) => ({
         product_id: p.product_id,
@@ -75,7 +95,6 @@ export default function StoreDashboardPage() {
 
       setProducts(fixedProductList);
 
-      // เซ็ต primaryImages
       const mapPrimary: Record<number, string | null> = {};
       fixedProductList.forEach((p) => {
         const primaryImg =
@@ -83,10 +102,12 @@ export default function StoreDashboardPage() {
         mapPrimary[p.product_id] = primaryImg;
       });
       setPrimaryImages(mapPrimary);
-    };
-
-    loadData();
-  }, [router]);
+    } catch (error) {
+      console.error('Failed to reload products:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -101,14 +122,20 @@ export default function StoreDashboardPage() {
       const product = products.find((p) => p.product_id === productId);
       if (!product) return;
 
-      const newPrimaryImageUrl = product.product_images?.find(img => img.id === imageId)?.image_url || null;
+      const newPrimaryImageUrl =
+        product.product_images?.find((img) => img.id === imageId)?.image_url || null;
       if (newPrimaryImageUrl) {
-        setPrimaryImages(prev => ({ ...prev, [productId]: newPrimaryImageUrl }));
+        setPrimaryImages((prev) => ({ ...prev, [productId]: newPrimaryImageUrl }));
       }
     } catch (error) {
       alert('เกิดข้อผิดพลาดในการตั้งรูปหลัก');
       console.error(error);
     }
+  };
+
+  const handleAddProductSuccess = async () => {
+    await reloadProducts();
+    setCurrentView('dashboard');
   };
 
   return (
@@ -117,8 +144,12 @@ export default function StoreDashboardPage() {
       <aside className="md:col-span-1 bg-white rounded-card shadow-card p-4 sticky top-4 h-fit">
         <nav className="space-y-2 text-sm">
           <button
-            onClick={() => router.push('/store-dashboard')}
-            className="w-full text-left block px-3 py-2 rounded-pill bg-primary text-white shadow hover:bg-primary/90 transition"
+            onClick={() => setCurrentView('dashboard')}
+            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+              currentView === 'dashboard'
+                ? 'bg-primary text-white'
+                : 'hover:bg-primary/10 hover:text-primary'
+            }`}
           >
             Dashboard
           </button>
@@ -129,14 +160,27 @@ export default function StoreDashboardPage() {
             Products
           </button>
           <button
+            onClick={reloadProducts}
+            disabled={loadingProducts}
+            className={`w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition ${
+              loadingProducts ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {loadingProducts ? 'กำลังโหลด...' : '🔄 Reload Products'}
+          </button>
+          <button
             onClick={() => router.push('/store-orders')}
             className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
           >
             Orders
           </button>
           <button
-            onClick={() => router.push('/addproduct')}
-            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition"
+            onClick={() => setCurrentView('add-product')}
+            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+              currentView === 'add-product'
+                ? 'bg-primary text-white'
+                : 'hover:bg-primary/10 hover:text-primary'
+            }`}
           >
             เพิ่มสินค้า
           </button>
@@ -151,91 +195,158 @@ export default function StoreDashboardPage() {
 
       {/* Main content */}
       <section className="md:col-span-3 space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-card shadow-card p-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold mb-1">📦 Store Dashboard</h1>
-            <p className="text-textmuted">👋 ยินดีต้อนรับคุณ <span className="font-semibold">{username}</span></p>
-            <p className="text-textmuted">🏪 ร้าน: <span className="font-semibold">{storeName}</span> | 🆔 Shop ID: {shopId}</p>
-          </div>
-          <div>
-            {stripeConnected ? (
-              <p className="text-green-600 font-semibold">✅ เชื่อมต่อ Stripe แล้ว</p>
-            ) : (
-              <button
-                onClick={() => regisstripe(localStorage.getItem('token')!)}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition"
-              >
-                ➕ เชื่อมบัญชี Stripe
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-card shadow-card p-4 text-center">
-            <p className="text-sm text-textmuted">Total Products</p>
-            <p className="text-2xl font-bold">{products.length}</p>
-          </div>
-          <div className="bg-white rounded-card shadow-card p-4 text-center">
-            <p className="text-sm text-textmuted">Low Stock Items</p>
-            <p className="text-2xl font-bold">{products.filter(p => p.total_stock <= 5).length}</p>
-          </div>
-          <div className="bg-white rounded-card shadow-card p-4 text-center">
-            <p className="text-sm text-textmuted">Hot Deal Items</p>
-            <p className="text-2xl font-bold">{products.filter(p => p.status === 'hot').length}</p>
-          </div>
-        </div>
-
-        {/* Products List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {products.length > 0 ? products.map((p) => (
-            <div key={p.product_id} className="bg-white rounded-card shadow-card p-4 hover:shadow-xl transition relative">
-              {p.total_stock <= 5 && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded-full font-semibold shadow">
-                  Low Stock
-                </span>
-              )}
-              <div className="flex flex-col md:flex-row gap-4">
-                <img
-                  src={primaryImages[p.product_id] ?? undefined}
-                  alt={p.product_name ?? undefined}
-                  className="w-full md:w-48 h-48 object-cover rounded-card border border-gray-200 shadow-md transition-transform hover:scale-105"
-                />
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold text-primary">{p.product_name}</h2>
-                  <p className="text-textmuted mt-1 italic">{p.product_description}</p>
-                  <p className="mt-2 font-bold text-accent">💰 {p.price != null ? `฿${p.price.toFixed(2)}` : 'N/A'}</p>
-
-                  {/* Variants */}
-                  {p.product_variants && p.product_variants.length > 0 && (
-                    <table className="w-full mt-4 text-sm table-auto border border-gray-200 rounded">
-                      <thead className="bg-bgpage font-semibold">
-                        <tr>
-                          <th className="border px-2 py-1 text-left">SKU</th>
-                          <th className="border px-2 py-1 text-left">ราคา</th>
-                          <th className="border px-2 py-1 text-left">สต็อก</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {p.product_variants.map((v) => (
-                          <tr key={v.variant_id} className="odd:bg-white even:bg-bgpage hover:bg-primary/10 transition">
-                            <td className="border px-2 py-1">{v.sku}</td>
-                            <td className="border px-2 py-1">{v.price != null ? `฿${v.price.toFixed(2)}` : '-'}</td>
-                            <td className="border px-2 py-1">{v.total_stock}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+        {currentView === 'dashboard' ? (
+          <>
+            {/* Header */}
+            <div className="bg-white rounded-card shadow-card p-6 flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold mb-1">📦 Store Dashboard</h1>
+                <p className="text-textmuted">
+                  👋 ยินดีต้อนรับคุณ <span className="font-semibold">{username}</span>
+                </p>
+                <p className="text-textmuted">
+                  🏪 ร้าน: <span className="font-semibold">{storeName}</span> | 🆔 Shop ID:{' '}
+                  {shopId}
+                </p>
+              </div>
+              <div>
+                {stripeConnected ? (
+                  <p className="text-green-600 font-semibold">✅ เชื่อมต่อ Stripe แล้ว</p>
+                ) : (
+                  <button
+                    onClick={() => regisstripe(localStorage.getItem('token')!)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition"
+                  >
+                    ➕ เชื่อมบัญชี Stripe
+                  </button>
+                )}
               </div>
             </div>
-          )) : (
-            <p className="italic text-textmuted col-span-full text-center py-20">ยังไม่มีสินค้าในร้าน</p>
-          )}
-        </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white rounded-card shadow-card p-4 text-center">
+                <p className="text-sm text-textmuted">Total Products</p>
+                <p className="text-2xl font-bold">{products.length}</p>
+              </div>
+              <div className="bg-white rounded-card shadow-card p-4 text-center">
+                <p className="text-sm text-textmuted">Low Stock Items</p>
+                <p className="text-2xl font-bold">
+                  {products.filter((p) => (p.total_stock ?? 0) <= 5).length}
+                </p>
+              </div>
+              <div className="bg-white rounded-card shadow-card p-4 text-center">
+                <p className="text-sm text-textmuted">Hot Deal Items</p>
+                <p className="text-2xl font-bold">
+                  {products.filter((p) => p.status === 'hot').length}
+                </p>
+              </div>
+            </div>
+
+            {/* Products List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {products.length > 0 ? (
+                products.map((p) => {
+                  const totalStock = p.total_stock ?? 0;
+                  return (
+                    <div
+                      key={p.product_id}
+                      className="bg-white rounded-card shadow-card p-4 hover:shadow-xl transition relative"
+                    >
+                      {totalStock <= 5 && (
+                        <span className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded-full font-semibold shadow">
+                          Low Stock
+                        </span>
+                      )}
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <img
+                          src={primaryImages[p.product_id] ?? undefined}
+                          alt={p.product_name ?? undefined}
+                          className="w-full md:w-48 h-48 object-cover rounded-card border border-gray-200 shadow-md transition-transform hover:scale-105"
+                        />
+                        <div className="flex-1">
+                          <h2 className="text-xl font-semibold text-primary">{p.product_name}</h2>
+                          <p className="text-textmuted mt-1 italic">{p.product_description}</p>
+                          <p className="mt-2 font-bold text-accent">
+                            💰 {p.price != null ? `฿${p.price.toFixed(2)}` : 'N/A'}
+                          </p>
+
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="text-sm font-semibold">รวมสต็อก:</span>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${getStockStatusColor(
+                                totalStock
+                              )}`}
+                            >
+                              {totalStock} ชิ้น
+                            </span>
+                          </div>
+
+                          <div className="mt-1">
+                            <span
+                              className={`text-sm font-medium ${
+                                p.status === 'active'
+                                  ? 'text-green-600'
+                                  : p.status === 'inactive'
+                                  ? 'text-red-500'
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {p.status ?? 'ไม่ระบุ'}
+                            </span>
+                          </div>
+
+                          {p.product_variants && p.product_variants.length > 0 && (
+                            <table className="w-full mt-4 text-sm table-auto border border-gray-200 rounded overflow-hidden">
+                              <thead className="bg-bgpage font-semibold">
+                                <tr>
+                                  <th className="border px-2 py-1 text-left">SKU</th>
+                                  <th className="border px-2 py-1 text-left">ราคา</th>
+                                  <th className="border px-2 py-1 text-left">สต็อก</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {p.product_variants.map((v) => (
+                                  <tr
+                                    key={v.variant_id}
+                                    className="odd:bg-white even:bg-bgpage hover:bg-primary/10 transition"
+                                  >
+                                    <td className="border px-2 py-1">{v.sku}</td>
+                                    <td className="border px-2 py-1">
+                                      {v.price != null ? `฿${v.price.toFixed(2)}` : '-'}
+                                    </td>
+                                    <td className="border px-2 py-1">
+                                      <span
+                                        className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${getStockStatusColor(
+                                          v.total_stock
+                                        )}`}
+                                      >
+                                        {v.total_stock}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="italic text-textmuted col-span-full text-center py-20">
+                  ยังไม่มีสินค้าในร้าน
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <AddProductForm
+            onSuccess={handleAddProductSuccess}
+            onCancel={() => setCurrentView('dashboard')}
+          />
+        )}
       </section>
     </div>
   );

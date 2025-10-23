@@ -69,6 +69,12 @@ export default function Header() {
             <>
               <span className="text-sm font-medium">Hi, {username}</span>
               <button
+                onClick={() => router.push('/profile')}
+                className="rounded-pill px-3 py-2 hover:bg-primary/10 hover:text-primary text-sm"
+              >
+                👤 Profile
+              </button>
+              <button
                 onClick={handleLogout}
                 className="rounded-pill px-3 py-2 border border-gray-200 hover:border-primary/40 hover:text-primary text-sm"
               >

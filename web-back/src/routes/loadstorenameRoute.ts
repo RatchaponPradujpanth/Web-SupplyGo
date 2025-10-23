@@ -15,7 +15,6 @@ loadstorename.get(
   authenticateToken,
   authstore,
   async (req: Request, res: Response): Promise<void> => {
-    console.log("✅ ผ่าน middleware เข้า handler แล้ว");
 
     try {
       //const user = req.user as { user_id: number; shop_id: number; role: string };

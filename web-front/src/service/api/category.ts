@@ -18,12 +18,6 @@ export const getProductsByCategory = async (
   page?: number,
   sort?: string
 ): Promise<Product[]> => {
-  console.log("📤 Sending request to getProductsByCategory with:", {
-    categoryName,
-    page,
-    sort,
-  });
-
   try {
     const response = await axios.get<Product[]>(`${API_URL}/api/products`, {
       params: {

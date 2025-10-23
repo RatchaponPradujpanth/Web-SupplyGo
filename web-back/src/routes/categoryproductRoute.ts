@@ -8,15 +8,21 @@ categoryproductRoute.get('/products', async (req: Request, res: Response) => {
   try {
     const categoryName = req.query.category as string | undefined;
 
-    // สร้างเงื่อนไข filter ตาม category
+    // ✅ ถูกต้องตาม schema (one-to-one relation)
     const whereCondition = categoryName
-      ? { product_categories: { category_name: categoryName } }
+      ? {
+          product_categories: {
+            category_name: categoryName
+          }
+        }
       : {};
+
+    console.log('🔍 Querying with:', { categoryName, whereCondition });
 
     const foundProducts = await prisma.products.findMany({
       where: whereCondition,
       include: {
-        product_categories: true, // join category info
+        product_categories: true,
         product_variants: {
           include: {
             variant_options: {
@@ -27,13 +33,23 @@ categoryproductRoute.get('/products', async (req: Request, res: Response) => {
           },
         },
         product_images: true,
+        product_owners: {
+          include: {
+            shops: {
+              select: {
+                shop_id: true,
+                shop_name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { created_date: 'desc' },
     });
 
-    // หา path รูป full URL
     const host = req.headers.host;
     const protocol = req.protocol;
+
     const getFullUrl = (path?: string | null) => {
       if (!path) return null;
       if (path.startsWith('http')) return path;
@@ -41,11 +57,18 @@ categoryproductRoute.get('/products', async (req: Request, res: Response) => {
     };
 
     const products = foundProducts.map(prod => {
-      const primaryImage = prod.product_images.find(img => img.is_primary);
-      const mainImage = prod.image
-        ? getFullUrl(prod.image)
-        : primaryImage
+      // แปลงรูปภาพทั้งหมดเป็น full URL
+      const productImages = prod.product_images.map((img) => ({
+        ...img,
+        image_url: getFullUrl(img.image_url),
+      }));
+
+      // หา image หลัก
+      const primaryImage = prod.product_images.find((img) => img.is_primary);
+      const mainImage = primaryImage
         ? getFullUrl(primaryImage.image_url)
+        : productImages.length > 0
+        ? productImages[0].image_url
         : null;
 
       // map variants
@@ -64,25 +87,28 @@ categoryproductRoute.get('/products', async (req: Request, res: Response) => {
         .map(v => v.price)
         .filter(p => p !== null) as number[];
       const minVariantPrice =
-        variantPrices.length > 0
-          ? Math.min(...variantPrices)
-          : null;
+        variantPrices.length > 0 ? Math.min(...variantPrices) : null;
 
-      // map product images ให้ full URL
-      const productImages = prod.product_images.map(img => ({
-        ...img,
-        image_url: getFullUrl(img.image_url),
+      // ✅ ส่ง shops เป็น array
+      const shops = prod.product_owners.map(po => ({
+        shop_id: po.shops.shop_id,
+        shop_name: po.shops.shop_name,
       }));
 
       return {
-        ...prod,
+        product_id: prod.product_id,
+        product_name: prod.product_name,
+        product_description: prod.product_description,
         price: prod.price ? Number(prod.price) : minVariantPrice,
         image: mainImage,
-        product_variants: variants,
         product_images: productImages,
+        product_variants: variants,
+        product_categories: prod.product_categories,
+        shop: shops, // ✅ ส่งเป็น array
       };
     });
 
+    console.log(`✅ Found ${products.length} products for category: ${categoryName || 'all'}`);
     res.status(200).json(products);
   } catch (error) {
     console.error('❌ Fetch products failed:', error);

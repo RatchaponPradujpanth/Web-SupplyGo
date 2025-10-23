@@ -5,7 +5,6 @@ import React, { useState } from 'react';
 import { useStripe, useElements, CardElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { createTopupPointPayment } from '@/service/api/groupsharing/topuppoint';
-import { updateTopupStatus } from '@/service/api/groupsharing/confirmtopup';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -67,18 +66,12 @@ function TopupFormContent() {
       if (error) throw new Error(error.message);
 
       if (paymentIntent?.status === 'succeeded') {
-        // 3️⃣ เรียก API confirm-topup เพื่ออัปเดต DB ว่า user ได้ point แล้ว
-        const confirmRes = await updateTopupStatus(token, paymentIntent.id);
-
-        if (confirmRes.success) {
-          setMessage({
-            type: 'success',
-            text: `✅ เติม point สำเร็จ! จำนวน ${confirmRes.pointsAdded ?? points} point`,
-          });
-          setPoints(0);
-        } else {
-          throw new Error(confirmRes.message || 'ไม่สามารถอัปเดตสถานะ point ได้');
-        }
+        // ✅ ไม่ต้องเรียก updateTopupStatus อีก เพราะ webhook จะอัปเดต point ให้
+        setMessage({
+          type: 'success',
+          text: `✅ การชำระเงินสำเร็จ! Point จะถูกอัปเดตโดยอัตโนมัติผ่านระบบ`,
+        });
+        setPoints(0);
       } else {
         throw new Error(`การชำระเงินล้มเหลว: ${paymentIntent?.status}`);
       }
@@ -139,6 +132,7 @@ function TopupFormContent() {
     </div>
   );
 }
+
 
 export default function TopupForm() {
   return (

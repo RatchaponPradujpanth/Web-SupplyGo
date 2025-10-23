@@ -8,12 +8,14 @@ const prisma = new PrismaClient();
 addtocartRoute.post("/addtocart", authenticateToken, async (req: Request, res: Response): Promise<void> => {
   const { product_id, quantity, variant_id, option_value_id } = req.body;
   const userId = req.user?.user_id;
-// console.log("📥 รับข้อมูลจาก client:", {
-//   product_id,
-//   quantity,
-//   variant_id,
-//   option_value_id,
-// });
+  console.log("📥 รับข้อมูลจาก client:", {
+    product_id,
+    quantity,
+    variant_id,
+    option_value_id,
+    userId,
+    body: req.body
+  });
   if (!userId || typeof userId !== "number") {
     res.status(401).json({ error: "ผู้ใช้ไม่ได้เข้าสู่ระบบหรือ user_id ไม่ถูกต้อง" });
     return;
