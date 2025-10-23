@@ -9,7 +9,6 @@ const prisma = new PrismaClient();
 loadstorename.get(
   "/loadstorename",
   (req, res, next) => {
-    console.log("📥 request มาที่ /loadstorename");
     next();
   },
   authenticateToken,
@@ -34,8 +33,6 @@ loadstorename.get(
         
       })
 
-     
-      console.log("🏪 ชื่อร้านที่ดึงได้จาก DB:", storename);
       res.status(200).json(storename);
     } catch (error) {
       console.error("Error loading shopname:", error);

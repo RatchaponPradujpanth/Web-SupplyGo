@@ -365,6 +365,7 @@ export interface GroupBuyingProduct {
   product_id: number;
   product_name?: string | null;
   product_images?: ProductImage[];
+  
 }
 
 export interface GroupBuying {
@@ -425,7 +426,139 @@ export interface GroupBuyingResult {
 }
 
 // ถ้าใช้ `members` ต้องมี type ด้วย
+// export interface GroupOrderUI {
+//   group_order_id: number;      // ✅ ต้องมี เพราะ frontend ใช้
+//   group_buying_id: number;     // ✅ มีแล้ว
+//   total_amount: number;        // ✅ ต้องมี (ถ้า frontend แสดงยอดรวม)
+//   status: string;
+//   created_at: string;
 
+//   // ✅ field แทน `group` เดิม
+//   group: GroupBuying;           // frontend ใช้ order.group.xxx
+
+//   items?: GroupItem[];          // ถ้า frontend render รายการสินค้ากลุ่ม
+//   member_orders?: any[];        // อันนี้ optional
+// }
+
+export interface GroupItem {
+  order_item_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price_per_unit: number;
+  total_price: number;
+  image_url?: string;
+  variant_option?: {
+    option_name: string;
+    value: string;
+  };
+}
+export interface GroupMember {
+  group_members_id: number;
+  joined_at: string;
+  username?: string;
+  email?: string;
+  addresses?: Address[];
+  tracking_number :string;
+}
+
+// Interfaces
+interface NormalOrderUI {
+  order_shop_id: number;
+  order_id: number;
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number?: string;
+  transaction_id?: string;
+  order_date?: string;
+  user_info?: {
+    username?: string;
+    email?: string;
+  };
+  address?: {
+    firstname?: string;
+    lastname?: string;
+    phone_number?: number;
+    house_number?: string;
+    street?: string;
+    sub_district?: string;
+    district?: string;
+    province?: string;
+    postal_code?: number;
+    address_type?: string;
+  };
+  items: {
+    order_item_id: number;
+    product_id: number;
+    product_name: string;
+    quantity: number;
+    price_per_unit: number;
+    total_price: number;
+    image_url?: string;
+    variant_option?: {
+      option_name: string;
+      value: string;
+    };
+  }[];
+}
+
+export interface GroupOrderUI {
+  created_at: string;           // วันที่สร้าง group order
+  group: {
+    group_buying_id: number;
+    group_name: string;
+    description?: string;
+    expire_at?: string;
+    items_per_member: number;
+    required_members: number;
+    total_items: number;
+    status: string;            // confirmed / active / etc
+    members: {
+      group_members_id: number;
+      joined_at: string;
+      left_at?: string | null;
+      user_id: number;
+      user: {
+        username: string;
+        email?: string;
+      };
+      tracking_number?: string;
+      status:string;
+      addresses?: {
+        firstname: string;
+        lastname: string;
+        phone_number: string;
+        house_number: string;
+        street: string;
+        sub_district: string;
+        district: string;
+        province: string;
+        postal_code: string;
+        address_type?: string;
+      }[];
+    }[];
+    product: {
+      product_id: number;
+      product_name: string;
+      product_description?: string;
+      price: string | number;
+      image?: string;
+    };
+    variant?: {
+      variant_id: number;
+      product_id: number;
+      sku: string;
+      price: string | number;
+    };
+  };
+  group_order_id: number;
+  items: any[];                  // list ของ item ภายใน order
+  member_orders: any[];
+  status: string;                // pending / completed / cancelled
+  total_amount: string;
+  
+}
 
 // ========================
 // Admin Dashboard

@@ -50,6 +50,7 @@ import checkjoingroupRoute from "./routes/group_buying/customer/checkjoingroupRo
 import categoryproductRoute from "./routes/categoryproductRoute";
 import updatestatusRoute from "./routes/shop/updatestatusRoute";
 import webhookRoute from "./stripe/stripeWebhook";
+import grouporderRoute from "./routes/group_buying/shop/grouporderRoute";
 import otpRoute from './routes/otpRoute';
 import profileRoute from "./routes/profileRoute";
 
@@ -109,9 +110,7 @@ app.use("/api",allOrderHistoryRoute)
 app.use("/api",checkjoingroupRoute)
 app.use("/api",categoryproductRoute)
 app.use("/api",updatestatusRoute);
-app.use("/api",profileRoute);
 
-app.use('/api', otpRoute);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

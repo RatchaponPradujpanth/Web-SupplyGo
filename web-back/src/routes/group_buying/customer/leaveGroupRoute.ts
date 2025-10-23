@@ -27,12 +27,22 @@ leaveGroupRoute.post("/leave-group", authenticateToken, async (req: Request, res
       });
       if (!member) throw new Error("คุณไม่ได้อยู่ในกลุ่มนี้");
 
-      // 2️⃣ ดึงข้อมูล group เพื่อรู้ shop_id, points_per_member และ required_members
+      // 2️⃣ ดึงข้อมูล group เพื่อรู้ shop_id, points_per_member, required_members, status
       const group = await tx.group_buying.findUnique({
         where: { group_buying_id },
-        select: { shop_id: true, points_per_member: true, required_members: true },
+        select: {
+          shop_id: true,
+          points_per_member: true,
+          required_members: true,
+          status: true,
+        },
       });
       if (!group) throw new Error("ไม่พบกลุ่มนี้");
+
+      // 2.1️⃣ เช็คสถานะกลุ่ม ถ้า confirmed ห้ามออก
+      if (group.status === "confirmed") {
+        throw new Error("ไม่สามารถออกจากกลุ่มได้ เนื่องจากกลุ่มนี้ยืนยันแล้ว");
+      }
 
       // 3️⃣ อัปเดตสมาชิกว่าออกแล้ว
       await tx.group_members.update({
