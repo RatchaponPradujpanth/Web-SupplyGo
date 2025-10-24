@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css"
+import Header from "@/components/header";
 
 export const metadata: Metadata = {
   title: "SupplyGo",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-bgpage text-textmain min-h-screen flex flex-col">
+        <Header />
         {/* อันหลัก */}
         <main className="flex-1">
           {children}

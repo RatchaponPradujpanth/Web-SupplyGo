@@ -53,6 +53,7 @@ import webhookRoute from "./stripe/stripeWebhook";
 import grouporderRoute from "./routes/group_buying/shop/grouporderRoute";
 import otpRoute from './routes/otpRoute';
 import profileRoute from "./routes/profileRoute";
+import searchRoute from "./routes/searchRoute";
 
 dotenv.config();
 
@@ -110,6 +111,9 @@ app.use("/api",allOrderHistoryRoute)
 app.use("/api",checkjoingroupRoute)
 app.use("/api",categoryproductRoute)
 app.use("/api",updatestatusRoute);
+app.use("/api",profileRoute);
+app.use("/api",otpRoute);
+app.use("/api",searchRoute);
 
 
 app.listen(PORT, () => {

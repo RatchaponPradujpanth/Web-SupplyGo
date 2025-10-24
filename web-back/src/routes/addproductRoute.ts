@@ -79,6 +79,33 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       batches: parsedBatches
     });
 
+    // ✅ ตรวจสอบว่าร้านนี้มีสินค้าชื่อซ้ำกันหรือไม่
+    console.log("🔍 Checking for duplicate product name in shop...");
+    const existingProduct = await prisma.product_owners.findFirst({
+      where: {
+        shop_id: shopId,
+        products: {
+          product_name: product_name.trim()
+        }
+      },
+      include: {
+        products: {
+          select: {
+            product_id: true,
+            product_name: true
+          }
+        }
+      }
+    });
+
+    if (existingProduct) {
+      console.error("❌ Product name already exists in this shop");
+      return res.status(409).json({ 
+        message: `สินค้าชื่อ "${product_name}" มีอยู่ในร้านแล้ว`,
+        existing_product_id: existingProduct.products.product_id
+      });
+    }
+
     // สร้างสินค้าใหม่
     console.log("💾 Creating product...");
     try {

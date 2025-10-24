@@ -19,7 +19,7 @@ export default function RoleRedirect() {
         if (role === 'store') {
           router.push('/store/dashboard');
         } else if (role === 'customer') {
-          router.push('/home');
+          router.push('/'); // หน้าแรก (home)
         } else if (role === 'admin') {
           router.push('/admin');
         } else {

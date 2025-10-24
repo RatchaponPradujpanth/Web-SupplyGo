@@ -9,7 +9,6 @@ import { getCategories } from '@/service/api/category';
 import type { Product, Category } from '@/types/type';
 import ProductCard from '@/components/customer/ProductCard';
 import ProductDetail from '@/components/customer/ProductDetail';
-import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
 export default function UserDashboardPage() {
@@ -164,8 +163,6 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-bgpage">
-      <Header />
-
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Hero Banner */}
         <section className="bg-gradient-to-r from-primary to-primary/80 rounded-card shadow-card p-8 md:p-12 mb-8 text-white">

@@ -3,11 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { 
   getUserProfile, 
-  updateUserProfile, 
-  uploadProfilePicture,
   loadaddress,
   addAddress,
   updateAddress,
@@ -36,16 +33,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  
-  // Profile form states
-  const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    phone_number: ''
-  });
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Address form states
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -75,11 +62,6 @@ export default function ProfilePage() {
 
       const userProfile = await getUserProfile(token);
       setProfile(userProfile);
-      setFormData({
-        username: userProfile.username || '',
-        email: userProfile.email || '',
-        phone_number: userProfile.phone_number || ''
-      });
 
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -95,9 +77,9 @@ export default function ProfilePage() {
       if (!token) return;
 
       const addressData = await loadaddress(token);
-      setAddresses(addressData.addresses || []);
-    } catch {
-      console.error('Error loading addresses');
+      setAddresses(addressData || []); // แก้ไข: loadaddress return Address[] โดยตรง
+    } catch (error) {
+      console.error('Error loading addresses:', error);
     }
   }, []);
 
@@ -105,46 +87,6 @@ export default function ProfilePage() {
     loadProfile();
     loadAddresses();
   }, [loadProfile, loadAddresses]);
-
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      // Upload profile picture first if selected
-      if (profilePicture) {
-        const uploadResult = await uploadProfilePicture(token, profilePicture);
-        setProfile(prev => prev ? { ...prev, profile_picture: uploadResult.profile_picture } : null);
-      }
-
-      // Update profile data
-      const updatedProfile = await updateUserProfile(token, formData);
-      setProfile(updatedProfile);
-      
-      setMessage('✅ อัปเดตโปรไฟล์สำเร็จ');
-      setEditMode(false);
-      setProfilePicture(null);
-      setPreviewUrl(null);
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      setMessage('❌ อัปเดตโปรไฟล์ไม่สำเร็จ');
-      setTimeout(() => setMessage(null), 3000);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfilePicture(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,7 +109,7 @@ export default function ProfilePage() {
       resetAddressForm();
       loadAddresses();
       setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
+    } catch {
       setMessage(`❌ ${editingAddress ? 'อัปเดต' : 'เพิ่ม'}ที่อยู่ไม่สำเร็จ`);
       setTimeout(() => setMessage(null), 3000);
     } finally {
@@ -219,7 +161,7 @@ export default function ProfilePage() {
       setMessage('✅ ลบที่อยู่สำเร็จ');
       loadAddresses();
       setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
+    } catch {
       setMessage('❌ ลบที่อยู่ไม่สำเร็จ');
       setTimeout(() => setMessage(null), 3000);
     }
@@ -295,126 +237,38 @@ export default function ProfilePage() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="flex items-start space-x-8">
-                  {/* Profile Picture */}
+                  {/* Profile Icon - ไม่มีรูปโปรไฟล์ */}
                   <div className="flex-shrink-0">
-                    <div className="relative">
-                      <div className="w-32 h-32 rounded-full bg-gray-200 overflow-hidden">
-                        {previewUrl || profile?.profile_picture ? (
-                          <Image
-                            src={previewUrl || `${process.env.NEXT_PUBLIC_API_URL}${profile?.profile_picture}`}
-                            alt="Profile"
-                            width={128}
-                            height={128}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <span className="text-4xl">👤</span>
-                          </div>
-                        )}
-                      </div>
-                      {editMode && (
-                        <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                          📷
-                        </label>
-                      )}
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                      <span className="text-5xl text-white font-bold">
+                        {profile?.username?.charAt(0).toUpperCase() || '�'}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Profile Form */}
+                  {/* Profile Info - แสดงอย่างเดียว ไม่สามารถแก้ไขได้ */}
                   <div className="flex-1">
-                    <form onSubmit={handleProfileUpdate} className="space-y-6">
+                    <div className="space-y-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           ชื่อผู้ใช้
                         </label>
-                        <input
-                          type="text"
-                          value={formData.username}
-                          onChange={(e) => setFormData({...formData, username: e.target.value})}
-                          disabled={!editMode}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
-                        />
+                        <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                          {profile?.username || '-'}
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           อีเมล
                         </label>
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          disabled={!editMode}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
-                        />
+                        <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                          {profile?.email || '-'}
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          เบอร์โทรศัพท์
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.phone_number}
-                          onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                          disabled={!editMode}
-                          placeholder="เช่น 081-234-5678"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          บทบาท
-                        </label>
-                        <input
-                          type="text"
-                          value={profile?.role || ''}
-                          disabled
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                        />
-                      </div>
-
-                      <div className="flex space-x-4">
-                        {!editMode ? (
-                          <button
-                            type="button"
-                            onClick={() => setEditMode(true)}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                          >
-                            ✏️ แก้ไขข้อมูล
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              type="submit"
-                              disabled={saving}
-                              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-                            >
-                              {saving ? '💾 กำลังบันทึก...' : '💾 บันทึก'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditMode(false);
-                                setPreviewUrl(null);
-                                setProfilePicture(null);
-                              }}
-                              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
-                            >
-                              ❌ ยกเลิก
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </form>
+    
+                    </div>
                   </div>
                 </div>
               </motion.div>

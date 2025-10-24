@@ -48,7 +48,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         if (onSuccess) {
           onSuccess();
         } else {
-          router.push('/home'); // default redirect
+          router.push('/'); // redirect ไปหน้าแรก
         }
       }, 2000);
       
