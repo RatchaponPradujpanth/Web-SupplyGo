@@ -196,7 +196,7 @@ export default function UserDashboardPage() {
         {/* Quick Actions */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <button
-            onClick={() => requireLogin(() => router.push('/orderhistory'))}
+            onClick={() => requireLogin(() => router.push('/order'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">📦</div>
@@ -220,15 +220,6 @@ export default function UserDashboardPage() {
             <div className="text-4xl mb-2 group-hover:scale-110 transition">🤝</div>
             <h3 className="font-semibold text-sm md:text-base">Group Buying</h3>
             <p className="text-xs text-textmuted mt-1">Save together</p>
-          </button>
-
-          <button
-            onClick={() => requireLogin(() => router.push('/wishlist'))}
-            className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
-          >
-            <div className="text-4xl mb-2 group-hover:scale-110 transition">❤️</div>
-            <h3 className="font-semibold text-sm md:text-base">Wishlist</h3>
-            <p className="text-xs text-textmuted mt-1">Save favorites</p>
           </button>
         </section>
 
