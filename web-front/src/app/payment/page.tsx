@@ -47,6 +47,18 @@ export interface OrderItemForFrontend {
   price_per_unit?: number | null;
   total_price?: number | null;
 }
+  export interface OrderItemForFrontend {
+    product_id: number;
+    product_name?: string | null;
+    variant_option?: {
+      value: string;
+      option_name: string;
+      sku: string;
+    } | null;
+    quantity?: number | null;
+    price_per_unit?: number | null;
+    total_price?: number | null;
+  }
 
 export interface ShopPaymentIntentForFrontend {
   shop_id: number;

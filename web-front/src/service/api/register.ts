@@ -7,7 +7,7 @@ export const RegisterUser = async (
   password: string,
   email: string,
   role: string,
-): Promise<void> => {
+): Promise<{ message: string; email?: string }> => {
   try {
     const response = await axios.post(`${API_URL}/api/register`, {
       username,
@@ -15,6 +15,7 @@ export const RegisterUser = async (
       email,
       role,
     });
+    return response.data;
   } catch (error: unknown) {
     const err = error as AxiosError<{ message?: string }>;
     const errorMsg =

@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
-// import dotenv from 'dotenv'
+
 //export const API_URL = "http://192.168.1.49:5000";  
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -80,6 +81,7 @@ interface CartItem {
 
 
 import type { CartResponse } from "@/types/type";
+import { dot } from "node:test/reporters";
 // interface CartResponse {
 //   cart_id: number | null;
 //   items: CartItem[];
@@ -193,32 +195,32 @@ export const loadUsername = async (token: string): Promise<string> => {
   }
 };
 
-// export const loadproduct = async (token: string): Promise<Product[]> => {
-//   if (!token) throw new Error("No token provided");
-//   try {
-//     const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
-//   headers: {
-//     Authorization: `Bearer ${token}`,
-//   },
-// });
+export const loadproduct = async (token: string): Promise<Product[]> => {
+  if (!token) throw new Error("No token provided");
+  try {
+    const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-//     console.log("✅ Products fetched:", response.data);
-//     return response.data;
-//   } catch (error: unknown) {
-//     const err = error as AxiosError<{ message?: string }>;
-//     const errorMsg =
-//       err.response?.data?.message || err.message || "Failed to load products";
+    console.log("✅ Products fetched:", response.data);
+    return response.data;
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ message?: string }>;
+    const errorMsg =
+      err.response?.data?.message || err.message || "Failed to load products";
 
-//     // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
-//     if (errorMsg === "No products found") {
-//       console.warn("⚠️ No products found, returning empty list.");
-//       return [];
-//     }
+    // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
+    if (errorMsg === "No products found") {
+      console.warn("⚠️ No products found, returning empty list.");
+      return [];
+    }
 
-//     console.error("Error fetching products:", errorMsg);
-//     throw new Error(errorMsg);
-//   }
-// };
+    console.error("Error fetching products:", errorMsg);
+    throw new Error(errorMsg);
+  }
+};
 
 export const loadstorename = async (
   token: string

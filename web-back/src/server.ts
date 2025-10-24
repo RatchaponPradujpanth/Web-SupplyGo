@@ -1,6 +1,5 @@
-import express from "express";
-import "dotenv/config";
-//import dotenv from 'dotenv'
+import express ,{Request,Response} from "express";
+import dotenv from 'dotenv';
 import loginRoute from "./routes/loginRoute";
 import registerRoute from "./routes/registerRoute";
 import cors from "cors";
@@ -53,6 +52,7 @@ import updatestatusRoute from "./routes/shop/updatestatusRoute";
 import webhookRoute from "./stripe/stripeWebhook";
 import grouporderRoute from "./routes/group_buying/shop/grouporderRoute";
 import graphsellRoute from "./routes/shop/graphsellRoute";
+import otpRoute from './routes/otpRoute';
 
 const PORT = process.env.PORT
 // dotenv.config({path:".env"}); // โหลดค่า .env
