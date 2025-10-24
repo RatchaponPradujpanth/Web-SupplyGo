@@ -16,17 +16,27 @@ import ShopProductsList from "@/components/shop/ShopProductsList";
 import CreateGroupForm from "@/components/shop/CreateGroupForm";
 import ShopGraphDashboard from "@/components/shop/ShopGraphDashboard";
 import WithdrawPage from "@/components/shop/WithdrawForm";
+import ManageGroups from "@/components/shop/ManageGroups";
 
 export default function StoreDashboardPage() {
   const [username, setUsername] = useState("");
   const [storeName, setStoreName] = useState("");
   const [shopId, setShopId] = useState<number | null>(null);
-  const [points, setPoints] = useState(0); // ✅ state สำหรับ points
+  const [points, setPoints] = useState(0); 
   const [products, setProducts] = useState<Product[]>([]);
   const [stripeConnected, setStripeConnected] = useState(false);
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [generalOpen, setGeneralOpen] = useState(false);
 
   const [currentView, setCurrentView] = useState<
-    "dashboard" | "add-product" | "orders" | "orders-group" | "product" | "create-group" | "withdraw"
+    | "dashboard"
+    | "add-product"
+    | "orders"
+    | "orders-group"
+    | "product"
+    | "create-group"
+    | "withdraw"
+    | "my-group"
   >("dashboard");
 
   const [startDate, setStartDate] = useState(() => {
@@ -59,7 +69,7 @@ export default function StoreDashboardPage() {
       const store = await loadstorename(token);
       setStoreName(store.shop_name);
       setShopId(store.shop_id);
-      setPoints(store.points); // ✅ โหลด points จาก backend
+      setPoints(store.points); 
       setStripeConnected(Boolean(store.stripe_account_id));
     };
 
@@ -75,7 +85,6 @@ export default function StoreDashboardPage() {
     setCurrentView("dashboard");
   };
 
-  // 🎨 Dynamic background per view
   const getSectionBg = () => {
     switch (currentView) {
       case "dashboard":
@@ -96,84 +105,140 @@ export default function StoreDashboardPage() {
       {/* Sidebar */}
       <aside className="md:col-span-1 bg-white rounded-card shadow-card p-4 sticky top-4 h-fit">
         <nav className="space-y-2 text-sm">
-          <button
-            onClick={() => setCurrentView("dashboard")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "dashboard"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setCurrentView("product")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "product"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            คลังสินค้า
-          </button>
-          <button
-            onClick={() => setCurrentView("orders")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "orders"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            Orders
-          </button>
-          <button
-            onClick={() => setCurrentView("add-product")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "add-product"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            เพิ่มสินค้า
-          </button>
-          <button
-            onClick={() => setCurrentView("orders-group")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "orders-group"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            ออเดอร์ group
-          </button>
-          <button
-            onClick={() => setCurrentView("create-group")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "create-group"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            สร้างกรุ๊ป
-          </button>
-          <button
-            onClick={() => setCurrentView("withdraw")}
-            className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
-              currentView === "withdraw"
-                ? "bg-primary text-white"
-                : "hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            ถอน point
-          </button>
+          {/* หมวดทั่วไป */}
+          <div className="space-y-2">
+            <button
+              onClick={() => setGeneralOpen(!generalOpen)}
+              className="w-full text-left block px-3 py-2 rounded-pill shadow transition flex justify-between items-center hover:bg-primary/10 hover:text-primary"
+            >
+              <span className="font-medium">ทั่วไป</span>
+              <span
+                className={`transform transition-transform duration-200 ${
+                  generalOpen ? "rotate-90" : ""
+                }`}
+              >
+                ▶
+              </span>
+            </button>
+            
+            {generalOpen && (
+              <div className="pl-4 space-y-2">
+                <button
+                  onClick={() => setCurrentView("dashboard")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "dashboard"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => setCurrentView("product")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "product"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  คลังสินค้า
+                </button>
+                <button
+                  onClick={() => setCurrentView("orders")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "orders"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  Orders
+                </button>
+                <button
+                  onClick={() => setCurrentView("add-product")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "add-product"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  เพิ่มสินค้า
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* หมวด Group Buying */}
+          <div className="space-y-2 mt-4">
+            <button
+              onClick={() => setGroupOpen(!groupOpen)}
+              className="w-full text-left block px-3 py-2 rounded-pill shadow transition flex justify-between items-center hover:bg-primary/10 hover:text-primary"
+            >
+              <span className="font-medium">Group Buying</span>
+              <span
+                className={`transform transition-transform duration-200 ${
+                  groupOpen ? "rotate-90" : ""
+                }`}
+              >
+                ▶
+              </span>
+            </button>
+            
+            {groupOpen && (
+              <div className="pl-4 space-y-2">
+                <button
+                  onClick={() => setCurrentView("orders-group")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "orders-group"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  ออเดอร์ group
+                </button>
+                <button
+                  onClick={() => setCurrentView("create-group")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "create-group"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  สร้างกรุ๊ป
+                </button>
+                <button
+                  onClick={() => setCurrentView("my-group")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "my-group"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  กลุ่มของฉัน
+                </button>
+                <button
+                  onClick={() => setCurrentView("withdraw")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    currentView === "withdraw"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  ถอน point
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-red-600 hover:text-white transition"
+            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-red-600 hover:text-white transition mt-6"
           >
             🚪 Logout
           </button>
         </nav>
       </aside>
+
 
       {/* Main Content */}
       <section
@@ -209,7 +274,6 @@ export default function StoreDashboardPage() {
               </div>
             </div>
 
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white rounded-card shadow-card p-4 text-center">
                 <p className="text-sm text-textmuted">Total Products</p>
@@ -222,12 +286,11 @@ export default function StoreDashboardPage() {
                 </p>
               </div>
               <div className="bg-white rounded-card shadow-card p-4 text-center">
-                <p className="text-sm text-textmuted">Pointของคุณ</p>
-                <p className="text-2xl font-bold">{points}</p> {/* ✅ แสดง points จริง */}
+                <p className="text-sm text-textmuted">Point ของคุณ</p>
+                <p className="text-2xl font-bold">{points}</p>
               </div>
             </div>
 
-            {/* Date Selector */}
             <div className="flex items-center gap-4 mt-4">
               <label>
                 Start Date:
@@ -270,6 +333,7 @@ export default function StoreDashboardPage() {
         {currentView === "product" && <ShopProductsList />}
         {currentView === "create-group" && <CreateGroupForm />}
         {currentView === "withdraw" && <WithdrawPage />}
+        {currentView === "my-group" && <ManageGroups />}
       </section>
     </div>
   );

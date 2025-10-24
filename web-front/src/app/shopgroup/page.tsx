@@ -97,7 +97,7 @@ export default function ManageGroupsPage() {
                     <h3 className="text-sm font-semibold">Members:</h3>
                     <ul className="text-xs text-gray-700 list-disc list-inside max-h-24 overflow-y-auto">
                       {group.members.map((m) => (
-                        <li key={m.id}>
+                        <li key={m.group_members_id}>
                           {m.username} ({m.email})
                         </li>
                       ))}
