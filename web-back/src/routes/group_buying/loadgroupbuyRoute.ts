@@ -25,6 +25,9 @@ loadgroupbuyRoute.get(
           status: true,
           created_at: true,
           shop_id: true,
+          points_per_member: true,      // ✅ เพิ่ม
+          points_per_group: true,        // ✅ เพิ่ม
+          items_per_member: true,        // ✅ เพิ่ม (อาจจะมีประโยชน์)
           shop: { select: { shop_id: true, shop_name: true } },
           product: { include: { product_images: true } },
           members: {
