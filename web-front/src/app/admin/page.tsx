@@ -14,7 +14,6 @@ import type {
 } from "@/types/type";
 
 // Import Components
-import Sidebar from "@/components/admin/sidebar";
 import DashboardStats from "@/components/admin/DashboardStats";
 import RecentOrders from "@/components/admin/RecentOrders";
 import UsersTable from "@/components/admin/UsersTable";
@@ -49,6 +48,10 @@ export default function AdminDashboardPage() {
   >("dashboard");
   const [modalOpen, setModalOpen] = useState(false);
   const [currentWithdrawal, setCurrentWithdrawal] = useState<Withdrawal | null>(null);
+  
+  // ✅ เพิ่ม state สำหรับ collapsible menu
+  const [managementOpen, setManagementOpen] = useState(true);
+  const [financialOpen, setFinancialOpen] = useState(true);
 
   // Fetch Dashboard Data
   useEffect(() => {
@@ -178,53 +181,217 @@ export default function AdminDashboardPage() {
 
   const { dashboard } = data;
 
+  const getSectionBg = () => {
+    switch (activeSidebar) {
+      case "dashboard":
+        return "bg-gray-50";
+      case "payments":
+        return "bg-indigo-50";
+      case "withdraw":
+        return "bg-green-50";
+      default:
+        return "bg-white";
+    }
+  };
+
   return (
-    <div className="bg-bgpage text-textmain min-h-screen">
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 grid md:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <Sidebar activeSidebar={activeSidebar} setActiveSidebar={setActiveSidebar} />
+    <div className="min-h-screen bg-bgpage text-textmain px-6 py-8 grid md:grid-cols-4 gap-6">
+      {/* Sidebar - ปรับให้เหมือน Store Dashboard */}
+      <aside className="md:col-span-1 bg-white rounded-card shadow-card p-4 sticky top-4 h-fit">
+        <div className="mb-6 pb-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-primary">⚙️ Admin Panel</h2>
+          <p className="text-xs text-gray-500 mt-1">ระบบจัดการ</p>
+        </div>
 
-        {/* Main Content */}
-        <section className="md:col-span-3 space-y-6">
-          {/* Dashboard */}
-          {activeSidebar === "dashboard" && (
-            <>
-              <DashboardStats
-                totalUsers={dashboard?.totalUsers ?? 0}
-                totalStores={dashboard?.totalStores ?? 0}
-                totalProducts={dashboard?.totalProducts ?? 0}
-                totalOrders={dashboard?.totalOrders ?? 0}
-              />
-              <RecentOrders orders={dashboard?.recentOrders ?? []} />
-            </>
-          )}
+        <nav className="space-y-2 text-sm">
+          {/* หมวดจัดการระบบ */}
+          <div className="space-y-2">
+            <button
+              onClick={() => setManagementOpen(!managementOpen)}
+              className="w-full text-left block px-3 py-2 rounded-pill shadow transition flex justify-between items-center hover:bg-primary/10 hover:text-primary"
+            >
+              <span className="font-medium">📊 จัดการระบบ</span>
+              <span
+                className={`transform transition-transform duration-200 ${
+                  managementOpen ? "rotate-90" : ""
+                }`}
+              >
+                ▶
+              </span>
+            </button>
+            
+            {managementOpen && (
+              <div className="pl-4 space-y-2">
+                <button
+                  onClick={() => setActiveSidebar("dashboard")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "dashboard"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  🏠 Dashboard
+                </button>
+                <button
+                  onClick={() => setActiveSidebar("users")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "users"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  👥 ผู้ใช้งาน
+                </button>
+                <button
+                  onClick={() => setActiveSidebar("products")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "products"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  📦 สินค้า
+                </button>
+                <button
+                  onClick={() => setActiveSidebar("orders")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "orders"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  🛒 คำสั่งซื้อ
+                </button>
+              </div>
+            )}
+          </div>
 
-          {/* Users */}
-          {activeSidebar === "users" && (
-  <UsersTable users={(dashboard?.allUsers ?? []).map(u => ({
-    ...u,
-    username: u.username ?? "",
-    email: u.email ?? "",
-    role: u.role ?? "",
-    registration_date: u.registration_date ?? "",
-  }))} />
-)}
+          {/* หมวดการเงิน */}
+          <div className="space-y-2 mt-4">
+            <button
+              onClick={() => setFinancialOpen(!financialOpen)}
+              className="w-full text-left block px-3 py-2 rounded-pill shadow transition flex justify-between items-center hover:bg-primary/10 hover:text-primary"
+            >
+              <span className="font-medium">💰 การเงิน</span>
+              <span
+                className={`transform transition-transform duration-200 ${
+                  financialOpen ? "rotate-90" : ""
+                }`}
+              >
+                ▶
+              </span>
+            </button>
+            
+            {financialOpen && (
+              <div className="pl-4 space-y-2">
+                <button
+                  onClick={() => setActiveSidebar("payments")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "payments"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  💳 ประวัติการชำระเงิน
+                </button>
+                <button
+                  onClick={() => setActiveSidebar("withdraw")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "withdraw"
+                      ? "bg-primary text-white"
+                      : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  🏦 คำขอถอนเงิน
+                </button>
+              </div>
+            )}
+          </div>
+        </nav>
+      </aside>
 
-          {/* Products */}
-          {activeSidebar === "products" && <ProductsTable products={products} />}
+      {/* Main Content - ปรับให้มี background สีสันเหมือน Store */}
+      <section
+        className={`md:col-span-3 rounded-card shadow-card p-6 w-full flex flex-col ${getSectionBg()} transition-all duration-300`}
+      >
+        {/* Dashboard */}
+        {activeSidebar === "dashboard" && (
+          <div className="space-y-6">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">📊 Dashboard Overview</h1>
+              <p className="text-sm text-gray-500 mt-1">ภาพรวมระบบทั้งหมด</p>
+            </div>
+            <DashboardStats
+              totalUsers={dashboard?.totalUsers ?? 0}
+              totalStores={dashboard?.totalStores ?? 0}
+              totalProducts={dashboard?.totalProducts ?? 0}
+              totalOrders={dashboard?.totalOrders ?? 0}
+            />
+            <RecentOrders orders={dashboard?.recentOrders ?? []} />
+          </div>
+        )}
 
-          {/* Orders */}
-          {activeSidebar === "orders" && <OrdersList orders={ordersData} />}
+        {/* Users */}
+        {activeSidebar === "users" && (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">👥 จัดการผู้ใช้งาน</h1>
+              <p className="text-sm text-gray-500 mt-1">รายชื่อผู้ใช้งานทั้งหมด</p>
+            </div>
+            <UsersTable users={(dashboard?.allUsers ?? []).map(u => ({
+              ...u,
+              username: u.username ?? "",
+              email: u.email ?? "",
+              role: u.role ?? "",
+              registration_date: u.registration_date ?? "",
+            }))} />
+          </div>
+        )}
 
-          {/* Payments */}
-          {activeSidebar === "payments" && <PaymentsTable paymentData={paymentData} />}
+        {/* Products */}
+        {activeSidebar === "products" && (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">📦 จัดการสินค้า</h1>
+              <p className="text-sm text-gray-500 mt-1">สินค้าทั้งหมดในระบบ</p>
+            </div>
+            <ProductsTable products={products} />
+          </div>
+        )}
 
-          {/* Withdraw Requests */}
-          {activeSidebar === "withdraw" && (
+        {/* Orders */}
+        {activeSidebar === "orders" && (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">🛒 จัดการคำสั่งซื้อ</h1>
+              <p className="text-sm text-gray-500 mt-1">รายการสั่งซื้อทั้งหมด</p>
+            </div>
+            <OrdersList orders={ordersData} />
+          </div>
+        )}
+
+        {/* Payments */}
+        {activeSidebar === "payments" && (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">💳 ประวัติการชำระเงิน</h1>
+              <p className="text-sm text-gray-500 mt-1">รายการชำระเงินทั้งหมด</p>
+            </div>
+            <PaymentsTable paymentData={paymentData} />
+          </div>
+        )}
+
+        {/* Withdraw Requests */}
+        {activeSidebar === "withdraw" && (
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">🏦 คำขอถอนเงิน</h1>
+              <p className="text-sm text-gray-500 mt-1">รายการคำขอถอนเงินที่รออนุมัติ</p>
+            </div>
             <WithdrawalList withdrawals={withdrawals} onApprove={openModal} />
-          )}
-        </section>
-      </main>
+          </div>
+        )}
+      </section>
 
       {/* Payment Modal */}
       {modalOpen && currentWithdrawal && (

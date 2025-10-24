@@ -197,8 +197,8 @@ export default function ProductDetailPage() {
   const getCurrentPrice = () => {
     if (!product) return 0;
 
-    // ถ้ามี variants และเลือกครบแล้ว
-    if (product.product_variants && Object.keys(selectedOptions).length > 0) {
+    // ถ้ามี variants และเลือกครบแล้ว ให้แสดงราคาของ variant ที่เลือก
+    if (product.product_variants && product.product_variants.length > 0 && Object.keys(selectedOptions).length > 0) {
       const matchedVariant = product.product_variants.find(variant => {
         return variant.variant_options.every(opt => 
           selectedOptions[opt.option_name] === opt.value
@@ -207,7 +207,33 @@ export default function ProductDetailPage() {
       if (matchedVariant) return matchedVariant.price;
     }
 
+    // ถ้ามี variants แต่ยังไม่ได้เลือก ให้คืนค่า null เพื่อแสดงช่วงราคา
+    if (product.product_variants && product.product_variants.length > 0) {
+      return null;
+    }
+
     return product.price;
+  };
+
+  const getPriceRange = () => {
+    if (!product || !product.product_variants || product.product_variants.length === 0) {
+      return null;
+    }
+
+    const prices = product.product_variants
+      .map(v => v.price)
+      .filter((p): p is number => p !== null && p !== undefined);
+
+    if (prices.length === 0) return null;
+
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (minPrice === maxPrice) {
+      return formatPrice(minPrice);
+    }
+
+    return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
   };
 
   const formatPrice = (price: number | null | undefined) => {
@@ -341,7 +367,15 @@ export default function ProductDetailPage() {
             <h1 className="text-3xl font-bold text-textmain mb-4">{product.product_name}</h1>
             
             <div className="text-4xl font-bold text-primary mb-6">
-              {formatPrice(getCurrentPrice())}
+              {(() => {
+                const currentPrice = getCurrentPrice();
+                // ถ้ามี variants แต่ยังไม่ได้เลือก แสดงช่วงราคา
+                if (currentPrice === null) {
+                  return getPriceRange();
+                }
+                // ถ้าเลือกแล้ว หรือไม่มี variants แสดงราคาปกติ
+                return formatPrice(currentPrice);
+              })()}
             </div>
 
             {/* Options */}

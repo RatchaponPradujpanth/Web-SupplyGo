@@ -257,11 +257,6 @@ export default function Header() {
                         className="w-full p-3 hover:bg-gray-50 transition text-left border-b border-gray-50 last:border-0"
                       >
                         <p className="font-medium text-sm text-gray-800">{product.product_name}</p>
-                        {product.price && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            ฿{product.price.toLocaleString()}
-                          </p>
-                        )}
                       </button>
                     ))}
                   </div>
