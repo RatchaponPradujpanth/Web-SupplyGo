@@ -37,7 +37,6 @@ cartSummaryRoute.get("/cartsummary", authenticateToken, async (req: Request, res
     products: {
       select: {
         product_name: true,
-        image: true, // รูปหลักของสินค้า
       },
     },
     shops: {
@@ -98,7 +97,6 @@ cartSummaryRoute.get("/cartsummary", authenticateToken, async (req: Request, res
             total_price: Number(item.quantity) * Number(item.price_per_unit),
             product_id: item.product_id,
             product_name: item.products.product_name,
-            image: item.products.image,
             shop_id: item.shops.shop_id,
             shop_name: item.shops.shop_name,
             variant_id: item.variant_id, // เพิ่ม variant_id

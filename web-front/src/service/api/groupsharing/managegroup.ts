@@ -1,12 +1,12 @@
 import { AxiosError } from "axios";
 import axios from "axios";
-import type { GroupBuyingResult } from "@/types/type";
+import type { GroupOrderResponse } from "@/types/type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface ManageGroupsResponse {
   store_balance: number;
-  groups: GroupBuyingResult[];
+  groups: GroupOrderResponse[];
 }
 
 export const managegroup = async (token: string): Promise<ManageGroupsResponse> => {

@@ -48,7 +48,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         if (onSuccess) {
           onSuccess();
         } else {
-          router.push('/dashboard'); // default redirect
+          router.push('/home'); // default redirect
         }
       }, 2000);
       

@@ -5,121 +5,127 @@ import { PrismaClient } from "@prisma/client";
 const manageproductsRoute = Router();
 const prisma = new PrismaClient();
 
-manageproductsRoute.get("/manageproducts", authenticateToken, authstore, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const shopId = req.user?.shop_id;
-    if (!shopId) {
-      res.status(400).json({ message: "shop_id ไม่ถูกต้อง" });
-      return;
-    }
+manageproductsRoute.get(
+  "/manageproducts",
+  authenticateToken,
+  authstore,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const shopId = req.user?.shop_id;
+      if (!shopId) {
+        res.status(400).json({ message: "shop_id ไม่ถูกต้อง" });
+        return;
+      }
 
-    // ดึงข้อมูลสินค้าของร้านที่ login มา พร้อมข้อมูล variant, options, images, batches
-    const products = await prisma.products.findMany({
-      where: {
-        product_owners: {
-          some: {
-            shop_id: shopId,
+      const products = await prisma.products.findMany({
+        where: {
+          product_owners: {
+            some: { shop_id: shopId },
           },
         },
-      },
-      select: {
-        product_id: true,
-        product_name: true,
-        product_description: true,
-        price: true,
-        status: true,
-        image: true, // รูปหลักจาก products table
-        // ✅ เพิ่ม product_batches สำหรับสินค้าที่ไม่มี variant
-        product_batches: {
-          select: {
-            batch_id: true,
-            batch_number: true,
-            manufactured_date: true,
-            expiry_date: true,
-            quantity: true,
-          },
-        },
-        product_variants: {
-          select: {
-            variant_id: true,
-            sku: true,
-            price: true,
-            // ดึง batches ของ variant
-            product_batches: {
-              select: {
-                batch_id: true,
-                batch_number: true,
-                manufactured_date: true,
-                expiry_date: true,
-                quantity: true,
-              },
+        select: {
+          product_id: true,
+          product_name: true,
+          product_description: true,
+          price: true,
+          status: true,
+          product_batches: {
+            select: {
+              batch_id: true,
+              batch_number: true,
+              manufactured_date: true,
+              expiry_date: true,
+              quantity: true,
             },
-            variant_options: {
-              select: {
-                value: true,
-                option: {
-                  select: {
-                    name: true,
+          },
+          product_variants: {
+            select: {
+              variant_id: true,
+              sku: true,
+              price: true,
+              product_batches: {
+                select: {
+                  batch_id: true,
+                  batch_number: true,
+                  manufactured_date: true,
+                  expiry_date: true,
+                  quantity: true,
+                },
+              },
+              variant_options: {
+                select: {
+                  value: true,
+                  option: {
+                    select: { name: true },
                   },
                 },
               },
             },
           },
-        },
-        product_options: {
-          select: {
-            option_id: true,
-            name: true,
+          product_options: {
+            select: {
+              option_id: true,
+              name: true,
+            },
+          },
+          product_images: {
+            select: {
+              product_images_id: true,
+              image_url: true,
+              is_primary: true,
+              sort_order: true,
+            },
           },
         },
-        product_images: {
-          select: {
-            id: true,
-            image_url: true,
-            is_primary: true,
-            sort_order: true,
-          },
-        },
-      },
-    });
+      });
 
-    // สร้าง URL รูปภาพให้สมบูรณ์ (ถ้าเก็บเป็น relative path)
-    const host = req.headers.host; // เช่น "localhost:5000"
-    const protocol = req.protocol; // เช่น "http" หรือ "https"
+      const host = req.headers.host;
+      const protocol = req.protocol;
 
-    const productsWithFullImageUrls = products.map(prod => ({
-      ...prod,
-      // รูปหลักของสินค้า
-      image: prod.image ? `${protocol}://${host}${prod.image}` : null,
-      
-      // ✅ คำนวณ total_stock สำหรับสินค้าหลัก (สำหรับสินค้าที่ไม่มี variant)
-      total_stock: prod.product_batches.reduce((sum, b) => sum + b.quantity, 0),
-      batches: prod.product_batches, // เก็บ batch info ของสินค้าหลัก
-      
-      product_variants: prod.product_variants.map(variant => ({
-        ...variant,
-        
-        variant_options: variant.variant_options.map(vo => ({
-          value: vo.value,
-          option_name: vo.option.name,
-        })),
-        
-        // คำนวณ total_stock สำหรับ variant
-        total_stock: variant.product_batches.reduce((sum, b) => sum + b.quantity, 0),
-        batches: variant.product_batches, // เก็บ batch info ของ variant
-      })),
-      
-      product_images: prod.product_images.map(img => ({
-        ...img,
-        image_url: img.image_url ? `${protocol}://${host}${img.image_url}` : null,
-      })),
-    }));
+      const productsWithFullImageUrls = products.map((prod) => {
+        const primaryImage = prod.product_images.find((img) => img.is_primary);
 
-    res.status(200).json(productsWithFullImageUrls);
-  } catch (error) {
-    console.error('❌ Error loading manage products:', error);
-    res.status(500).json({ message: 'Internal server error' });
+        return {
+          ...prod,
+          // ✅ รูปหลักจาก product_images
+          image: primaryImage
+            ? `${protocol}://${host}${primaryImage.image_url}`
+            : null,
+
+          total_stock: prod.product_batches.reduce(
+            (sum: number, b: { quantity: number }) => sum + b.quantity,
+            0
+          ),
+          batches: prod.product_batches,
+
+          product_variants: prod.product_variants.map((variant) => ({
+            ...variant,
+            variant_options: variant.variant_options.map((vo) => ({
+              value: vo.value,
+              option_name: vo.option.name,
+            })),
+            total_stock: variant.product_batches.reduce(
+              (sum: number, b: { quantity: number }) => sum + b.quantity,
+              0
+            ),
+            batches: variant.product_batches,
+          })),
+
+          product_images: prod.product_images.map((img) => ({
+            ...img,
+            image_url: img.image_url
+              ? `${protocol}://${host}${img.image_url}`
+              : null,
+          })),
+        };
+      });
+
+      res.status(200).json(productsWithFullImageUrls);
+    } catch (error) {
+      console.error("❌ Error loading manage products:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
 export default manageproductsRoute;

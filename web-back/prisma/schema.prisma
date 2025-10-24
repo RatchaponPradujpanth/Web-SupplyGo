@@ -127,7 +127,7 @@ model product_categories {
 }
 
 model product_owners {
-  id         Int      @id @default(autoincrement())
+  product_owners_id         Int      @id @default(autoincrement())
   shop_id    Int
   product_id Int
 
@@ -142,7 +142,6 @@ model products {
   price               Decimal?            @db.Decimal(10, 2)
   category_id         Int?
   status              String?
-  image               String?
   created_date        DateTime?           @default(now()) @db.Timestamp(6)
   updated_date        DateTime?           @default(now()) @db.Timestamp(6)
 
@@ -160,7 +159,7 @@ model products {
 }
 
 model product_images {
-  id         Int      @id @default(autoincrement())
+  product_images_id         Int      @id @default(autoincrement())
   product_id Int
   image_url  String
   is_primary Boolean  @default(false)
@@ -344,7 +343,7 @@ model point_transactions {
 }
 
 model user_point_transactions {
-  id         Int      @id @default(autoincrement())
+  user_point_transactions_id         Int      @id @default(autoincrement())
   user_id    Int
   shop_id    Int
   points     Int      // จำนวน point (+ve ได้ point, -ve ใช้ point)
@@ -356,14 +355,15 @@ model user_point_transactions {
 }
 
 model store_wallets {
-  shop_id  Int   @id
+  store_wallets_id Int @id @default(autoincrement())
+  shop_id  Int   @unique
   points  Int   @default(0)
 
   shop     shops @relation(fields: [shop_id], references: [shop_id])
 }
 
 model store_withdrawals {
-  id                    Int      @id @default(autoincrement())
+  store_withdrawals_id  Int @id @default(autoincrement())
   shop_id               Int
   points                Int
   status                String   // "pending", "approved", "rejected", "completed"

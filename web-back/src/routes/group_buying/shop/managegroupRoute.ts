@@ -12,7 +12,7 @@ manageGroupsRoute.get(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const shopId = req.user?.shop_id;
-      console.log("👤 Shop ID:", shopId);
+      //console.log("👤 Shop ID:", shopId);
 
       if (!shopId) {
         console.log("❌ shop_id ไม่ถูกต้อง");
@@ -47,7 +47,6 @@ manageGroupsRoute.get(
           product: {
             select: {
               product_name: true,
-              image: true,
               product_images: {
                 select: {
                   image_url: true,
@@ -82,9 +81,7 @@ manageGroupsRoute.get(
 
       const result = groups.map((g) => {
         const primaryImageRelative =
-          g.product.product_images.find((img) => img.is_primary)?.image_url ||
-          g.product.image ||
-          null;
+          g.product.product_images.find((img) => img.is_primary)?.image_url
         const primaryImage = primaryImageRelative
           ? `${protocol}://${host}${primaryImageRelative}`
           : null;
@@ -123,6 +120,7 @@ manageGroupsRoute.get(
         };
       });
 
+      console.log(groups)
       // ส่งผลลัพธ์พร้อม point ของร้าน
       res.status(200).json({
         store_balance: storeBalance,

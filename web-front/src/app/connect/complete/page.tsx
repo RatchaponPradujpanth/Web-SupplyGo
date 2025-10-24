@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ConnectCompletePage() {
   const searchParams = useSearchParams();
   const acct_id = searchParams.get('acct_id');
@@ -21,8 +23,8 @@ export default function ConnectCompletePage() {
 
       try {
         const res = await fetch(
-  `http://192.168.1.133:5000/api/connect?acct_id=${acct_id}&shop_id=${shop_id}`
-);
+          `${API_URL}/api/connect?acct_id=${acct_id}&shop_id=${shop_id}`
+        );
 
         if (!res.ok) throw new Error(await res.text());
 

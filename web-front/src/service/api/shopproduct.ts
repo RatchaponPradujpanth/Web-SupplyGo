@@ -1,8 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import type { Product } from "@/types/product";
-
-
-
+import type { Product } from '@/types/type';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ;
 
 export const loadproduct = async (token: string): Promise<Product[]> => {
@@ -14,7 +11,6 @@ export const loadproduct = async (token: string): Promise<Product[]> => {
       },
     });
 
-    console.log("✅ Products fetched:", response.data);
     return response.data;
   } catch (error: unknown) {
     const err = error as AxiosError<{ message?: string }>;

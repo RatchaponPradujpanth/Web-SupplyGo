@@ -10,7 +10,7 @@ loadgroupbuyRoute.get(
   authenticateToken,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = req.user?.user_id;
+      const userId = req.user?.user_id; // ✅ ใช้ได้เลยถ้า middleware ประกาศ type แล้ว
 
       const groups = await prisma.group_buying.findMany({
         select: {
@@ -39,7 +39,7 @@ loadgroupbuyRoute.get(
       const host = req.headers.host;
 
       const groupsWithFullData = groups.map((group) => {
-        // ประกอบ URL ของรูปสินค้า
+        // ✅ แก้ URL รูปสินค้า
         const product = group.product;
         if (product?.product_images) {
           product.product_images = product.product_images.map((img) => ({
@@ -52,10 +52,15 @@ loadgroupbuyRoute.get(
 
         const currentMembers = group.members?.length || 0;
 
-        // ตรวจสอบ user อยู่ใน group หรือยัง
+        // ✅ เช็คว่าผู้ใช้ที่ล็อกอินอยู่ในกลุ่มนี้ไหม
         const user_in_group = userId
           ? group.members?.some((m) => m.user.user_id === userId) || false
           : false;
+
+        // ✅ คำนวณเวลาที่เหลือ (มิลลิวินาที)
+        const now = new Date();
+        const expire = group.expire_at ? new Date(group.expire_at) : null;
+        const time_left = expire ? expire.getTime() - now.getTime() : null;
 
         return {
           ...group,
@@ -63,6 +68,7 @@ loadgroupbuyRoute.get(
           current_members: currentMembers,
           is_full: currentMembers >= group.required_members,
           user_in_group,
+          time_left, // ⏳ เหลือกี่ ms ก่อนหมดอายุ
         };
       });
 

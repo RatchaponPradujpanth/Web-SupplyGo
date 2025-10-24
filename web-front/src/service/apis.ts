@@ -1,10 +1,7 @@
 import axios, { AxiosError } from "axios";
 // import dotenv from 'dotenv'
-<<<<<<< HEAD
-export const API_URL = "http://192.168.1.49:5000";  
-=======
-export const API_URL = "http://192.168.1.50:5001";  
->>>>>>> 2731646 (ทดสอบ)
+//export const API_URL = "http://192.168.1.49:5000";  
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 
 export type Shop = {
@@ -132,26 +129,26 @@ export interface OrderHistoryResponse {
 }
 
 
-export const RegisterUser = async (
-  username: string,
-  password: string,
-  email: string
-): Promise<void> => {
-  try {
-    const response = await axios.post(`${API_URL}/api/register`, {
-      username,
-      password,
-      email,
-    });
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Register error";
+// export const RegisterUser = async (
+//   username: string,
+//   password: string,
+//   email: string
+// ): Promise<void> => {
+//   try {
+//     const response = await axios.post(`${API_URL}/api/register`, {
+//       username,
+//       password,
+//       email,
+//     });
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Register error";
 
-    console.error("Register error:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Register error:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const loginUser = async (
   username: string,
@@ -196,47 +193,58 @@ export const loadUsername = async (token: string): Promise<string> => {
   }
 };
 
-export const loadproduct = async (token: string): Promise<Product[]> => {
-  if (!token) throw new Error("No token provided");
-  try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+// export const loadproduct = async (token: string): Promise<Product[]> => {
+//   if (!token) throw new Error("No token provided");
+//   try {
+//     const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
+//   headers: {
+//     Authorization: `Bearer ${token}`,
+//   },
+// });
 
-    console.log("✅ Products fetched:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Failed to load products";
+//     console.log("✅ Products fetched:", response.data);
+//     return response.data;
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Failed to load products";
 
-    // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
-    if (errorMsg === "No products found") {
-      console.warn("⚠️ No products found, returning empty list.");
-      return [];
-    }
+//     // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
+//     if (errorMsg === "No products found") {
+//       console.warn("⚠️ No products found, returning empty list.");
+//       return [];
+//     }
 
-    console.error("Error fetching products:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Error fetching products:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const loadstorename = async (
   token: string
-): Promise<{ shop_name: string; shop_id: number; stripe_account_id?: string | null }> => {
+): Promise<{
+  shop_name: string;
+  shop_id: number;
+  stripe_account_id?: string | null;
+  points: number;
+}> => {
   try {
-    console.log("📦 loading store with token:", token); // ตรวจ token
-    const response = await axios.get<{ shop_name: string; shop_id: number }>(
-      `${API_URL}/api/loadstorename`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    console.log("✅ ได้idร้าน:", response.data.shop_id);
+    console.log("📦 loading store with token:", token);
+
+    const response = await axios.get<{
+      shop_name: string;
+      shop_id: number;
+      stripe_account_id?: string | null;
+      points: number;
+    }>(`${API_URL}/api/loadstorename`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // ถ้าอยาก map เป็นชื่ออื่น เช่น pointstore
+    // const data = { ...response.data, pointstore: response.data.points };
+
     return response.data;
   } catch (error) {
     console.error("Load store name error:", error);
@@ -303,21 +311,6 @@ export const cartUser = async (token: string): Promise<CartResponse> => {
   }
 };
 
-// export const getCartSummary = async (token: string): Promise<CheckoutSummary> => {
-//   try {
-//     const response = await axios.get<CheckoutSummary>(`${API_URL}/api/cartsummary`, {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//         "Content-Type": "application/json",
-//       },
-//     });
-
-//     return response.data;
-//   } catch (error: any) {
-//     console.error("❌ โหลดข้อมูลสรุปตะกร้าไม่สำเร็จ:", error.message);
-//     throw error;
-//   }
-// };
 
 export type ShopPaymentIntent = {
   shop_id: number;
@@ -340,27 +333,6 @@ export type ShopPaymentIntent = {
   }>;
 };
 
-// export const createMultiVendorPayment = async (
-//   token: string,
-//   orderId: number
-// ): Promise<{ paymentIntents: ShopPaymentIntent[]; order_id: number }> => {
-//   try {
-//     const response = await axios.post(
-//       `${API_URL}/api/payment-multivendor`,
-//       { orderId },  // <-- ส่ง orderId แทน cartId
-//       {
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-//     return response.data;
-//   } catch (error: any) {
-//     const msg = error.response?.data?.message || "ไม่สามารถสร้างการชำระเงินแบบหลายร้านได้";
-//     throw new Error(msg);
-//   }
-// };
 
 export async function uploadImages(images: File[]) {
   console.log("🚀 [uploadImages] เริ่มส่งไฟล์จำนวน:", images.length);
@@ -437,15 +409,15 @@ export const addproduct = async (
 
 
 
-export const getCategories = async (): Promise<Category[]> => {
-  try {
-    const response = await axios.get<Category[]>(`${API_URL}/api/categories`);
-    return response.data;
-  } catch (error) {
-    console.error("❌ ดึง category ไม่สำเร็จ:", error);
-    return [];
-  }
-};
+// export const getCategories = async (): Promise<Category[]> => {
+//   try {
+//     const response = await axios.get<Category[]>(`${API_URL}/api/categories`);
+//     return response.data;
+//   } catch (error) {
+//     console.error("❌ ดึง category ไม่สำเร็จ:", error);
+//     return [];
+//   }
+// };
 
 export async function fetchUserRole(token: string): Promise<string> {
   try {
@@ -461,33 +433,13 @@ export async function fetchUserRole(token: string): Promise<string> {
   }
 }
 
-// export const loaduserproduct = async (): Promise<Product[]> => {
-//   try {
-//     const response = await axios.get<Product[]>(`${API_URL}/api/loaduserproduct`, {
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//     });
-
-//     console.log("✅ Products fetched:", response.data);
-//     return response.data;
-//   } catch (error: unknown) {
-//     const err = error as AxiosError<{ message?: string }>;
-//     const errorMsg =
-//       err.response?.data?.message || err.message || "Failed to load products";
-
-//     console.error("Error fetching products:", errorMsg);
-//     throw new Error(errorMsg);
-//   }
-// };
-
 export const submitOrder = async (
   token: string,
   cartId: number,
   address_id: number
 ): Promise<{ order_id: number; message: string }> => {
   try {
-    const response = await axios.post(
+     const response = await axios.post(
       `${API_URL}/api/order-success`,
       { cartId, address_id },
       {
@@ -571,45 +523,7 @@ export const loadaddress = async (token: string): Promise<Address[]> => {
   }
 };
 
-// export async function addtocart(product_id: number, quantity: number) {
-//   try {
-//     const token = localStorage.getItem("token");
 
-//     const res = await axios.post(
-//       `${API_URL}/api/addtocart`,
-//       { product_id, quantity, variant_id, option_value_ids },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-
-//     return res.data; // ข้อมูลที่ backend ตอบกลับ
-//   } catch (error: unknown) {
-//     const err = error as AxiosError<{ message?: string }>;
-//     const errorMsg =
-//       err.response?.data?.message || err.message || "Add to cart failed";
-
-//     console.error("Add to cart error:", errorMsg);
-//     throw new Error(errorMsg);
-//   }
-// }
-
-// export const getOrderHistory = async (token: string): Promise<OrderHistoryResponse> => {
-//   try {
-//     const response = await axios.get<OrderHistoryResponse>(`${API_URL}/api/orderhistory`, {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//         "Content-Type": "application/json",
-//       },
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     console.error("❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:", error.message);
-//     throw error;
-//   }
-// };
 
 
 export interface ShopOrderResponse {

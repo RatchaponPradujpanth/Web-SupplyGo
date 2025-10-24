@@ -15,10 +15,7 @@ primarypictureRoute.patch('/primary-picture', async (req: Request, res: Response
         res.status(400).json({ error: 'productId และ imageId ต้องระบุ' });
         return 
     }
-    
-    try {
-        console.log('🔄 Starting database operations...');
-        
+    try {        
         await prisma.product_images.updateMany({
             where: {
                 product_id: productId,
@@ -30,13 +27,13 @@ primarypictureRoute.patch('/primary-picture', async (req: Request, res: Response
         });
 
         await prisma.product_images.update({
-            where: {
-                id: imageId
-            },
-            data: {
-                is_primary: true,
-            },
-        });
+  where: {
+    product_images_id: imageId,
+  },
+  data: {
+    is_primary: true,
+  },
+});
         
         console.log('✅ Database operations completed');
         res.json({ message: "อัพเดทรูปหลักแล้ว" });

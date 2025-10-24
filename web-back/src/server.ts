@@ -33,7 +33,7 @@ import loadgroupbuyRoute from "./routes/group_buying/loadgroupbuyRoute";
 import admindashboardRoute from "./routes/admin/admindashboardRoute";
 import confirmPaymentRoute from "./routes/order/confirmPaymentRoute";
 import cancelorderRoute from "./routes/order/cancelorder";
-import confirmTopupRoute from "./routes/group_buying/confirmTopupRoute";
+import createTopupRoute from "./routes/group_buying/createTopupRoute";
 import topuppointRoute from "./routes/group_buying/topuppointRoute";
 import creategroupRoute from "./routes/group_buying/shop/creategroupRoute";
 import manageGroupsRoute from "./routes/group_buying/shop/managegroupRoute";
@@ -43,10 +43,22 @@ import confirmgrouporderRoute from "./routes/group_buying/shop/confirmgrouporder
 import cancelgrouporderRoute from "./routes/group_buying/shop/cancelgroupRoute";
 import historygroupRoute from "./routes/group_buying/customer/historygroupRoute";
 import withdrawRoute from "./routes/group_buying/shop/withdrawRoute";
+import approvewithdrawRoute from "./routes/group_buying/admin/approvewithdrawRoute";
+import loadwithdrawRoute from "./routes/group_buying/admin/loadwithdrawRoute";
+import paymenthistoryRoute from "./routes/admin/paymenthistoryRoute";
+import allOrderHistoryRoute from "./routes/admin/allOrderHistoryRoute";
+import checkjoingroupRoute from "./routes/group_buying/customer/checkjoingroupRoute";
+import categoryproductRoute from "./routes/categoryproductRoute";
+import updatestatusRoute from "./routes/shop/updatestatusRoute";
+import webhookRoute from "./stripe/stripeWebhook";
+import grouporderRoute from "./routes/group_buying/shop/grouporderRoute";
+import graphsellRoute from "./routes/shop/graphsellRoute";
 
+const PORT = process.env.PORT
 // dotenv.config({path:".env"}); // โหลดค่า .env
 
 const app = express();
+app.use('/stripe-webhook', express.raw({ type: 'application/json' }), webhookRoute);
 app.use(express.json());
 app.use(cors());
 app.use('/upload', express.static(path.join(__dirname, '../uploads')));
@@ -82,7 +94,7 @@ app.use("/api",admindashboardRoute);
 app.use("/api",confirmPaymentRoute)
 app.use("/api",cancelorderRoute)
 app.use("/api",createorderRoute);
-app.use("/api",confirmTopupRoute)
+app.use("/api",createTopupRoute)
 app.use("/api",topuppointRoute)
 app.use("/api",creategroupRoute)
 app.use("/api",manageGroupsRoute)
@@ -92,7 +104,17 @@ app.use("/api",confirmgrouporderRoute)
 app.use("/api",cancelgrouporderRoute)
 app.use("/api",historygroupRoute)
 app.use("/api",withdrawRoute)
+app.use("/api",approvewithdrawRoute)
+app.use("/api",loadwithdrawRoute)
+app.use("/api",paymenthistoryRoute);
+app.use("/api",allOrderHistoryRoute)
+app.use("/api",checkjoingroupRoute)
+app.use("/api",categoryproductRoute)
+app.use("/api",updatestatusRoute);
+app.use("/api",grouporderRoute)
+app.use("/api",graphsellRoute)
 
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
+
+app.listen(PORT, () => {
+  console.log("Server is running on port 5001");
 });

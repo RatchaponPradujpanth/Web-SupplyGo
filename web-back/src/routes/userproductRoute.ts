@@ -5,10 +5,11 @@ const userproductRoute = Router();
 const prisma = new PrismaClient();
 
 userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Promise<void> => {
-  console.log('Loadproduct route called');
+  console.log("✅ Loadproduct route called");
+
   try {
     const foundproduct = await prisma.products.findMany({
-      include: {
+      include: {  
         product_variants: {
           include: {
             variant_options: {
@@ -16,13 +17,30 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
                 option: true,
               },
             },
+            product_batches: true,
           },
         },
         product_images: true,
+        product_owners: {
+          include: {
+            shops: {
+              select: {
+                shop_id: true,
+                shop_name: true,
+              },
+            },
+          },
+        },
+        product_batches: true,
+        product_options: {
+          include: {
+            variant_options: true,
+          },
+        },
+        product_categories: true,
       },
     });
 
-    //หา path รูป
     const host = req.headers.host;
     const protocol = req.protocol;
     const getFullUrl = (path?: string | null) => {
@@ -31,49 +49,96 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
       return `${protocol}://${host}${path.startsWith("/") ? path : "/" + path}`;
     };
 
-    const products = foundproduct.map(prod => {
-      const primaryImage = prod.product_images.find(img => img.is_primary);
-      const mainImage = prod.image ? getFullUrl(prod.image) : primaryImage ? getFullUrl(primaryImage.image_url) : null;
+    const products = foundproduct.map((prod) => {
+      const productImages = prod.product_images.map((img) => ({
+        product_images_id: img.product_images_id, // ✅ ใช้ชื่อที่ถูกต้อง
+        image_url: getFullUrl(img.image_url),
+        is_primary: img.is_primary,
+        sort_order: img.sort_order,
+      }));
 
+      const shops = prod.product_owners.map((po) => ({
+        shop_id: po.shops.shop_id,
+        shop_name: po.shops.shop_name,
+      }));
 
-      // map ข้อมูลก่อนส่งไป frontend
-      const variants = prod.product_variants.map(variant => {
+      const primaryImage = prod.product_images.find((img) => img.is_primary);
+      const mainImage = primaryImage
+        ? getFullUrl(primaryImage.image_url)
+        : productImages.length > 0
+        ? productImages[0].image_url
+        : null;
+
+      // ✅ คำนวณ total_stock สำหรับแต่ละ variant
+      const variants = prod.product_variants.map((variant) => {
+        // รวม quantity จากทุก batch ที่มี variant_id ตรงกัน
+        const totalStock = variant.product_batches.reduce((sum, batch) => sum + (batch.quantity || 0), 0);
+
         return {
-          ...variant,
+          variant_id: variant.variant_id,
+          sku: variant.sku,
           price: variant.price ? Number(variant.price) : null,
-          variant_options: variant.variant_options.map(vo => ({
-            variant_option_id: vo.variant_option_id,  // <-- เพิ่มตรงนี้
+          total_stock: totalStock, // ✅ เพิ่ม total_stock
+          variant_options: variant.variant_options.map((vo) => ({
+            variant_option_id: vo.variant_option_id,
             option_name: vo.option.name,
             value: vo.value,
+            option_id: vo.option_id,
           })),
+          batches: variant.product_batches?.map((batch) => ({
+            batch_id: batch.batch_id,
+            batch_number: batch.batch_number,
+            manufactured_date: batch.manufactured_date?.toISOString() || null,
+            expiry_date: batch.expiry_date?.toISOString() || null,
+            quantity: batch.quantity,
+          })) || [],
         };
       });
 
-      // ถ้าไม่มี price ใน products ให้ใช้ราคาที่ต่ำที่สุดใน variants
-      const variantPrices = prod.product_variants
-        .map(v => v.price) //ดึงราคาจากทุก variant
-        .filter(p => p !== null) as any[]; //กรอกเอาเฉพาะที่มีราคาไม่เอา null
-
-        //ตรงนี้เทียบราคาที่ได้แล้วเอาถูกที่สุด
-      const minVariantPrice = variantPrices.length > 0
-        ? Number(
-            variantPrices.reduce((min, p) => (p! < min! ? p : min), variantPrices[0])
-          )
-        : null;
-
-      //ส่งรูปไปแบบ full path
-      const productImages = prod.product_images.map(img => ({
-        ...img,
-        image_url: getFullUrl(img.image_url),
+      const productOptions = prod.product_options.map((opt) => ({
+        option_id: opt.option_id,
+        name: opt.name,
+        product_id: opt.product_id,
+        variant_options: opt.variant_options.map((vo) => ({
+          variant_option_id: vo.variant_option_id,
+          value: vo.value,
+          option_name: opt.name,
+          option_id: opt.option_id,
+        })),
       }));
 
-      //ส่วนที่ส่งไป
+      // ✅ คำนวณ total_stock สำหรับ product (ถ้าไม่มี variant)
+      const productBatches = prod.product_batches
+        .filter(batch => !batch.variant_id) // เฉพาะ batch ที่ไม่มี variant_id
+        .map((batch) => ({
+          batch_id: batch.batch_id,
+          batch_number: batch.batch_number,
+          manufactured_date: batch.manufactured_date?.toISOString() || null,
+          expiry_date: batch.expiry_date?.toISOString() || null,
+          quantity: batch.quantity,
+        }));
+
+      const productTotalStock = productBatches.reduce((sum, batch) => sum + (batch.quantity || 0), 0);
+
+      const variantPrices = prod.product_variants
+        .map((v) => (v.price ? Number(v.price) : null))
+        .filter((p): p is number => p !== null);
+      const minVariantPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : null;
+
       return {
-        ...prod, // ... คือทุกค่า ของ prod ออกมา
-        price: prod.price ? Number(prod.price) : minVariantPrice, // บอกว่าเอาราคาจาก
+        product_id: prod.product_id,
+        product_name: prod.product_name,
+        product_description: prod.product_description,
+        price: prod.price ? Number(prod.price) : minVariantPrice,
         image: mainImage,
-        product_variants: variants,
+        status : prod.status,
+        total_stock: productTotalStock, // ✅ stock รวมของ product
         product_images: productImages,
+        product_variants: variants,
+        product_options: productOptions,
+        product_batches: productBatches,
+        shop: shops,
+        category_name: prod.product_categories?.category_name || null,
       };
     });
 

@@ -1,21 +1,61 @@
+// ========================
+// Product-related Types
+// ========================
+
 // src/types/product.ts
 
-// export interface VariantOption {
-//   variant_option_id: number
-//   variant_id: number
-//   option_id : number
-//   value: string;
-//   //option_name: string;
-// }
+export interface VariantOption {
+  variant_option_id: number;  // ✅ เพิ่ม
+  value: string;
+  option_name: string;
+  option_id: number;          // ✅ เพิ่ม
+}
 
-// export interface ProductVariant {
-//   variant_id: number;
-//   sku: string;
-//   price: number | null;
-//   total_stock: number; // เปลี่ยนจาก stock_quantity
-//   image: string | null;
-//   variant_options: VariantOption[];
-// }
+export interface ProductBatch {
+  batch_id: number;
+  batch_number: string;
+  manufactured_date: string;
+  expiry_date: string;
+  quantity: number;
+}
+
+export interface ProductVariant {
+  variant_id: number;
+  sku: string;
+  price: number | null;
+  total_stock: number;          // ✅ รวม quantity จาก batches
+  batches?: ProductBatch[];     
+  variant_options: VariantOption[];  // ✅ เอา image ออก
+}
+
+export interface ProductImage {
+  product_images_id: number;
+  image_url: string;
+  is_primary?: boolean;
+  sort_order?: number | null;
+}
+
+export interface Product {
+  product_id: number;
+  product_name: string | null;
+  product_description: string | null;
+  price: number | null;
+  image: string | null;
+  total_stock?: number;
+  shop?: Shop[];
+  shop_name?: string;
+  shop_id?: number;
+  secondary_images?: string[];
+  status : string;
+
+  // ✅ เพิ่มพวกนี้
+  product_images?: ProductImage[];
+  product_variants?: ProductVariant[];
+  product_options?: ProductOption[];
+  product_batches?: ProductBatch[];
+  category_name?: string | null;
+}
+
 
 export interface ProductImage {
   id: number;
@@ -31,216 +71,10 @@ export type ProductOption = {
   variant_options: VariantOption[];
 };
 
-// export interface Product {
-//   product_id: number;
-//   product_name: string | null;
-//   product_description: string | null;
-//   price: number | null;
-//   status?: string | null;
-//   image: string | null;
-
-//   // ความสัมพันธ์
-//   product_variants?: ProductVariant[];
-//   product_images?: ProductImage[];
-//   product_options?: ProductOption[];
-//   product_owners?: ProductOwner[];
-
-//   // ✅ เพิ่มตรงนี้
-//   secondary_images?: string[];
-// }
-
-
-export type Shop = {
-  shop_id: number;
-  shop_name?: string;
-};
-
-export type ProductOwner = {
-  shop_id: number;
-  shops?: Shop;
-  product_id: number;
-};
-
-export type TransferItem = {
-  storeId: number;
-  amount: number;
-};
-
 export interface Category {
   category_id: number;
   category_name: string;
 }
-
-// Updated CheckoutItem Interface
-export interface CheckoutItem {
-  cart_item_id: number;
-  product_name: string;
-  shop_name: string;
-  shop_id: number;
-  quantity: number;
-  price_per_unit: number;
-  total_price: number;
-  product_id: number;
-  variant_id?: number | null; // เพิ่ม variant_id
-  variant?: Variant | null; // เพิ่ม variant object
-  variant_options?: VariantOption[]; // เปลี่ยนจาก variant_option_id เป็น array
-  image?: string;
-}
-
-export interface CheckoutSummary {
-  cart_id: number;
-  items: CheckoutItem[];
-  totalAmount: number;
-}
-
-export interface LoginResponse {
-  token: string;
-}
-
-export interface CartItem {
-  cart_item_id: number;
-  quantity: number;
-  price_per_unit: number;
-  product_name: string;
-  image: string | null;
-  shop_name: string;
-  variant_id?: number;
-  variant_info?: string; // เพิ่ม variant_info
-  total_price: number;
-  product_id: number;
-}
-
-
-export interface CartItemWithExtra extends CartItem {
-  variant_option_ids?: number[];
-}
-
-export interface CartResponse {
-  cart_id: number;
-  items: CartItem[];
-  cart_items: any[];
-  total_amount: number;
-}
-
-export interface OrderHistoryResponse {
-  orders: {
-    order_id: number;
-    address_id: number;
-    order_date: string;
-    total_amount?: number;
-    status?: string;
-    address?: {   // <== เพิ่มฟิลด์นี้
-      address_id: number;
-      firstname: string;
-      lastname: string;
-      phone_number: string;
-      house_number: string;
-      street: string;
-      sub_district: string;
-      district: string;
-      province: string;
-      postal_code: string;
-    } | null;
-    order_shops: {
-      order_shop_id: number;
-      shop_id: number;
-      subtotal: number;
-      status: string;
-      tracking_number: string;
-      shops: {
-        shop_name: string;
-      };
-      order_items: {
-        order_item_id: number;
-        product_id: number;
-        quantity: number;
-        price_per_unit: number;
-        total_price: number;
-        products: {
-          product_name: string;
-          product_images: {
-            image_url: string;
-          }[];
-        };
-        variant_option: {
-          value: string;
-          option: {
-            name: string;
-          };
-          variant: {
-            sku: string;
-          };
-        } | null;
-      }[];
-    }[];
-  }[];
-}
-export interface ShopPaymentIntent {
-  shop_id: number;
-  shop_name: string;
-  amount: number;
-  client_secret: string;
-  stripe_account: string;
-}
-
-export interface PaymentIntentInfo {
-  shop_id: number;
-  amount: number;
-  payment_intent_id: string;
-}
-
-export interface Address {
-  address_id: number;
-  firstname: string;
-  lastname: string;
-  phone_number: number;
-  house_number: string;
-  street: string;
-  sub_district: string;
-  district: string;
-  province: string;
-  postal_code: number;
-  address_type: string;
-}
-
-export interface ShopOrderResponse {
-  orders: any[];
-  order_shops: any[];
-  order_items: any[];
-  addresses: any[];
-}
-
-export interface ShopOrder {
-  order_shop_id: number;
-  order_id: number;
-  shop_id: number;
-  subtotal: number;
-  status: string;
-  tracking_number: string;
-}
-
-
-export interface CreateOrderPayload {
-  addressId: number;
-  totalAmount: number;
-  cartItems: {
-    productId: number;
-    quantity: number;
-    price_per_unit: number;
-    shopId: number;
-    variant_id?: number | null; // เพิ่ม variant_id
-    variant_option_ids?: number[]; // เปลี่ยนเป็น array
-    total_price?: number;
-  }[];
-}
-
-export interface CreateOrderResponse {
-  order_id: number;
-  status: string;
-  total_amount: number;
-  message: string;
-}
-
 
 // Variant Option Type
 export interface VariantOption {
@@ -259,6 +93,78 @@ export interface Variant {
   image?: string;
 }
 
+// ========================
+// Shop-related Types
+// ========================
+export type Shop = {
+  shop_id: number;
+  shop_name?: string;
+};
+
+export type ProductOwner = {
+  shop_id: number;
+  shops?: Shop;
+  product_id: number;
+};
+
+export type TransferItem = {
+  storeId: number;
+  amount: number;
+};
+
+// ========================
+// Cart & Checkout
+// ========================
+export interface CartItem {
+  cart_item_id: number;
+  quantity: number;
+  price_per_unit: number;
+  product_name: string;
+  image: string | null;
+  shop_name: string;
+  variant_id?: number;
+  variant_info?: string; // เพิ่ม variant_info
+  total_price: number;
+  product_id: number;
+}
+
+// ใช้เฉพาะตอน checkout (รวม variant, shop_name, image)
+export interface CheckoutItem {
+  cart_item_id: number;
+  product_name: string;
+  shop_name: string;
+  shop_id: number;
+  quantity: number;
+  price_per_unit: number;
+  total_price: number;
+  product_id: number;
+  variant_id?: number | null;
+  variant?: Variant | null;
+  variant_options?: VariantOption[];
+  image?: string;
+}
+
+export interface CartItemWithExtra extends CartItem {
+  variant_option_ids?: number[];
+}
+
+export interface CartResponse {
+  cart_id: number;
+  items: CartItem[];
+  cart_items: any[];
+  total_amount: number;
+}
+
+// ❌ CheckoutSummary ซ้ำกับ CartSummaryResponse → เลือกใช้ CartSummaryResponse
+export interface CartSummaryResponse {
+  cart_id: number;
+  items: CheckoutItem[];
+  totalAmount: number;
+}
+
+// ========================
+// Order-related Types
+// ========================
 export interface CreateOrderPayload {
   addressId: number;
   totalAmount: number;
@@ -267,61 +173,122 @@ export interface CreateOrderPayload {
     quantity: number;
     price_per_unit: number;
     shopId: number;
-    variant_id?: number | null; // เพิ่ม variant_id
-    variant_option_ids?: number[]; // เปลี่ยนเป็น array
+    variant_id?: number | null;
+    variant_option_ids?: number[];
     total_price?: number;
   }[];
 }
 
-export interface CartSummaryResponse {
-  cart_id: number;
-  items: CheckoutItem[];
-  totalAmount: number;
+export interface CreateOrderResponse {
+  order_id: number;
+  status: string;
+  total_amount: number;
+  message: string;
 }
 
-export interface userpoint {
-  balance : number;
-}
-
-// GroupBuying Type
-export interface GroupBuying {
-  group_buying_id: number;
-  points_per_member: number;
-  shop_id: number;
-  product_id: number;
-  required_members: number;
-  total_items: number;
-  status: 'open' | 'success' | 'closed';
-  created_at: string;
-
-  // ฟิลด์ใหม่จาก API/UI
-  group_name?: string | null;
-  description?: string | null;
-  expire_at?: string | null;
-  variant_id?: number | null;
-
-  // ความสัมพันธ์ (optional)
-  shop?: {
-    shop_name?: string;
-  };
-  product?: {
-    product_id: number;
-    product_name?: string;
-    product_images?: { image_url: string }[];
-  };
-  members?: {
-    user_id: number;
-    username?: string;
+export interface OrderHistoryResponse {
+  orders: {
+    order_id: number;
+    address_id: number;
+    order_date: string;
+    total_amount?: number;
+    status?: string;
+    address?: {
+      address_id: number;
+      firstname: string;
+      lastname: string;
+      phone_number: string;
+      house_number: string;
+      street: string;
+      sub_district: string;
+      district: string;
+      province: string;
+      postal_code: string;
+    } | null;
+    order_shops: {
+      order_shop_id: number;
+      shop_id: number;
+      subtotal: number;
+      status: string;
+      tracking_number: string;
+      shops: { shop_name: string };
+      order_items: {
+        order_item_id: number;
+        product_id: number;
+        quantity: number;
+        price_per_unit: number;
+        total_price: number;
+        products: {
+          product_name: string;
+          product_images: { image_url: string }[];
+        };
+        variant_option: {
+          value: string;
+          option: { name: string };
+          variant: { sku: string };
+        } | null;
+      }[];
+    }[];
   }[];
-
-  // property ใหม่จาก backend
-  user_in_group?: boolean;       // ตรวจสอบว่า user อยู่ใน group หรือยัง
-  current_members?: number;      // จำนวนสมาชิกปัจจุบัน
-  is_full?: boolean;             // ครบจำนวนสมาชิกหรือยัง
 }
 
+// ⚠️ ShopOrderResponse ใช้ any[] → ถ้าไม่ได้ใช้จริงแนะนำลบ
+export interface ShopOrderResponse {
+  orders: any[];
+  order_shops: any[];
+  order_items: any[];
+  addresses: any[];
+}
 
-// ===== เพิ่ม type ที่ยังขาด =====
+export interface ShopOrder {
+  order_shop_id: number;
+  order_id: number;
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number: string;
+}
+
+// ========================
+// Payment
+// ========================
+export interface ShopPaymentIntent {
+  shop_id: number;
+  shop_name: string;
+  amount: number;
+  client_secret: string;
+  stripe_account: string;
+}
+
+export interface PaymentIntentInfo {
+  shop_id: number;
+  amount: number;
+  payment_intent_id: string;
+}
+
+// ========================
+// Address
+// ========================
+export interface Address {
+  address_id: number;
+  firstname: string;
+  lastname: string;
+  phone_number: number;
+  house_number: string;
+  street: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: number;
+  address_type: string;
+}
+
+// ========================
+// Auth & User
+// ========================
+export interface LoginResponse {
+  token: string;
+}
 
 export interface users {
   user_id: number;
@@ -330,6 +297,9 @@ export interface users {
   role?: string | null;
 }
 
+// ========================
+// DB-like Types
+// ========================
 export interface cart {
   cart_id: number;
   user_id: number;
@@ -377,13 +347,225 @@ export interface product_batches {
   quantity?: string | null;
 }
 
-export interface group_members {
-  id: number;
-  group_id: number;
+// ========================
+// Group Buying Types
+// ========================
+
+export interface GroupBuyingMember {
+  group_members_id: number;   // ตรงกับ Prisma
   user_id: number;
+  username?: string | null;
+  email?: string | null;
   joined_at: string;
+  left_at?: string | null;
+  addresses?: Address[];      // ถ้าใช้ member addresses
 }
 
+export interface GroupBuyingProduct {
+  product_id: number;
+  product_name?: string | null;
+  product_images?: ProductImage[];
+  
+}
+
+export interface GroupBuying {
+  group_buying_id: number;
+  shop_id: number;
+  product_id: number;
+  variant_id?: number | null;
+  required_members: number;
+  total_items: number;
+  status: string;              // ใช้ string ให้ตรงกับ DB
+  points_per_group: number;
+  points_per_member: number;
+  items_per_member: number;
+  created_at: string;
+  updated_at: string;
+
+  group_name?: string | null;
+  description?: string | null;
+  expire_at?: string | null;
+
+  shop?: { shop_name?: string };
+  product?: GroupBuyingProduct;
+  variant?: ProductVariant | null;
+  members?: GroupBuyingMember[];
+
+  // ✅ frontend helpers
+  user_in_group?: boolean;
+  current_members?: number;
+  is_full?: boolean;
+  time_left?: number | null;   // ⏳ เพิ่มอันนี้
+}
+
+
+export interface GroupBuyingResult {
+  group_buying_id: number;
+  group_name: string | null;
+  description: string | null;
+  expire_at: string | null;
+  product_id: number;
+  variant_id?: number | null;
+  product_name?: string | null;
+  product_image?: string | null;
+  secondary_images?: string[];
+  total_items?: number;
+  required_members: number;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+  points_per_group?: number;
+  points_per_member: number;
+  items_per_member?: number;
+  member_count: number;
+  members: GroupBuyingMember[];
+
+  // helper fields
+  is_full: boolean;
+  user_in_group: boolean;
+}
+
+export interface GroupOrderItem {
+  group_order_item_id: number;
+  group_order_id: number;
+  product_id: number;
+  quantity: number;
+  price_per_unit: string;
+  product: {
+    product_id: number;
+    product_name: string;
+    product_description: string;
+    price: string;
+    category_id: number;
+    status: string;
+    created_date: string;
+    updated_date: string;
+  };
+}
+
+export interface GroupItem {
+  order_item_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price_per_unit: number;
+  total_price: number;
+  image_url?: string;
+  variant_option?: {
+    option_name: string;
+    value: string;
+  };
+}
+export interface GroupMember {
+  group_members_id: number;
+  joined_at: string;
+  username?: string;
+  email?: string;
+  addresses?: Address[];
+  tracking_number :string;
+}
+
+// Interfaces
+interface NormalOrderUI {
+  order_shop_id: number;
+  order_id: number;
+  shop_id: number;
+  subtotal: number;
+  status: string;
+  tracking_number?: string;
+  transaction_id?: string;
+  order_date?: string;
+  user_info?: {
+    username?: string;
+    email?: string;
+  };
+  address?: {
+    firstname?: string;
+    lastname?: string;
+    phone_number?: number;
+    house_number?: string;
+    street?: string;
+    sub_district?: string;
+    district?: string;
+    province?: string;
+    postal_code?: number;
+    address_type?: string;
+  };
+  items: {
+    order_item_id: number;
+    product_id: number;
+    product_name: string;
+    quantity: number;
+    price_per_unit: number;
+    total_price: number;
+    image_url?: string;
+    variant_option?: {
+      option_name: string;
+      value: string;
+    };
+  }[];
+}
+
+export interface GroupOrderUI {
+  created_at: string;           // วันที่สร้าง group order
+  group: {
+    group_buying_id: number;
+    group_name: string;
+    description?: string;
+    expire_at?: string;
+    items_per_member: number;
+    required_members: number;
+    total_items: number;
+    status: string;            // confirmed / active / etc
+    members: {
+      group_members_id: number;
+      joined_at: string;
+      left_at?: string | null;
+      user_id: number;
+      user: {
+        username: string;
+        email?: string;
+      };
+      tracking_number?: string;
+      status:string;
+      addresses?: {
+        firstname: string;
+        lastname: string;
+        phone_number: string;
+        house_number: string;
+        street: string;
+        sub_district: string;
+        district: string;
+        province: string;
+        postal_code: string;
+        address_type?: string;
+      }[];
+    }[];
+    product: {
+      product_id: number;
+      product_name: string;
+      product_description?: string;
+      price: string | number;
+      image?: string;
+    };
+    variant?: {
+      variant_id: number;
+      product_id: number;
+      sku: string;
+      price: string | number;
+    };
+  };
+  group_order_id: number;
+  items: any[];                  // list ของ item ภายใน order
+  member_orders: any[];
+  status: string;                // pending / completed / cancelled
+  total_amount: string;
+  
+}
+
+// ========================
+// Admin Dashboard
+// ========================
 export interface AdminDashboardApiResponse {
   message: string;
   dashboard: {
@@ -396,7 +578,7 @@ export interface AdminDashboardApiResponse {
       status: string;
       total_amount: number;
       order_date: string;
-      users: { username: string }[];
+      users: { username: string };
     }[];
     recentProducts: {
       product_id: number;
@@ -404,45 +586,193 @@ export interface AdminDashboardApiResponse {
       price: number;
       status: string;
       created_date: string;
-      product_owners: {
-        shops: { shop_name: string };
-      }[];
+      product_owners: { shops: { shop_name: string } }[];
+    }[];
+    allUsers: {
+      user_id: number;
+      username: string | null;
+      email: string | null;
+      registration_date: string | null;
+      role: string | null;
     }[];
   };
 }
-
-export interface GroupBuyingMember {
-  id: number;
-  joined_at: string;
-  user_id: number;
-  username: string | null;
-  email: string | null;
-}
-
-export interface GroupBuyingProduct {
-  product_name: string | null;
-  image: string | null;
-  secondary_images?: string[]; // รูปรอง
-}
-
-export interface GroupBuyingResult {
+// เพิ่ม interface นี้สำหรับ API response ของ getGrouporder
+export interface GroupOrderResponse {
   group_buying_id: number;
-  group_name?: string | null;
-  description?: string | null;
-  expire_at?: string | null;
-  product_id: number;
-  variant_id?: number | null;
-  product_name: string | null; // fallback ถ้า group_name ไม่มี
-  product_image: string | null;
-  secondary_images: string[]; // กำหนดเป็น array ว่างได้ถ้าไม่มี
-  total_items: number;
   required_members: number;
+  total_items: number;
   status: string;
   created_at: string;
-  points_per_group: number;
-  points_per_member: number;
-  member_count: number;
-  members: GroupBuyingMember[];
+  group_name: string;
+  description: string;
+  product_name: string;
+  product_image: string;
+  price: number;
+  expire_at: string;
+  items_per_member: number;
+  product: {
+    product_id: number;
+    product_name: string;
+    product_description: string;
+    price: string;
+    category_id: number;
+    status: string;
+    created_date: string;
+    updated_date: string;
+    product_images?: Array<{ image_url: string }>;
+  };
+  variant: any | null;
+  members: {
+    group_members_id: number;
+    group_buying_id: number;
+    user_id: number;
+    joined_at: string;
+    left_at: string | null;
+    user: {
+      username: string;
+      email: string;
+    };
+  }[];
 }
 
 
+// ========================
+// Other
+// ========================
+export interface userpoint {
+  balance: number;
+}
+
+export interface PaymentHistoryOrder {
+  order_id: number;
+  user_id: number;
+  order_date?: string | null;
+  total_amount?: number | null;
+  status?: string | null;
+  users: {
+    user_id: number;
+    username?: string | null;
+    email?: string | null;
+  };
+  address?: {
+    address_id: number;
+    firstname?: string | null;
+    lastname?: string | null;
+    phone_number?: number | null;
+    house_number?: string | null;
+    street?: string | null;
+    sub_district?: string | null;
+    district?: string | null;
+    province?: string | null;
+    postal_code?: number | null;
+    address_type?: string | null;
+  } | null;
+  order_shops: {
+    order_shop_id: number;
+    shop_id: number;
+    subtotal?: number | null;
+    status?: string | null;
+    tracking_number?: string | null;
+    transaction_id?: string | null;
+    charge_id?: string | null;
+    shops: {
+      shop_id: number;
+      shop_name?: string | null;
+    };
+    order_items: {
+      order_item_id: number;
+      product_id: number;
+      quantity?: number | null;
+      price_per_unit?: number | null;
+      total_price?: number | null;
+      products: {
+        product_id: number;
+        product_name?: string | null;
+        product_images?: { image_url: string }[];
+      };
+      variant_option?: {
+        variant_option_id: number;
+        value: string;
+        option?: { name: string };
+      } | null;
+    }[];
+  }[];
+}
+
+export interface PaymentHistoryResponse {
+  success: boolean;
+  data: PaymentHistoryOrder[];
+}
+
+
+export interface AdminOrderHistoryOrder {
+  order_id: number;
+  user_id: number;
+  order_date?: string | null;
+  total_amount?: number | null;
+  status?: string | null;
+  address?: {
+    address_id: number;
+    firstname?: string | null;
+    lastname?: string | null;
+    phone_number?: number | null;
+    house_number?: string | null;
+    street?: string | null;
+    sub_district?: string | null;
+    district?: string | null;
+    province?: string | null;
+    postal_code?: number | null;
+    address_type?: string | null;
+  } | null;
+  order_shops: {
+    order_shop_id: number;
+    shop_id: number;
+    subtotal?: number | null;
+    status?: string | null;
+    tracking_number?: string | null;
+    transaction_id?: string | null;
+    charge_id?: string | null;
+    shops: {
+      shop_id: number;
+      shop_name?: string | null;
+    };
+    order_items: {
+      order_item_id: number;
+      product_id: number;
+      quantity?: number | null;
+      price_per_unit?: number | null;
+      total_price?: number | null;
+      products: {
+        product_id: number;
+        product_name?: string | null;
+        product_images?: { image_url: string }[];
+      };
+      variant_option?: {
+        variant_option_id: number;
+        value: string;
+        option?: { name: string };
+      } | null;
+    }[];
+  }[];
+}
+
+export interface AdminOrderHistoryResponse {
+  success: boolean;
+  data: AdminOrderHistoryOrder[];
+}
+
+export interface DailySales {
+  [date: string]: number; // '2025-10-20': 1200
+}
+
+export interface ProductSales {
+  product_id: number;
+  product_name: string | null;
+  quantity_sold: number;
+}
+
+export interface GraphSellResponse {
+  dailySales: DailySales;
+  productSales: ProductSales[];
+}
