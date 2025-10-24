@@ -381,6 +381,7 @@ export interface GroupBuying {
   items_per_member: number;
   created_at: string;
   updated_at: string;
+  joined_at?: string | null;   // ✅ เพิ่มวันที่เข้าร่วม
 
   group_name?: string | null;
   description?: string | null;

@@ -186,6 +186,8 @@ export default function GroupBuyingPage() {
     if (Array.isArray(groupData)) {
       console.log('🔍 Group data received:', groupData);
       console.log('🖼️ First group image:', groupData[0]?.product_image);
+      console.log('💰 First group points_per_member:', groupData[0]?.points_per_member);
+      console.log('📊 Full first group:', groupData[0]);
       setGroups(groupData);
     }
 
@@ -234,6 +236,14 @@ export default function GroupBuyingPage() {
 
     try {
       await joingroup(modalGroupId, points, selectedAddressId);
+      
+      // ✅ โหลด Point ใหม่จาก backend หลังเข้ากลุ่มสำเร็จ
+      const token = localStorage.getItem('token');
+      if (token) {
+        const updatedBalance = await loadbalance(token);
+        setPoints(updatedBalance);
+      }
+      
       alert('เข้ากลุ่มสำเร็จ 🎉');
       setModalGroupId(null);
     } catch (err) {
@@ -256,6 +266,9 @@ export default function GroupBuyingPage() {
     const confirmLeave = confirm('คุณต้องการออกจากกรุ๊ปนี้หรือไม่?');
     if (!confirmLeave) return;
 
+    const group = groups.find(g => g.group_buying_id === group_buying_id);
+    if (!group) return;
+
     // Optimistic update
     setGroups(prev =>
       prev.map(g =>
@@ -268,6 +281,14 @@ export default function GroupBuyingPage() {
 
     try {
       await leavegroup(group_buying_id);
+      
+      // ✅ โหลด Point ใหม่จาก backend หลังออกจากกลุ่มสำเร็จ
+      const token = localStorage.getItem('token');
+      if (token) {
+        const updatedBalance = await loadbalance(token);
+        setPoints(updatedBalance);
+      }
+      
       alert('ออกจากกลุ่มสำเร็จ ✅');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'ออกจากกลุ่มไม่สำเร็จ ❌';
@@ -438,7 +459,9 @@ export default function GroupBuyingPage() {
                       <div className="text-xs text-gray-600 mt-1">เป้าหมาย</div>
                     </div>
                     <div className="bg-green-50 rounded-lg p-3 text-center col-span-2">
-                      <div className="text-2xl font-bold text-green-600">{group.points_per_member} Point</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {group.points_per_member ?? 0} Point
+                      </div>
                       <div className="text-xs text-gray-600 mt-1">ราคาต่อคน</div>
                     </div>
                   </div>

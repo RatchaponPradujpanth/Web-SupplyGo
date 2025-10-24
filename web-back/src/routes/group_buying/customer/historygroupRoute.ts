@@ -87,6 +87,8 @@ historygroupRoute.get("/history-group", authenticateToken, async (req: Request, 
         group_name: group.group_name,
         description: group.description,
         expire_at: group.expire_at,
+        created_at: group.created_at,
+        joined_at: gm.joined_at,        // ✅ เพิ่มวันที่เข้าร่วม
         variant_id: group.variant_id,
         product_id: group.product_id,
         product: group.product,

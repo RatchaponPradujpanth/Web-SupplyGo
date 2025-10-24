@@ -129,7 +129,7 @@ const getFullUrl = (path?: string | null) => {
           price_per_unit: item.price_per_unit,
           product_name: item.products.product_name,
           image: item.products.product_images[0]?.image_url 
-            ? getFullUrl(`/upload/products/${item.products.product_images[0].image_url.replace('/upload/products/', '')}`)
+            ? getFullUrl(item.products.product_images[0].image_url)
             : null,
           shop_name: item.shops.shop_name,
           variant_id: item.variant_id,

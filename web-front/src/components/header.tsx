@@ -191,6 +191,17 @@ export default function Header() {
                         <span>การซื้อของฉัน</span>
                       </button>
                       
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          router.push('/mygroups');
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+                      >
+                        <span className="text-lg">🎯</span>
+                        <span>กลุ่มของฉัน</span>
+                      </button>
+                      
                       <div className="border-t border-gray-100 my-2"></div>
                       
                       <button
@@ -327,6 +338,17 @@ export default function Header() {
                     >
                       <span className="text-lg">📦</span>
                       <span>การซื้อของฉัน</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/mygroups');
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+                    >
+                      <span className="text-lg">🎯</span>
+                      <span>กลุ่มของฉัน</span>
                     </button>
                     
                     <div className="border-t border-gray-100 my-2"></div>
