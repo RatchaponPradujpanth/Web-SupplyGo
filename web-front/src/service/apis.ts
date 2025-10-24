@@ -684,8 +684,6 @@ export interface UserProfile {
   user_id: number;
   username: string;
   email: string;
-  phone_number?: string;
-  profile_picture?: string;
   role: string;
 }
 
@@ -711,7 +709,6 @@ export const updateUserProfile = async (
   profileData: {
     username?: string;
     email?: string;
-    phone_number?: string;
   }
 ): Promise<UserProfile> => {
   try {
@@ -730,33 +727,6 @@ export const updateUserProfile = async (
     const axiosError = error as AxiosError<{ message?: string }>;
     console.error('Error updating user profile:', error);
     throw new Error(axiosError.response?.data?.message || 'ไม่สามารถอัปเดตโปรไฟล์ได้');
-  }
-};
-
-// Upload profile picture
-export const uploadProfilePicture = async (
-  token: string,
-  file: File
-): Promise<{ profile_picture: string }> => {
-  try {
-    const formData = new FormData();
-    formData.append('profile_picture', file);
-
-    const response = await axios.post(
-      `${API_URL}/api/profile/upload-picture`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    console.error('Error uploading profile picture:', error);
-    throw new Error(axiosError.response?.data?.message || 'ไม่สามารถอัปโหลดรูปโปรไฟล์ได้');
   }
 };
 

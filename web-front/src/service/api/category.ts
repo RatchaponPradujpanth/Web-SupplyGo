@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import type { Category , Product  } from '../../types/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -19,9 +19,14 @@ export const getProductsByCategory = async (
   sort?: string
 ): Promise<Product[]> => {
   try {
+    // ✅ Decode URI component ก่อนส่งไป backend (กรณีที่มาจาก URL)
+    const decodedCategoryName = decodeURIComponent(categoryName);
+    
+    console.log("📤 Fetching products for category:", decodedCategoryName);
+    
     const response = await axios.get<Product[]>(`${API_URL}/api/products`, {
       params: {
-        category: categoryName,
+        category: decodedCategoryName,
         page,
         sort,
       },
@@ -29,11 +34,12 @@ export const getProductsByCategory = async (
 
     console.log("✅ Received response:", response.data);
     return response.data;
-  } catch (error: any) {
-    console.error("❌ Error fetching products by category:", error.message);
-    if (error.response) {
-      console.error("Response data:", error.response.data);
-      console.error("Status code:", error.response.status);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("❌ Error fetching products by category:", errorMessage);
+    if (axios.isAxiosError(error)) {
+      console.error("Response data:", error.response?.data);
+      console.error("Status code:", error.response?.status);
     }
     throw error;
   }

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import Footer from '@/components/layout/Footer';
+import { fetchUserRole } from '@/service/apis';
 
 interface ProductImage {
   id: number;
@@ -56,6 +57,26 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState<'description' | 'specs'>('description');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  // ✅ ตรวจสอบ role - ห้าม admin และ store เข้าหน้านี้
+  useEffect(() => {
+    const checkRole = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return; // ถ้าไม่มี token ให้ผ่านไปก่อน (guest)
+
+      try {
+        const userRole = await fetchUserRole(token);
+        if (userRole === 'admin' || userRole === 'store') {
+          alert('⚠️ คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+          router.push('/'); // redirect ไปหน้าหลัก
+        }
+      } catch (error) {
+        console.error('Error checking role:', error);
+      }
+    };
+
+    checkRole();
+  }, [router]);
 
   useEffect(() => {
     if (!productId) return;
@@ -428,7 +449,7 @@ export default function ProductDetailPage() {
           {relatedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedProducts.map((relatedProduct) => {
-                const productImage = (relatedProduct as any).image || relatedProduct.product_images?.[0]?.image_url;
+                const productImage = (relatedProduct as Product & { image?: string }).image || relatedProduct.product_images?.[0]?.image_url;
                 const imageUrl = productImage ? getImageUrl(productImage) : null;
                 
                 return (

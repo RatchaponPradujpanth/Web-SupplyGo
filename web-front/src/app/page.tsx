@@ -168,22 +168,22 @@ export default function UserDashboardPage() {
         <section className="bg-gradient-to-r from-primary to-primary/80 rounded-card shadow-card p-8 md:p-12 mb-8 text-white">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex-1">
-              <h1 className="text-3xl md:text-4xl font-bold mb-3">Today&apos;s Hot Deals 🔥</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-3">สินค้าลดราคาวันนี้ 🔥</h1>
               <p className="text-lg md:text-xl opacity-90 mb-6">
-                Join a group to unlock better prices and save more!
+                ร่วมกลุ่มซื้อสินค้าเพื่อรับส่วนลดพิเศษ!
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => router.push('/groupbuying')}
                   className="rounded-pill px-6 py-3 bg-secondary text-textmain font-semibold hover:bg-secondary/90 transition shadow-md"
                 >
-                  🤝 Start Group Buying
+                  🤝 เริ่มการซื้อแบบกลุ่ม
                 </button>
                 <button
                   onClick={() => requireLogin(() => router.push('/cart'))}
                   className="rounded-pill px-6 py-3 bg-white text-primary font-semibold hover:bg-gray-50 transition shadow-md"
                 >
-                  🛒 View Cart
+                  🛒 ดูตะกร้าสินค้า
                 </button>
               </div>
             </div>
@@ -200,8 +200,8 @@ export default function UserDashboardPage() {
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">📦</div>
-            <h3 className="font-semibold text-sm md:text-base">Order History</h3>
-            <p className="text-xs text-textmuted mt-1">Track your orders</p>
+            <h3 className="font-semibold text-sm md:text-base">ประวัติการสั่งซื้อ</h3>
+            <p className="text-xs text-textmuted mt-1">ติดตามคำสั่งซื้อ</p>
           </button>
 
           <button
@@ -209,8 +209,8 @@ export default function UserDashboardPage() {
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">👤</div>
-            <h3 className="font-semibold text-sm md:text-base">My Profile</h3>
-            <p className="text-xs text-textmuted mt-1">Manage account</p>
+            <h3 className="font-semibold text-sm md:text-base">โปรไฟล์</h3>
+            <p className="text-xs text-textmuted mt-1">จัดการบัญชี</p>
           </button>
 
           <button
@@ -218,8 +218,8 @@ export default function UserDashboardPage() {
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">🤝</div>
-            <h3 className="font-semibold text-sm md:text-base">Group Buying</h3>
-            <p className="text-xs text-textmuted mt-1">Save together</p>
+            <h3 className="font-semibold text-sm md:text-base">ซื้อแบบกลุ่ม</h3>
+            <p className="text-xs text-textmuted mt-1">ประหยัดด้วยกัน</p>
           </button>
         </section>
 
@@ -232,9 +232,9 @@ export default function UserDashboardPage() {
           <>
             <section className="mb-10">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Shop by Category</h2>
+                <h2 className="text-2xl font-bold">หมวดหมู่สินค้า</h2>
                 <button className="text-primary hover:underline text-sm font-medium">
-                  View All →
+                  ดูทั้งหมด →
                 </button>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-8 gap-3 md:gap-4">
@@ -260,14 +260,14 @@ export default function UserDashboardPage() {
               <section className="mb-10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold">Best Sellers Today 🏆</h2>
-                    <p className="text-textmuted text-sm mt-1">Most popular items right now</p>
+                    <h2 className="text-2xl font-bold">สินค้าขายดี 🏆</h2>
+                    <p className="text-textmuted text-sm mt-1">สินค้ายอดนิยมขณะนี้</p>
                   </div>
                   <button 
                     onClick={() => router.push('/products')}
                     className="text-primary hover:underline text-sm font-medium"
                   >
-                    View All →
+                    ดูทั้งหมด →
                   </button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -288,14 +288,14 @@ export default function UserDashboardPage() {
               <section className="mb-10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold">Recommended for You ⭐</h2>
-                    <p className="text-textmuted text-sm mt-1">Handpicked just for you</p>
+                    <h2 className="text-2xl font-bold">แนะนำสำหรับคุณ ⭐</h2>
+                    <p className="text-textmuted text-sm mt-1">คัดสรรมาเพื่อคุณโดยเฉพาะ</p>
                   </div>
                   <button 
                     onClick={() => router.push('/products')}
                     className="text-primary hover:underline text-sm font-medium"
                   >
-                    View All →
+                    ดูทั้งหมด →
                   </button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -315,28 +315,28 @@ export default function UserDashboardPage() {
             {products.length === 0 && (
               <div className="bg-white rounded-card shadow-card p-12 text-center">
                 <div className="text-6xl mb-4">🛍️</div>
-                <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
-                <p className="text-textmuted mb-6">Check back soon for amazing deals!</p>
+                <h3 className="text-xl font-semibold mb-2">ไม่พบสินค้า</h3>
+                <p className="text-textmuted mb-6">กรุณากลับมาใหม่เร็วๆ นี้ เพื่อดูสินค้าราคาพิเศษ!</p>
                 <button
                   onClick={() => router.push('/groupbuying')}
                   className="rounded-pill px-6 py-3 bg-primary text-white font-medium hover:bg-primary/90 transition"
                 >
-                  Explore Group Buying
+                  ดูการซื้อแบบกลุ่ม
                 </button>
               </div>
             )}
 
             {/* Special Banner */}
             <section className="mt-12 bg-gradient-to-r from-accent to-accent/80 rounded-card shadow-card p-8 text-white text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">💰 Save More with Group Buying!</h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">💰 ประหยัดมากขึ้นด้วยการซื้อแบบกลุ่ม!</h2>
               <p className="text-lg mb-6 opacity-90">
-                Team up with friends and get exclusive discounts
+                รวมกลุ่มกับเพื่อนๆ และรับส่วนลดพิเศษ
               </p>
               <button
                 onClick={() => router.push('/groupbuying')}
                 className="rounded-pill px-8 py-3 bg-white text-accent font-semibold hover:bg-gray-50 transition shadow-md"
               >
-                Learn More
+                เรียนรู้เพิ่มเติม
               </button>
             </section>
           </>

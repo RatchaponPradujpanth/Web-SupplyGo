@@ -184,6 +184,8 @@ export default function GroupBuyingPage() {
 
     const groupData = await loadgroupbuy(token);
     if (Array.isArray(groupData)) {
+      console.log('🔍 Group data received:', groupData);
+      console.log('🖼️ First group image:', groupData[0]?.product_image);
       setGroups(groupData);
     }
 
@@ -371,8 +373,14 @@ export default function GroupBuyingPage() {
             const createdTimestamp = group.created_at ? new Date(group.created_at).getTime() : Date.now();
             const totalDuration = expireTimestamp - createdTimestamp;
             const remaining = Math.max(expireTimestamp - nowTime, 0);
-            const percent = Math.min(100, Math.round((remaining / totalDuration) * 100));
-            const progressColor = percent <= 20 ? 'bg-red-500' : percent <= 50 ? 'bg-yellow-500' : 'bg-green-500';
+            const timePercent = totalDuration > 0 ? Math.min(100, Math.round((remaining / totalDuration) * 100)) : 0;
+            
+            // Member progress
+            const memberPercent = group.required_members > 0 
+              ? Math.min(100, Math.round((group.member_count / group.required_members) * 100))
+              : 0;
+            
+            const progressColor = timePercent <= 20 ? 'bg-red-500' : timePercent <= 50 ? 'bg-yellow-500' : 'bg-green-500';
 
             return (
               <div 
@@ -383,9 +391,17 @@ export default function GroupBuyingPage() {
                 {group.product_image && (
                   <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200">
                     <img 
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${group.product_image}`}
+                      src={
+                        group.product_image.startsWith('http') 
+                          ? group.product_image 
+                          : `${process.env.NEXT_PUBLIC_API_URL}${group.product_image}`
+                      }
                       alt="Main product" 
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        (e.target as HTMLImageElement).src = '/placeholder.png';
+                      }}
                     />
                     {group.user_in_group && (
                       <div className="absolute top-3 right-3 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2">
@@ -442,7 +458,7 @@ export default function GroupBuyingPage() {
                     <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                       <div 
                         className={`h-3 ${progressColor} transition-all duration-500 shadow-sm`} 
-                        style={{ width: `${percent}%` }}
+                        style={{ width: `${memberPercent}%` }}
                       />
                     </div>
                   </div>

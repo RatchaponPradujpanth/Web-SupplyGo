@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getProductsByCategory } from '@/service/api/category';
-import { addtocart } from '@/service/api/addtocart';
 import ProductCard from '@/components/customer/ProductCard';
-import ProductDetail from '@/components/customer/ProductDetail';
 import type { Product } from '@/types/type';
 
 export default function ProductDisplayPage() {
@@ -13,116 +11,55 @@ export default function ProductDisplayPage() {
   const router = useRouter();
   
   const categoryNameParam = params.categoryName;
-  const categoryName =
+  const categoryNameEncoded =
     typeof categoryNameParam === 'string'
       ? categoryNameParam
       : Array.isArray(categoryNameParam)
       ? categoryNameParam[0]
       : '';
+  
+  // ✅ Decode URL สำหรับแสดงผลและส่งไป API
+  const categoryName = decodeURIComponent(categoryNameEncoded);
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sortBy, setSortBy] = useState('relevance');
   
-  // Filter states
+  // Filter states - เหลือแค่ราคา
   const [filters, setFilters] = useState({
-    brands: [] as string[],
     minPrice: '',
     maxPrice: '',
-    rating: null as number | null,
-    freeShipping: false,
-    cod: false,
-    ship24h: false,
-    officialStore: false,
-    topRated: false
   });
 
   // Pagination - เปลี่ยนเป็น 6 ชิ้นต่อหน้า
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  const formatPrice = (price: number | null | undefined) => {
-    if (price == null) return 'ติดต่อร้านค้า';
+  // Helper function สำหรับแสดงราคา
+  const getDisplayPrice = (product: Product) => {
+    if (product.price == null) return 'ติดต่อร้านค้า';
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: 'THB',
       minimumFractionDigits: 2,
-    }).format(price);
-  };
-
-  const getDisplayPrice = (product: Product, variantId?: number | null) => {
-    if (product.product_variants && product.product_variants.length > 0) {
-      if (variantId) {
-        const selectedVariant = product.product_variants.find(v => v.variant_id === variantId);
-        return formatPrice(selectedVariant?.price);
-      } else {
-        const prices = product.product_variants
-          .map(v => v.price)
-          .filter((p): p is number => p !== null);
-        if (prices.length === 0) return 'ติดต่อร้านค้า';
-        if (prices.length === 1) return formatPrice(prices[0]);
-        return `${formatPrice(Math.min(...prices))} - ${formatPrice(Math.max(...prices))}`;
-      }
-    } else {
-      return formatPrice(product.price);
-    }
-  };
-
-  const requireLogin = (action: () => void) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('⚠️ กรุณาเข้าสู่ระบบก่อนทำรายการ');
-      return;
-    }
-    action();
-  };
-
-  const handleAddToCart = async (
-    productId: number,
-    quantity: number,
-    variantId?: number,
-    optionValueIds?: number[]
-  ) => {
-    requireLogin(async () => {
-      try {
-        await addtocart(productId, quantity, variantId, optionValueIds);
-        alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
-        setSelectedProduct(null);
-      } catch (error) {
-        console.error('❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้:', error);
-        const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดขณะเพิ่มสินค้า';
-        alert(errorMessage);
-        
-        // ถ้า error เกี่ยวกับ token ให้ redirect ไป login
-        if (errorMessage.includes('Session') || errorMessage.includes('เข้าสู่ระบบ')) {
-          router.push('/login');
-        }
-      }
-    });
+    }).format(product.price);
   };
 
   const handleProductCardClick = (product: Product) => {
-    setSelectedProduct(product);
+    // ✅ ไปหน้า product detail แทนการเปิด modal
+    router.push(`/product/${product.product_id}`);
   };
 
   // Clear filters
   const handleClearFilters = () => {
     setFilters({
-      brands: [],
       minPrice: '',
       maxPrice: '',
-      rating: null,
-      freeShipping: false,
-      cod: false,
-      ship24h: false,
-      officialStore: false,
-      topRated: false
     });
   };
 
   // Apply filters & sort
   const getFilteredAndSortedProducts = () => {
-    let filtered = [...products];
+    const filtered = [...products];
 
     // Apply filters here if needed
     // (เพิ่มโลจิกกรองตาม filters ได้ตามต้องการ)
@@ -168,17 +105,6 @@ export default function ProductDisplayPage() {
     loadData();
   }, [categoryName]);
 
-  if (selectedProduct) {
-    return (
-      <ProductDetail
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onAddToCart={handleAddToCart}
-        getDisplayPrice={getDisplayPrice}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-bgpage">
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
@@ -216,116 +142,25 @@ export default function ProductDisplayPage() {
             <div className="bg-white rounded-card shadow-card p-4 sticky top-4">
               <h2 className="font-semibold mb-4">ตัวกรอง</h2>
 
-              {/* Brand */}
-              <div className="mb-5">
-                <div className="font-medium mb-2">แบรนด์</div>
-                <div className="space-y-2 text-sm text-textmuted">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> Samsung
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> Garmin
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> Xiaomi
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> Sony
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> UGREEN
-                  </label>
-                  <button className="mt-1 text-primary text-xs">แสดงเพิ่มเติม</button>
-                </div>
-              </div>
-
               {/* Price */}
               <div className="mb-5">
-                <div className="font-medium mb-2">ราคา</div>
+                <div className="font-medium mb-2">ช่วงราคา</div>
                 <div className="flex items-center gap-2">
                   <input
+                    type="number"
                     placeholder="ต่ำสุด"
                     value={filters.minPrice}
                     onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                    className="w-24 bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
+                    className="w-full bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
                   />
                   <span>-</span>
                   <input
+                    type="number"
                     placeholder="สูงสุด"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                    className="w-24 bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
+                    className="w-full bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
                   />
-                </div>
-              </div>
-
-              {/* Rating */}
-              <div className="mb-5">
-                <div className="font-medium mb-2">คะแนน</div>
-                <div className="space-y-2 text-sm text-textmuted">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> ★★★★★
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> ★★★★☆ ขึ้นไป
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" /> ★★★☆☆ ขึ้นไป
-                  </label>
-                </div>
-              </div>
-
-              {/* Shipping */}
-              <div className="mb-5">
-                <div className="font-medium mb-2">การจัดส่ง</div>
-                <div className="space-y-2 text-sm text-textmuted">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.freeShipping}
-                      onChange={(e) => setFilters({ ...filters, freeShipping: e.target.checked })}
-                    />
-                    จัดส่งฟรี
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.cod}
-                      onChange={(e) => setFilters({ ...filters, cod: e.target.checked })}
-                    />
-                    เก็บเงินปลายทาง
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.ship24h}
-                      onChange={(e) => setFilters({ ...filters, ship24h: e.target.checked })}
-                    />
-                    จัดส่งภายใน 24 ชม.
-                  </label>
-                </div>
-              </div>
-
-              {/* Shop type */}
-              <div className="mb-5">
-                <div className="font-medium mb-2">ประเภทร้านค้า</div>
-                <div className="space-y-2 text-sm text-textmuted">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.officialStore}
-                      onChange={(e) => setFilters({ ...filters, officialStore: e.target.checked })}
-                    />
-                    ร้านค้าทางการ
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.topRated}
-                      onChange={(e) => setFilters({ ...filters, topRated: e.target.checked })}
-                    />
-                    ผู้ขายชั้นนำ
-                  </label>
                 </div>
               </div>
 

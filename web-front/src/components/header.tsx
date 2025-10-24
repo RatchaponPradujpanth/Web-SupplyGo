@@ -131,11 +131,100 @@ export default function Header() {
           )}
         </Link>
 
-        <div className="hidden md:flex items-center gap-3 w-1/2">
-          {/* ซ่อน search bar และ cart ในหน้า auth */}
-          {!isAuthPage && (
-            <>
-              <div ref={searchRef} className="relative w-full">
+        {/* ✅ ถ้าเป็น admin/store ให้แสดงแค่ user menu ชิดขวา */}
+        {(role === 'admin' || role === 'store') ? (
+          <div className="hidden md:flex items-center">
+            {username ? (
+              <div ref={userMenuRef} className="relative">
+                <button
+                  onMouseEnter={() => setShowUserMenu(true)}
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 rounded-pill px-4 py-2 hover:bg-primary/10 hover:text-primary text-sm transition-all"
+                >
+                  <span className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+                    {username.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="font-medium">{username}</span>
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div 
+                    onMouseLeave={() => setShowUserMenu(false)}
+                    className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                      <p className="text-sm font-semibold text-gray-800">{username}</p>
+                      {role && (
+                        <p className="text-xs text-gray-500 mt-1">Role: {role}</p>
+                      )}
+                    </div>
+                    
+                    <div className="py-2">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          router.push('/profile');
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+                      >
+                        <span className="text-lg">👤</span>
+                        <span>บัญชีของฉัน</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          router.push('/order');
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+                      >
+                        <span className="text-lg">📦</span>
+                        <span>การซื้อของฉัน</span>
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-2"></div>
+                      
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          handleLogout();
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-red-50 hover:text-red-600 transition flex items-center gap-3 text-sm text-gray-700"
+                      >
+                        <span className="text-lg">🚪</span>
+                        <span>ออกจากระบบ</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              !isAuthPage && (
+                <button
+                  onClick={() => router.push('/login')}
+                  className="rounded-pill px-3 py-2 border border-gray-200 hover:border-primary/40 hover:text-primary text-sm"
+                >
+                  Login
+                </button>
+              )
+            )}
+          </div>
+        ) : (
+          // ✅ สำหรับ customer/guest แสดง search bar + cart + user menu
+          <div className="hidden md:flex items-center gap-3 w-1/2">
+            {/* ซ่อน search bar และ cart ในหน้า auth และสำหรับ role admin/store */}
+            {!isAuthPage && (
+              <>
+                <div ref={searchRef} className="relative w-full">
                 <div className="relative">
                   <input
                     aria-label="Search"
@@ -273,6 +362,7 @@ export default function Header() {
             )
           )}
         </div>
+        )}
       </div>
     </header>
   );
