@@ -1,0 +1,141 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SupplyGo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2D89EF',      /* blue */
+            secondary: '#FFB300',    /* yellow-gold */
+            accent: '#00C853',       /* green */
+            bgpage: '#F5F7FA',
+            textmain: '#212121',
+            textmuted: '#616161'
+          },
+          borderRadius: {
+            'card': '0.5rem',
+            'input': '0.75rem',
+            'pill': '999px'
+          },
+          boxShadow: {
+            'card': '0 2px 10px rgba(0,0,0,0.06)'
+          },
+          fontFamily: {
+            inter: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Helvetica Neue', 'Arial']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html,body{font-family:Inter,ui-sans-serif,system-ui; color:#212121;}
+  </style>
+</head>
+<body class="bg-bgpage text-textmain">
+
+<header class="bg-white shadow-card sticky top-0 z-20">
+  <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-primary"></div>
+      <span class="font-semibold text-lg">SupplyGo</span>
+      <span class="ml-3 rounded-pill bg-primary/10 text-primary px-3 py-1 text-xs font-medium">Role: Admin</span>
+    </a>
+    <div class="hidden md:flex items-center gap-3 w-1/2">
+      <input aria-label="Search" placeholder="Search products" class="w-full bg-bgpage rounded-input px-4 py-2 outline-none focus:ring-2 ring-primary/30" />
+      <a href="cart.html" class="rounded-pill px-3 py-2 hover:bg-primary/10 hover:text-primary text-sm">Cart</a>
+      <a href="login.html" class="rounded-pill px-3 py-2 border border-gray-200 hover:border-primary/40 hover:text-primary text-sm">Login</a>
+    </div>
+  </div>
+</header>
+<main class="max-w-7xl mx-auto px-4 md:px-6 py-8 grid md:grid-cols-4 gap-6">
+  <aside class="md:col-span-1 bg-white rounded-card shadow-card p-4">
+    <nav class="space-y-1 text-sm">
+      <a href="admin-dashboard.html" class="block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition">Dashboard</a>
+      <a href="admin-users.html" class="block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition">Users</a>
+      <a href="admin-products.html" class="block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition">Products</a>
+      <a href="admin-orders.html" class="block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition">Orders</a>
+      <a href="admin-payments.html" class="block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition">Payments</a>
+      <a href="admin-reports.html" class="block px-3 py-2 rounded-pill bg-primary text-white shadow">Reports</a>
+      <a href="admin-settings.html" class="block px-3 py-2 rounded-pill hover:bg-primary/10 hover:text-primary transition">Settings</a>
+    </nav>
+  </aside>
+  <section class="md:col-span-3 space-y-6">
+    <h1 class="text-2xl font-semibold">Reports</h1>
+<div class="grid md:grid-cols-2 gap-6">
+  <div class="bg-white rounded-card shadow-card p-5">
+    <h2 class="font-semibold mb-3">GMV by day</h2>
+    <svg viewBox="0 0 600 220" class="w-full h-64">
+      <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#2D89EF" stop-opacity="0.35"/><stop offset="100%" stop-color="#2D89EF" stop-opacity="0.05"/></linearGradient></defs>
+      <polyline fill="url(#g1)" stroke="#2D89EF" stroke-width="2" points="0,180 40,170 80,150 120,160 160,130 200,140 240,110 280,120 320,90 360,95 400,80 440,100 480,70 520,85 560,60 600,70 600,220 0,220"/>
+    </svg>
+  </div>
+  <div class="bg-white rounded-card shadow-card p-5">
+    <h2 class="font-semibold mb-3">Orders by status</h2>
+    <svg viewBox="0 0 600 220" class="w-full h-64">
+      <rect x="60" y="60" width="40" height="120" fill="#2D89EF"/>
+      <rect x="140" y="40" width="40" height="140" fill="#2D89EF"/>
+      <rect x="220" y="80" width="40" height="100" fill="#2D89EF"/>
+      <rect x="300" y="30" width="40" height="150" fill="#2D89EF"/>
+      <rect x="380" y="70" width="40" height="110" fill="#2D89EF"/>
+      <rect x="460" y="90" width="40" height="90" fill="#2D89EF"/>
+    </svg>
+  </div>
+</div>
+
+    
+<div class="grid md:grid-cols-2 gap-6">
+  <div class="bg-white rounded-card shadow-card p-5 h-64 flex items-center justify-center text-textmuted">GMV by day (chart)</div>
+  <div class="bg-white rounded-card shadow-card p-5 h-64 flex items-center justify-center text-textmuted">Orders by status (chart)</div>
+</div>
+<div class="bg-white rounded-card shadow-card p-5 mt-4">
+  <h2 class="font-semibold mb-3">Top sellers</h2>
+  <table class="w-full text-sm">
+    <thead class="text-left text-textmuted"><tr><th class="p-3">Seller</th><th class="p-3">Orders</th><th class="p-3">GMV</th></tr></thead>
+    <tbody>
+      <tr class="border-t"><td class="p-3">TechHub</td><td class="p-3">2,392</td><td class="p-3">฿3.1M</td></tr>
+      <tr class="border-t"><td class="p-3">Gadget Lab</td><td class="p-3">1,884</td><td class="p-3">฿2.2M</td></tr>
+    </tbody>
+  </table>
+</div>
+
+  </section>
+</main>
+
+
+<footer class="mt-16 border-t border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 md:px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div>
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary"></div>
+        <span class="font-semibold text-lg">SupplyGo</span>
+      </div>
+      <p class="text-textmuted mt-3 text-sm">Marketplace for better prices.</p>
+    </div>
+    <div>
+      <h4 class="font-semibold mb-3">Resources</h4>
+      <ul class="space-y-2 text-sm text-textmuted">
+        <li><a>Help Center</a></li>
+        <li><a>Shipping & Returns</a></li>
+        <li><a>Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="font-semibold mb-3">Get the best deals</h4>
+      <div class="flex gap-2">
+        <input placeholder="Email address" class="flex-1 bg-bgpage rounded-input px-4 py-2 outline-none" />
+        <button class="px-4 py-2 rounded-pill bg-secondary text-textmain font-medium">Subscribe</button>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
