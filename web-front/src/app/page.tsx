@@ -16,8 +16,10 @@ export default function UserDashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categoryScrollPosition, setCategoryScrollPosition] = useState(0);
 
   const router = useRouter();
+  const categoryScrollRef = React.useRef<HTMLDivElement>(null);
 
   // Mapping icon สำหรับ category (frontend)
   const categoryIcons: Record<string, string> = {
@@ -157,9 +159,8 @@ export default function UserDashboardPage() {
     );
   }
 
-  // แบ่งสินค้าเป็น Best Sellers (8 อันแรก) และ Recommended (ที่เหลือ)
-  const bestSellers = products.slice(0, 8);
-  const recommended = products.slice(8, 16);
+  // Shuffle products แบบสุ่ม และเอาแค่ 12 ชิ้น (3 แถว)
+  const shuffledProducts = [...products].sort(() => Math.random() - 0.5).slice(0, 12);
 
   return (
     <div className="min-h-screen bg-bgpage">
@@ -194,7 +195,7 @@ export default function UserDashboardPage() {
         </section>
 
         {/* Quick Actions */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
           <button
             onClick={() => requireLogin(() => router.push('/order'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
@@ -215,7 +216,7 @@ export default function UserDashboardPage() {
 
           <button
             onClick={() => router.push('/groupbuying')}
-            className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
+            className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group col-span-2 md:col-span-1"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">🤝</div>
             <h3 className="font-semibold text-sm md:text-base">ซื้อแบบกลุ่ม</h3>
@@ -231,13 +232,10 @@ export default function UserDashboardPage() {
         ) : (
           <>
             <section className="mb-10">
-              <div className="flex items-center justify-between mb-6">
+              <div className="mb-6 text-center">
                 <h2 className="text-2xl font-bold">หมวดหมู่สินค้า</h2>
-                <button className="text-primary hover:underline text-sm font-medium">
-                  ดูทั้งหมด →
-                </button>
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-8 gap-3 md:gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 max-w-4xl mx-auto">
                 {categories.map((cat) => (
                   <button
                     key={cat.category_name}
@@ -256,50 +254,16 @@ export default function UserDashboardPage() {
             </section>
 
             {/* Best Sellers Section */}
-            {bestSellers.length > 0 && (
+            {shuffledProducts.length > 0 && (
               <section className="mb-10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold">สินค้าขายดี 🏆</h2>
-                    <p className="text-textmuted text-sm mt-1">สินค้ายอดนิยมขณะนี้</p>
+                    <h2 className="text-2xl font-bold">สินค้าทั้งหมด 🛍️</h2>
+                    <p className="text-textmuted text-sm mt-1">เลือกสรรสินค้าคุณภาพ</p>
                   </div>
-                  <button 
-                    onClick={() => router.push('/products')}
-                    className="text-primary hover:underline text-sm font-medium"
-                  >
-                    ดูทั้งหมด →
-                  </button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {bestSellers.map((product) => (
-                    <ProductCard
-                      key={product.product_id}
-                      product={product}
-                      onSelect={handleProductCardClick}
-                      getDisplayPrice={getDisplayPrice}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Recommended Section */}
-            {recommended.length > 0 && (
-              <section className="mb-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold">แนะนำสำหรับคุณ ⭐</h2>
-                    <p className="text-textmuted text-sm mt-1">คัดสรรมาเพื่อคุณโดยเฉพาะ</p>
-                  </div>
-                  <button 
-                    onClick={() => router.push('/products')}
-                    className="text-primary hover:underline text-sm font-medium"
-                  >
-                    ดูทั้งหมด →
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {recommended.map((product) => (
+                  {shuffledProducts.map((product) => (
                     <ProductCard
                       key={product.product_id}
                       product={product}
