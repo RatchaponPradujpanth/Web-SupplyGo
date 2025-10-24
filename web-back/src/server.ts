@@ -56,7 +56,7 @@ import otpRoute from './routes/otpRoute';
 import profileRoute from "./routes/profileRoute";
 import searchRoute from "./routes/searchRoute";
 
-const PORT = process.env.PORT
+
 // dotenv.config({path:".env"}); // โหลดค่า .env
 dotenv.config();
 
@@ -122,8 +122,7 @@ app.use("/api",otpRoute);
 app.use("/api",searchRoute);
 
 
-app.listen(PORT, () => {
-  console.log("Server is running on port 5001");
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
