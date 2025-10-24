@@ -396,6 +396,8 @@ export interface GroupBuying {
   current_members?: number;
   is_full?: boolean;
   time_left?: number | null;   // ⏳ เพิ่มอันนี้
+  cancellation_type?: "shop_cancelled" | "user_left" | null;
+  cancellation_message?: string | null;
 }
 
 

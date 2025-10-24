@@ -68,13 +68,15 @@ export default function OrderHistoryPage() {
 
     return groupData.filter(group => {
       if (statusTab === 'to_ship') {
-        return group.status === 'pending' || group.status === 'active';
+        // แสดงเฉพาะกลุ่มที่ยังอยู่ในกลุ่ม และยังไม่ถูกยกเลิก
+        return !group.cancellation_message && (group.status === 'pending' || group.status === 'active');
       } else if (statusTab === 'to_receive') {
-        return group.status === 'processing' || group.status === 'shipped';
+        return !group.cancellation_message && (group.status === 'processing' || group.status === 'shipped');
       } else if (statusTab === 'completed') {
-        return group.status === 'completed' || group.status === 'delivered';
+        return !group.cancellation_message && (group.status === 'completed' || group.status === 'delivered');
       } else if (statusTab === 'cancelled') {
-        return group.status === 'cancelled' || group.status === 'expired';
+        // แสดงทั้ง: 1) กลุ่มที่ร้านยกเลิก 2) กลุ่มที่ลูกค้ากดออก 3) กลุ่มหมดอายุ
+        return group.status === 'cancelled' || group.status === 'expired' || !!group.cancellation_message;
       }
       return false;
     });
@@ -218,6 +220,17 @@ export default function OrderHistoryPage() {
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-800 mb-1">{group.group_name || 'กลุ่มซื้อ'}</h3>
                       <p className="text-sm text-gray-500">เริ่มเมื่อ: {new Date(group.created_at).toLocaleDateString('th-TH')}</p>
+                      
+                      {/* ✅ แสดง cancellation message */}
+                      {group.cancellation_message && (
+                        <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                          <span className="text-red-500 text-lg">⚠️</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-red-800">สาเหตุการยกเลิก:</p>
+                            <p className="text-sm text-red-700 mt-1">{group.cancellation_message}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                       group.status === 'active' ? 'bg-green-100 text-green-800' :
