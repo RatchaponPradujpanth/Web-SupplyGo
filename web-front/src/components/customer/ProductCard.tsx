@@ -50,11 +50,6 @@ export default function ProductCard({ product, onSelect, getDisplayPrice }: Prod
       <div className="mt-2 flex items-center gap-2 text-sm">
         <span className="font-semibold text-green-600">{getDisplayPrice(product)}</span>
       </div>
-
-      {/* ปุ่ม Add to cart */}
-      <button className="mt-3 w-full rounded-full bg-blue-600 text-white py-2 text-sm hover:bg-blue-700 transition">
-        Add to cart
-      </button>
     </div>
   );
 }

@@ -138,7 +138,7 @@ export default function UserDashboardPage() {
   };
 
   const handleProductCardClick = (product: Product) => {
-    setSelectedProduct(product);
+    router.push(`/product/${product.product_id}`);
   };
 
   const handleCategoryClick = async (categoryName: string) => {
