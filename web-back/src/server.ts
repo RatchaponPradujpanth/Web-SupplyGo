@@ -1,5 +1,5 @@
 import express ,{Request,Response} from "express";
-import dotenv from 'dotenv';
+import "dotenv/config";
 import loginRoute from "./routes/loginRoute";
 import registerRoute from "./routes/registerRoute";
 import cors from "cors";
@@ -57,8 +57,7 @@ import profileRoute from "./routes/profileRoute";
 import searchRoute from "./routes/searchRoute";
 
 
-// dotenv.config({path:".env"}); // โหลดค่า .env
-dotenv.config();
+
 
 const PORT = process.env.PORT || 4000;
 const app = express();

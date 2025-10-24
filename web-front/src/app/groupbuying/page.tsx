@@ -409,19 +409,21 @@ export default function GroupBuyingPage() {
                 className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
               >
                 {/* Product Images */}
-                {group.product_image && (
-                  <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200">
+                <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200">
                     <img 
                       src={
-                        group.product_image.startsWith('http') 
-                          ? group.product_image 
-                          : `${process.env.NEXT_PUBLIC_API_URL}${group.product_image}`
+                        group.product_image
+                          ? (group.product_image.startsWith('http') 
+                             ? group.product_image 
+                             : `${process.env.NEXT_PUBLIC_API_URL}${group.product_image}`)
+                          : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNNzUgOTJIMTI1TTEwMCA2N1YxMTciIHN0cm9rZT0iIzk0QTNCOCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4='
                       }
                       alt="Main product" 
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Fallback to placeholder if image fails to load
-                        (e.target as HTMLImageElement).src = '/placeholder.png';
+                        const imgElement = e.target as HTMLImageElement;
+                        imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNNzUgOTJIMTI1TTEwMCA2N1YxMTciIHN0cm9rZT0iIzk0QTNCOCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=';
+                        imgElement.onerror = null; // ป้องกัน infinite loop
                       }}
                     />
                     {group.user_in_group && (
@@ -434,8 +436,7 @@ export default function GroupBuyingPage() {
                         เต็มแล้ว
                       </div>
                     )}
-                  </div>
-                )}
+                </div>
 
                 <div className="p-6">
                   {/* Group Name & Description */}
@@ -499,11 +500,33 @@ export default function GroupBuyingPage() {
                     </div>
                   )}
 
+                  {/* Status Badge */}
+                  <div className="mb-4">
+                    <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+                      group.status === 'open'
+                        ? 'bg-green-100 text-green-700'
+                        : group.status === 'confirmed'
+                        ? 'bg-blue-100 text-blue-700'
+                        : group.status === 'cancelled'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {group.status === 'open' && '🟢 เปิดรับสมาชิก'}
+                      {group.status === 'confirmed' && '✅ ยืนยันการสั่งซื้อแล้ว'}
+                      {group.status === 'cancelled' && '❌ ยกเลิกแล้ว'}
+                    </div>
+                  </div>
+
                   {/* Action Buttons */}
                   <div className="flex gap-3">
                     <button
                       onClick={() => setModalGroupId(group.group_buying_id)}
-                      disabled={isJoining || group.status !== 'open' || group.is_full || group.user_in_group}
+                      disabled={
+                        isJoining || 
+                        group.status !== 'open' || 
+                        group.is_full || 
+                        group.user_in_group
+                      }
                       className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 transform ${
                         isJoining || group.status !== 'open' || group.is_full || group.user_in_group
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -512,6 +535,10 @@ export default function GroupBuyingPage() {
                     >
                       {isJoining
                         ? '⏳ กำลังเข้ากลุ่ม...'
+                        : group.status !== 'open'
+                        ? group.status === 'confirmed'
+                          ? '✅ กลุ่มถูกยืนยันแล้ว'
+                          : '❌ กลุ่มถูกยกเลิก'
                         : group.is_full
                         ? '🚫 เต็มแล้ว'
                         : group.user_in_group
@@ -519,7 +546,7 @@ export default function GroupBuyingPage() {
                         : '🎯 เข้าร่วมกลุ่ม'}
                     </button>
 
-                    {group.user_in_group && (
+                    {group.user_in_group && group.status === 'open' && (
                       <button
                         onClick={() => handleLeaveGroup(group.group_buying_id)}
                         disabled={isLeaving}

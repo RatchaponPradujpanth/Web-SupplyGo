@@ -160,11 +160,11 @@ function PaymentFormContent() {
         await savetransaction(token, payment.shop_id, payment.order_shop_id, paymentIntent.id);
       }
 
-      setMessage({ type: 'success', text: '✅ ชำระเงินสำเร็จ! ระบบกำลังรอ webhook เพื่ออัปเดตสถานะ' });
+      setMessage({ type: 'success', text: ' ชำระเงินสำเร็จ กำลังนำคุณกลับไปหน้าประวัติ...' });
       setPaidSuccess(true);
 
       setTimeout(() => {
-        router.push('/orderhistory');
+        router.push('/order');
       }, 2000);
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะชำระเงิน' });
@@ -288,20 +288,25 @@ function PaymentFormContent() {
 
       {!paidSuccess && paymentList.length > 0 && (
         <>
-          <div className="mb-6">
-            <label className="block font-semibold mb-2">เลือกที่อยู่จัดส่ง</label>
-            <select
-              value={addressId !== null ? addressId.toString() : ''}
-              onChange={(e) => setAddressId(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-md p-2"
-            >
-              {addresses.map((addr) => (
-                <option key={addr.address_id} value={addr.address_id.toString()}>
-                  {addr.firstname} {addr.lastname} - {addr.house_number} {addr.street}, {addr.district}
-                </option>
-              ))}
-            </select>
-          </div>
+          {addresses.length > 0 && addressId !== null && (
+  <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <h3 className="font-semibold text-gray-700 mb-2">ที่อยู่จัดส่ง</h3>
+    {addresses
+      .filter((addr) => addr.address_id === addressId)
+      .map((addr) => (
+        <div key={addr.address_id} className="text-gray-700 space-y-1">
+          <p>
+            {addr.firstname} {addr.lastname} | {addr.phone_number}
+          </p>
+          <p>
+            {addr.house_number} {addr.street}, {addr.sub_district}, {addr.district}, {addr.province} {addr.postal_code}
+          </p>
+          <p className="text-sm text-gray-500">ประเภทที่อยู่: {addr.address_type}</p>
+        </div>
+      ))}
+  </div>
+)}
+
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <label className="block text-gray-700 font-semibold">

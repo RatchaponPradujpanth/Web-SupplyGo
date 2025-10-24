@@ -3,17 +3,207 @@
 import { useEffect, useState } from 'react'
 import { getOrderHistory } from '@/service/api/orderHistory'
 import { historygroup } from '@/service/api/groupsharing/historygroup'
-import type { OrderHistoryResponse, GroupBuying } from '@/types/type'
+import type { GroupBuying } from '@/types/GroupBuying'
 
 type OrderType = 'normal' | 'groupbuying';
 type StatusTab = 'to_ship' | 'to_receive' | 'completed' | 'cancelled';
 
+interface OrderItem {
+  product_id: number;
+  order_item_id: number;
+  quantity: number;
+  price_per_unit: string;
+  total_price: string;
+  products: {
+    product_name: string;
+  };
+  variant_option: {
+    variant_option_id: number;
+    value: string;
+    option: {
+      name: string;
+    };
+    variant: {
+      sku: string;
+    };
+  } | null;
+}
+
+interface OrderShop {
+  order_shop_id: number;
+  shop_id: number;
+  status: string;
+  tracking_number: string | null;
+  subtotal: string;
+  shops: {
+    shop_name: string;
+  };
+  order_items: OrderItem[];
+}
+
+interface Order {
+  order_id: number;
+  order_date: string | null;
+  total_amount: string;
+  status: string;
+  address_id: number;
+  address: {
+    address_id: number;
+    firstname: string;
+    lastname: string;
+    phone_number: number;
+    house_number: string;
+    street: string;
+    sub_district: string;
+    district: string;
+    province: string;
+    postal_code: number;
+  } | null;
+  order_shops: OrderShop[];
+}
+
+interface OrderHistoryData {
+  orders: {
+    order_id: number;
+    order_date: string | null;
+    total_amount: string;
+    status: string;
+    address_id: number;
+    address: {
+      address_id: number;
+      firstname: string;
+      lastname: string;
+      phone_number: number;
+      house_number: string;
+      street: string;
+      sub_district: string;
+      district: string;
+      province: string;
+      postal_code: number;
+    };
+    order_shops: {
+      order_shop_id: number;
+      shop_id: number;
+      status: string;
+      tracking_number: string | null;
+      subtotal: string;
+      shops: {
+        shop_name: string;
+      };
+      order_items: {
+        product_id: number;
+        order_item_id: number;
+        quantity: number;
+        price_per_unit: string;
+        total_price: string;
+        products: {
+          product_name: string;
+        };
+        variant_option: {
+          variant_option_id: number;
+          value: string;
+          option: {
+            name: string;
+          };
+          variant: {
+            sku: string;
+          };
+        } | null;
+      }[];
+    }[];
+  }[];
+}
+
+interface OrderItem {
+  product_id: number;
+  order_item_id: number;
+  quantity: number;
+  price_per_unit: string;
+  total_price: string;
+  products: {
+    product_name: string;
+  };
+  variant_option: {
+    variant_option_id: number;
+    value: string;
+    option: {
+      name: string;
+    };
+    variant: {
+      sku: string;
+    };
+  } | null;
+}
+
+interface OrderShop {
+  order_shop_id: number;
+  shop_id: number;
+  status: string;
+  tracking_number: string | null;
+  subtotal: string;
+  shops: {
+    shop_name: string;
+  };
+  order_items: OrderItem[];
+}
+
+interface Order {
+  order_id: number;
+  order_date: string | null;
+  total_amount: string;
+  status: string;
+  address_id: number;
+  address: {
+    address_id: number;
+    firstname: string;
+    lastname: string;
+    phone_number: number;
+    house_number: string;
+    street: string;
+    sub_district: string;
+    district: string;
+    province: string;
+    postal_code: number;
+  } | null;
+  order_shops: OrderShop[];
+}
+
 export default function OrderHistoryPage() {
-  const [orderData, setOrderData] = useState<OrderHistoryResponse | null>(null)
-  const [groupData, setGroupData] = useState<GroupBuying[]>([])
+  const [orderData, setOrderData] = useState<OrderHistoryData | null>(null)
+  const [groupData, setGroupData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [orderType, setOrderType] = useState<OrderType>('normal')
   const [statusTab, setStatusTab] = useState<StatusTab>('to_ship')
+
+  // Choose best status tab based on available groupData
+  const getBestStatusForGroups = (groups: any[]): StatusTab => {
+    if (!groups || groups.length === 0) return 'to_ship'
+
+    // Gather member_order_status from first order for each group (if present)
+    const statuses = groups
+      .map(g => g.orders?.[0]?.member_order_status?.toLowerCase())
+      .filter(Boolean)
+
+    if (statuses.some(s => s === 'shipped' || s === 'in_transit')) return 'to_receive'
+    if (statuses.some(s => s === 'pending' || s === 'not paid')) return 'to_ship'
+    if (statuses.some(s => s === 'completed' || s === 'delivered')) return 'completed'
+    if (statuses.some(s => s === 'cancelled')) return 'cancelled'
+
+    // fallback
+    return 'to_ship'
+  }
+
+  // Handler to set order type and auto-select sensible status when switching to groupbuying
+  const handleSetOrderType = (type: OrderType) => {
+    if (type === 'groupbuying') {
+      const best = getBestStatusForGroups(groupData)
+      setStatusTab(best)
+      setOrderType('groupbuying')
+    } else {
+      setOrderType('normal')
+      setStatusTab('to_ship')
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,14 +215,28 @@ export default function OrderHistoryPage() {
       }
 
       try {
-        const [orders, groups] = await Promise.all([
+        const [ordersResponse, groupsResponse] = await Promise.all([
           getOrderHistory(token),
           historygroup(token),
         ])
-        setOrderData(orders)
-        setGroupData(groups)
+        
+        console.log('Orders Response:', ordersResponse)
+        console.log('Groups Response:', groupsResponse)
+        
+        // เช็คและเซ็ตข้อมูล group
+        if (Array.isArray(groupsResponse)) {
+          console.log('Setting group data:', groupsResponse)
+          setGroupData(groupsResponse)
+        } else {
+          console.warn('❌ Group response is not an array:', groupsResponse)
+          setGroupData([])
+        }
+        
+        // เซ็ตข้อมูล order
+        setOrderData(ordersResponse as unknown as OrderHistoryData)
       } catch (err) {
         console.error('❌ ดึงข้อมูลไม่สำเร็จ', err)
+        setGroupData([]) // เซ็ตเป็น array ว่างเมื่อเกิด error
       } finally {
         setLoading(false)
       }
@@ -47,43 +251,67 @@ export default function OrderHistoryPage() {
     if (!orderData?.orders) return [];
     
     return orderData.orders.filter(order => {
+      if (!order) return false;
+      
+      // ดึง status จากทั้ง order และ shop
+      const orderStatus = order.status?.toLowerCase();
       const orderShops = order.order_shops || [];
-      return orderShops.some(shop => {
-        if (statusTab === 'to_ship') {
-          return shop.status === 'pending' || shop.status === 'processing';
-        } else if (statusTab === 'to_receive') {
-          return shop.status === 'shipped' || shop.status === 'in_transit';
-        } else if (statusTab === 'completed') {
-          return shop.status === 'delivered' || shop.status === 'completed';
-        }
-        return false;
-      });
-    });
-  };
-
-  // Filter group buying by status
-  const filterGroupsByStatus = () => {
-    if (orderType === 'normal') return [];
-    if (!groupData) return [];
-
-    return groupData.filter(group => {
+      
       if (statusTab === 'to_ship') {
-        // แสดงเฉพาะกลุ่มที่ยังอยู่ในกลุ่ม และยังไม่ถูกยกเลิก
-        return !group.cancellation_message && (group.status === 'pending' || group.status === 'active');
+        // แสดงออเดอร์ที่รอชำระเงิน และรอจัดส่ง
+        return orderStatus === 'not paid' || 
+               orderShops.some(shop => shop.status?.toLowerCase() === 'not paid' || 
+                                     shop.status?.toLowerCase() === 'pending');
       } else if (statusTab === 'to_receive') {
-        return !group.cancellation_message && (group.status === 'processing' || group.status === 'shipped');
+        // แสดงออเดอร์ที่กำลังจัดส่ง
+        return orderShops.some(shop => shop.status?.toLowerCase() === 'shipped' || 
+                                     shop.status?.toLowerCase() === 'in_transit');
       } else if (statusTab === 'completed') {
-        return !group.cancellation_message && (group.status === 'completed' || group.status === 'delivered');
+        // แสดงออเดอร์ที่เสร็จสมบูรณ์
+        return orderStatus === 'completed' || 
+               orderShops.every(shop => shop.status?.toLowerCase() === 'completed' || 
+                                      shop.status?.toLowerCase() === 'delivered');
       } else if (statusTab === 'cancelled') {
-        // แสดงทั้ง: 1) กลุ่มที่ร้านยกเลิก 2) กลุ่มที่ลูกค้ากดออก 3) กลุ่มหมดอายุ
-        return group.status === 'cancelled' || group.status === 'expired' || !!group.cancellation_message;
+        // แสดงออเดอร์ที่ยกเลิก
+        return orderStatus === 'cancelled' || 
+               orderShops.every(shop => shop.status?.toLowerCase() === 'cancelled');
       }
       return false;
     });
   };
 
   const filteredOrders = filterOrdersByStatus();
-  const filteredGroups = filterGroupsByStatus();
+  // Group buying now comes from groupData state
+  const filteredGroups = orderType === 'groupbuying' ? groupData.filter(group => {
+    // Prefer member_order_status (order-level) for filtering. Fallback to group.status when needed.
+    const orderStatusRaw = group.orders?.[0]?.member_order_status || group.orders?.[0]?.group_order_status;
+    const orderStatus = orderStatusRaw ? String(orderStatusRaw).toLowerCase() : undefined;
+    const groupStatus = group.status?.toLowerCase();
+
+    console.log('Filtering group (by orderStatus):', group.group_name, {
+      groupStatus,
+      orderStatus,
+      statusTab,
+      cancellation: group.cancellation_message
+    });
+
+    if (statusTab === 'to_ship') {
+      // Show groups where the member/order is still pending or not paid
+      return !group.cancellation_message && (orderStatus === 'pending' || orderStatus === 'not paid');
+    } else if (statusTab === 'to_receive') {
+      // Show groups where the member/order is shipped or in transit
+      return !group.cancellation_message && (orderStatus === 'shipped' || orderStatus === 'in_transit');
+    } else if (statusTab === 'completed') {
+      // Show groups where the member/order is completed/delivered
+      return !group.cancellation_message && (orderStatus === 'completed' || orderStatus === 'delivered');
+    } else if (statusTab === 'cancelled') {
+      // Show groups cancelled either by group or member
+      return !!group.cancellation_message || orderStatus === 'cancelled' || groupStatus === 'cancelled' || groupStatus === 'expired';
+    }
+    return false;
+  }) : [];
+
+  // If groupData exists but filteredGroups is empty, we can offer a quick hint in UI (handled below)
 
   if (loading) {
     return (
@@ -106,7 +334,7 @@ export default function OrderHistoryPage() {
         <div className="bg-white rounded-lg shadow-sm mb-4 overflow-hidden">
           <div className="flex border-b-2">
             <button
-              onClick={() => setOrderType('normal')}
+              onClick={() => handleSetOrderType('normal')}
               className={`flex-1 px-8 py-4 text-center font-semibold transition-all ${
                 orderType === 'normal'
                   ? 'text-blue-600 bg-blue-50 border-b-4 border-blue-600'
@@ -118,7 +346,7 @@ export default function OrderHistoryPage() {
             </button>
             
             <button
-              onClick={() => setOrderType('groupbuying')}
+              onClick={() => handleSetOrderType('groupbuying')}
               className={`flex-1 px-8 py-4 text-center font-semibold transition-all ${
                 orderType === 'groupbuying'
                   ? 'text-purple-600 bg-purple-50 border-b-4 border-purple-600'
@@ -219,7 +447,7 @@ export default function OrderHistoryPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-800 mb-1">{group.group_name || 'กลุ่มซื้อ'}</h3>
-                      <p className="text-sm text-gray-500">เริ่มเมื่อ: {new Date(group.created_at).toLocaleDateString('th-TH')}</p>
+                      <p className="text-sm text-gray-500">เริ่มเมื่อ: {group.orders?.[0]?.created_at ? new Date(group.orders[0].created_at).toLocaleDateString('th-TH') : 'ไม่ระบุ'}</p>
                       
                       {/* ✅ แสดง cancellation message */}
                       {group.cancellation_message && (
@@ -255,7 +483,7 @@ export default function OrderHistoryPage() {
                     <div className="bg-blue-50 rounded-lg p-4">
                       <p className="text-sm text-gray-600 mb-1">สมาชิกในกลุ่ม</p>
                       <p className="text-2xl font-bold text-blue-600">
-                        {group.current_members || (group.members?.length || 0)}/{group.required_members} คน
+                        {group.orders?.length || 0}/{group.required_members} คน
                       </p>
                     </div>
                   </div>
@@ -270,7 +498,7 @@ export default function OrderHistoryPage() {
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <span>สินค้า:</span>
                       <span className="font-medium text-gray-700">
-                        {group.product?.product_name || 'ไม่ระบุ'} (x{group.items_per_member} ชิ้น/คน)
+                        {group.product?.product_name || 'ไม่ระบุ'} (x{group.total_items} ชิ้น/คน)
                       </span>
                     </div>
                     {group.expire_at && (
@@ -289,7 +517,7 @@ export default function OrderHistoryPage() {
                 </div>
               ))
             )
-          ) : filteredOrders.length === 0 ? (
+          ) : (filteredOrders as Order[]).length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-12 text-center">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">ยังไม่มีการสั่งซื้อ</h3>
@@ -300,7 +528,7 @@ export default function OrderHistoryPage() {
               </p>
             </div>
           ) : (
-            filteredOrders.map((order, orderIdx) => {
+            (filteredOrders as Order[]).map((order: Order, orderIdx: number) => {
               const orderShops = order.order_shops || [];
               const address = order.address;
 
@@ -341,7 +569,7 @@ export default function OrderHistoryPage() {
                     )}
 
                     {/* Shops */}
-                    {orderShops.map((shop, shopIdx) => {
+                    {orderShops.map((shop: OrderShop, shopIdx: number) => {
                       const items = shop.order_items || [];
 
                       return (
@@ -362,7 +590,7 @@ export default function OrderHistoryPage() {
 
                           {/* Items */}
                           <div className="space-y-3">
-                            {items.map((item, itemIdx) => (
+                            {items.map((item: OrderItem, itemIdx: number) => (
                               <div key={`order-${order.order_id}-shop-${shop.order_shop_id}-item-${item.product_id}-${itemIdx}`} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
                                 <div className="flex-1">
                                   <div className="font-medium text-gray-800">{item.products?.product_name ?? 'ไม่พบชื่อสินค้า'}</div>

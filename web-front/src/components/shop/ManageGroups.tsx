@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { managegroup } from "@/service/api/groupsharing/managegroup";
 import { confirmGroupOrder } from "@/service/api/groupsharing/confirmgrouporder";
 import { cancelgroup } from "@/service/api/groupsharing/cancelgroup";
@@ -18,6 +17,7 @@ export default function ManageGroups() {
         if (!token) return;
 
         const data = await managegroup(token);
+        console.log("จัดการกลุ่ม", JSON.stringify(data, null, 2));
         setGroups(data.groups);
         setStoreBalance(data.store_balance);
       } catch (error: any) {
@@ -74,7 +74,6 @@ export default function ManageGroups() {
           const members = g.members || [];
           const activeMembers = members.filter((m: any) => !m.left_at);
           const isFull = activeMembers.length >= g.required_members;
-          const productImage = g.product_image;
 
           return (
             <div
@@ -82,19 +81,6 @@ export default function ManageGroups() {
               className="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition-shadow"
             >
               <div className="flex items-center space-x-4">
-                {productImage ? (
-                  <Image
-                    src={productImage}
-                    alt={g.product_name || "Product"}
-                    width={80}
-                    height={80}
-                    className="rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">No Image</span>
-                  </div>
-                )}
 
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg text-gray-800">
@@ -192,38 +178,37 @@ export default function ManageGroups() {
               )}
 
               {/* ปุ่มสร้างออเดอร์ / ยกเลิก */}
-<div className="mt-4 flex gap-2">
-  {isFull ? (
-    <button
-      onClick={() => handleConfirmOrder(g.group_buying_id)}
-      className={`flex-1 py-2 rounded transition ${
-        g.status === "confirmed" || g.status === "cancelled"
-          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-          : "bg-blue-600 hover:bg-blue-700 text-white"
-      }`}
-      disabled={g.status === "confirmed" || g.status === "cancelled"}
-    >
-      {g.status === "confirmed" ? "สร้างออเดอร์แล้ว" : "สร้างออเดอร์"}
-    </button>
-  ) : (
-    <span className="flex-1 text-sm text-gray-500 flex items-center justify-center">
-      ยังไม่ครบสมาชิก
-    </span>
-  )}
+              <div className="mt-4 flex gap-2">
+                {isFull ? (
+                  <button
+                    onClick={() => handleConfirmOrder(g.group_buying_id)}
+                    className={`flex-1 py-2 rounded transition ${
+                      g.status === "confirmed" || g.status === "cancelled"
+                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                    }`}
+                    disabled={g.status === "confirmed" || g.status === "cancelled"}
+                  >
+                    {g.status === "confirmed" ? "สร้างออเดอร์แล้ว" : "สร้างออเดอร์"}
+                  </button>
+                ) : (
+                  <span className="flex-1 text-sm text-gray-500 flex items-center justify-center">
+                    ยังไม่ครบสมาชิก
+                  </span>
+                )}
 
-  <button
-    onClick={() => handleCancelOrder(g.group_buying_id)}
-    className={`flex-1 py-2 rounded transition ${
-      g.status === "confirmed" || g.status === "cancelled"
-        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-        : "bg-red-600 hover:bg-red-700 text-white"
-    }`}
-    disabled={g.status === "confirmed" || g.status === "cancelled"}
-  >
-    ยกเลิก
-  </button>
-</div>
-
+                <button
+                  onClick={() => handleCancelOrder(g.group_buying_id)}
+                  className={`flex-1 py-2 rounded transition ${
+                    g.status === "confirmed" || g.status === "cancelled"
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                  disabled={g.status === "confirmed" || g.status === "cancelled"}
+                >
+                  ยกเลิก
+                </button>
+              </div>
 
               {/* ข้อมูลเพิ่มเติม */}
               <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-xs text-gray-400">

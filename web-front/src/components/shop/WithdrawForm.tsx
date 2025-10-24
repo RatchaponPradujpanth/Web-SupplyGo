@@ -12,7 +12,7 @@ export default function WithdrawPage() {
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
-    console.log("🔍 Token from localStorage:", storedToken);
+
     setToken(storedToken);
   }, []);
 
@@ -64,10 +64,6 @@ export default function WithdrawPage() {
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">ถอน Point ร้านค้า</h1>
 
-        <div className="mb-4 p-2 bg-gray-100 rounded text-xs break-words">
-          <p>Token: {token ? `${token.substring(0, 20)}...` : "ไม่พบ"}</p>
-        </div>
-
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             จำนวน Point ที่ต้องการถอน
@@ -91,10 +87,7 @@ export default function WithdrawPage() {
 
         {result && (
           <div className="mt-6 p-4 bg-green-50 text-green-700 rounded-lg text-sm">
-            ✅ ถอน Point สำเร็จ <br />
-            Withdrawal ID: {result.withdrawalId} <br />
-            จำนวน Point: {result.points} <br />
-            สถานะ: {result.status}
+            สร้างคำร้องถอน Point สำเร็จ <br />
           </div>
         )}
 

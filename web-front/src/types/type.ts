@@ -601,6 +601,7 @@ export interface AdminDashboardApiResponse {
   };
 }
 // เพิ่ม interface นี้สำหรับ API response ของ getGrouporder
+
 export interface GroupOrderResponse {
   group_buying_id: number;
   required_members: number;
@@ -623,7 +624,7 @@ export interface GroupOrderResponse {
     status: string;
     created_date: string;
     updated_date: string;
-    product_images?: Array<{ image_url: string }>;
+    product_images?: ProductImage[]; // เปลี่ยนจาก Array<{image_url:string}> เป็น ProductImage[]
   };
   variant: any | null;
   members: {
@@ -638,6 +639,7 @@ export interface GroupOrderResponse {
     };
   }[];
 }
+
 
 
 // ========================

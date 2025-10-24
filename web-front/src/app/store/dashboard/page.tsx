@@ -131,7 +131,7 @@ export default function StoreDashboardPage() {
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  Dashboard
+                  หน้าหลัก
                 </button>
                 <button
                   onClick={() => setCurrentView("product")}
@@ -151,7 +151,7 @@ export default function StoreDashboardPage() {
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  Orders
+                  คำสั่งซื้อ
                 </button>
                 <button
                   onClick={() => setCurrentView("add-product")}
@@ -193,7 +193,7 @@ export default function StoreDashboardPage() {
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  ออเดอร์ group
+                  ออเดอร์กรุ๊ป
                 </button>
                 <button
                   onClick={() => setCurrentView("create-group")}
@@ -213,7 +213,7 @@ export default function StoreDashboardPage() {
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  กลุ่มของฉัน
+                  กรุ๊ปของฉัน
                 </button>
                 <button
                   onClick={() => setCurrentView("withdraw")}
@@ -275,16 +275,6 @@ export default function StoreDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-card shadow-card p-4 text-center">
-                <p className="text-sm text-textmuted">Total Products</p>
-                <p className="text-2xl font-bold">{products.length}</p>
-              </div>
-              <div className="bg-white rounded-card shadow-card p-4 text-center">
-                <p className="text-sm text-textmuted">Low Stock Items</p>
-                <p className="text-2xl font-bold">
-                  {products.filter((p) => (p.total_stock ?? 0) <= 5).length}
-                </p>
-              </div>
               <div className="bg-white rounded-card shadow-card p-4 text-center">
                 <p className="text-sm text-textmuted">Point ของคุณ</p>
                 <p className="text-2xl font-bold">{points}</p>

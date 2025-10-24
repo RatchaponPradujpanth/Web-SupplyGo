@@ -8,7 +8,6 @@ import {
   ShopOrderResponse,
 } from "@/service/api/shop/ordershophistory";
 
-// Interfaces
 interface NormalOrderUI {
   order_shop_id: number;
   order_id: number;
@@ -49,9 +48,99 @@ interface NormalOrderUI {
   }[];
 }
 
+/* TrackingInput component: shows saved tracking or an input to add one */
+function TrackingInput({
+  orderShopId,
+  initialTracking,
+  onSaved,
+}: {
+  orderShopId: number;
+  initialTracking: string | null;
+  onSaved?: (newTracking: string) => void;
+}) {
+  const [tracking, setTracking] = useState(initialTracking ?? "");
+  const [saved, setSaved] = useState(!!initialTracking);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  // Sync when parent updates initialTracking
+  useEffect(() => {
+    setTracking(initialTracking ?? "");
+    setSaved(!!initialTracking);
+    setMessage("");
+  }, [initialTracking]);
+
+  const handleSave = async () => {
+    if (!tracking.trim()) {
+      setMessage("⚠️ กรุณากรอกเลขพัสดุ");
+      return;
+    }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("❌ ไม่พบ token");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await updateTrackingNumber(token, orderShopId, tracking.trim());
+      setSaved(true);
+      setMessage("✅ บันทึกเรียบร้อยแล้ว");
+      if (onSaved) onSaved(tracking.trim());
+    } catch (err: any) {
+      console.error(err);
+      setMessage(`❌ ${err.message || "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!tracking) return;
+    navigator.clipboard.writeText(tracking);
+    setMessage("📋 คัดลอกเลขพัสดุแล้ว");
+  };
+
+  if (saved && tracking) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-700">
+          เลขพัสดุ: <span className="font-semibold">{tracking}</span>
+        </span>
+        <button
+          onClick={handleCopy}
+          className="bg-gray-200 text-gray-800 px-2 py-1 rounded hover:bg-gray-300 text-xs"
+        >
+          Copy
+        </button>
+        {message && <span className="text-xs text-gray-500">{message}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+      <input
+        type="text"
+        value={tracking}
+        onChange={(e) => setTracking(e.target.value)}
+        placeholder="กรอกเลขพัสดุ..."
+        className="border border-gray-300 rounded-md px-3 py-1.5 w-full sm:w-60 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+      />
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50"
+      >
+        {saving ? "กำลังบันทึก..." : "บันทึก"}
+      </button>
+      {message && <p className="text-sm text-gray-600">{message}</p>}
+    </div>
+  );
+}
+
 export default function ShopOrderHistory() {
   const [orders, setOrders] = useState<NormalOrderUI[]>([]);
-  const [trackingInputs, setTrackingInputs] = useState<{ [key: string]: string }>({});
   const [statusInputs, setStatusInputs] = useState<{ [key: string]: string }>({});
   const [savingIds, setSavingIds] = useState<string[]>([]);
   const [trackingFilter, setTrackingFilter] = useState("");
@@ -119,15 +208,23 @@ export default function ShopOrderHistory() {
       const normalOrders = transformNormalOrders(res);
       setOrders(normalOrders);
 
-      // เซ็ตค่าเริ่มต้น
-      const initialTracking: { [key: string]: string } = {};
       const initialStatus: { [key: string]: string } = {};
       normalOrders.forEach((os) => {
-        initialTracking[os.order_shop_id] = os.tracking_number ?? "";
         initialStatus[os.order_shop_id] = os.status;
       });
-      setTrackingInputs(initialTracking);
       setStatusInputs(initialStatus);
+
+      // 🧾 log ดูข้อมูลทั้งหมด
+      console.log("📦 Orders received:", normalOrders);
+      normalOrders.forEach((o) =>
+        console.log("➡️", {
+          order_shop_id: o.order_shop_id,
+          tracking_number: o.tracking_number,
+          status: o.status,
+          subtotal: o.subtotal,
+          user: o.user_info?.username,
+        })
+      );
     } catch (err) {
       console.error("❌ โหลดข้อมูลล้มเหลว:", err);
       setOrders([]);
@@ -139,25 +236,6 @@ export default function ShopOrderHistory() {
   useEffect(() => {
     fetchData();
   }, [trackingFilter]);
-
-  const handleSaveTracking = async (orderShopId: number) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    const trackingNumber = trackingInputs[orderShopId];
-    if (!trackingNumber.trim()) return;
-
-    try {
-      setSavingIds((prev) => [...prev, String(orderShopId)]);
-      await updateTrackingNumber(token, orderShopId, trackingNumber);
-      alert("✅ อัปเดตเลขพัสดุเรียบร้อย");
-      await fetchData();
-    } catch (err) {
-      console.error("❌ อัปเดตเลขพัสดุล้มเหลว:", err);
-      alert("เกิดข้อผิดพลาดในการอัปเดตเลขพัสดุ");
-    } finally {
-      setSavingIds((prev) => prev.filter((id) => id !== String(orderShopId)));
-    }
-  };
 
   const handleStatusChange = (orderShopId: number, value: string) => {
     setStatusInputs((prev) => ({ ...prev, [orderShopId]: value }));
@@ -174,9 +252,10 @@ export default function ShopOrderHistory() {
       await updateStatus(token, orderShopId, newStatus);
       alert("✅ อัปเดตสถานะสำเร็จ");
       await fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ อัปเดตสถานะล้มเหลว:", err);
-      alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+      const errorMessage = err.response?.data?.error || err.message || "เกิดข้อผิดพลาดในการอัปเดตสถานะ";
+      alert(`❌ ${errorMessage}`);
     } finally {
       setSavingIds((prev) => prev.filter((id) => id !== String(orderShopId)));
     }
@@ -185,25 +264,8 @@ export default function ShopOrderHistory() {
   if (loading) return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6 px-4">
       <h1 className="text-3xl font-bold mb-6">ประวัติคำสั่งซื้อร้านค้า</h1>
-
-      {/* Filter */}
-      <div className="flex items-center gap-2 mb-6">
-        <input
-          type="text"
-          className="border border-gray-300 rounded-xl px-4 py-2 flex-1"
-          placeholder="กรอกเลขพัสดุเพื่อค้นหา..."
-          value={trackingFilter}
-          onChange={(e) => setTrackingFilter(e.target.value)}
-        />
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition"
-          onClick={fetchData}
-        >
-          ค้นหา
-        </button>
-      </div>
 
       {/* Normal Orders */}
       {orders.length === 0 ? (
@@ -315,30 +377,26 @@ export default function ShopOrderHistory() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2 pt-4 border-t">
-              <input
-                type="text"
-                className="border border-gray-300 rounded-lg px-3 py-2 flex-1 min-w-[200px] text-sm"
-                value={trackingInputs[order.order_shop_id] || ""}
-                onChange={(e) =>
-                  setTrackingInputs((prev) => ({
-                    ...prev,
-                    [order.order_shop_id]: e.target.value,
-                  }))
-                }
-                placeholder="เลขพัสดุ"
+            {/* Tracking Number (editable when not present) */}
+            <div className="mt-2">
+              <TrackingInput
+                orderShopId={order.order_shop_id}
+                initialTracking={order.tracking_number || null}
+                onSaved={(newTracking) => {
+                  // อัปเดต state ของ parent ให้แสดงเลขพัสดุที่บันทึกแล้ว
+                  setOrders((prev) =>
+                    prev.map((o) =>
+                      o.order_shop_id === order.order_shop_id
+                        ? { ...o, tracking_number: newTracking }
+                        : o
+                    )
+                  );
+                }}
               />
-              <button
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition"
-                onClick={() => handleSaveTracking(order.order_shop_id)}
-                disabled={savingIds.includes(String(order.order_shop_id))}
-              >
-                {savingIds.includes(String(order.order_shop_id))
-                  ? "กำลังบันทึก..."
-                  : "บันทึกเลขพัสดุ"}
-              </button>
+            </div>
 
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
               <select
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 value={statusInputs[order.order_shop_id] || ""}

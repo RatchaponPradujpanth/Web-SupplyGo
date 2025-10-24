@@ -8,85 +8,106 @@ const prisma = new PrismaClient();
 /**
  * GET /shoporderhistory
  */
-shoporderRoute.get("/shoporderhistory", authenticateToken, authstore, async (req: Request, res: Response) => {
-  const shopId = req.user?.shop_id;
-  const trackingNumberFilter = req.query.tracking_number?.toString();
+shoporderRoute.get(
+  "/shoporderhistory",
+  authenticateToken,
+  authstore,
+  async (req: Request, res: Response) => {
+    const shopId = req.user?.shop_id;
+    const trackingNumberFilter = req.query.tracking_number?.toString();
 
-  console.log("🔹 GET /shoporderhistory called");
-  console.log("Shop ID:", shopId);
-  console.log("Query params:", req.query);
+    if (!shopId) {
+      res.status(403).json({ error: "Unauthorized" });
+      return;
+    }
 
-  if (!shopId) {
-     res.status(403).json({ error: "Unauthorized" });
-     return;
-  }
+    const protocol = req.protocol;
+    const host = req.headers.host;
 
-  const protocol = req.protocol;
-  const host = req.headers.host;
-
-  const getFullUrl = (path?: string | null) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return `${protocol}://${host}${path.startsWith("/") ? path : "/" + path}`;
-  };
-
-  try {
-    const normalOrders = await prisma.order_shops.findMany({
-      where: {
-        shop_id: shopId,
-        status: "paid",
-        ...(trackingNumberFilter && {
-          tracking_number: {
-            contains: trackingNumberFilter,
-            mode: "insensitive",
-          },
-        }),
-      },
-      include: {
-        order: {
-          include: {
-            users: true,
-            address: true,
-          },
-        },
-        order_items: {
-          include: {
-            products: { include: { product_images: true } },
-            variant_option: { include: { option: true } },
-          },
-        },
-      },
-    });
-
-
-    // แปลง normalOrders ให้รวมรูปภาพ full URL
-    const normalOrdersWithImages = normalOrders.map((order) => ({
-  ...order,
-  order_items: order.order_items.map((item) => {
-    const prod = item.products; // object เดียว
-    const productImages = prod.product_images.map((img) => ({
-      ...img,
-      image_url: getFullUrl(img.image_url),
-    }));
-
-    return {
-      ...item,
-      products: {
-        ...prod,
-        product_images: productImages,
-      },
+    const getFullUrl = (path?: string | null) => {
+      if (!path) return null;
+      if (path.startsWith("http")) return path;
+      return `${protocol}://${host}${path.startsWith("/") ? path : "/" + path}`;
     };
-  }),
-}));
 
-   
+    try {
+      const normalOrders = await prisma.order_shops.findMany({
+        where: {
+          shop_id: shopId,
+          OR: [
+            { status: "paid" },
+            { status: "Pending" },
+            { status: "Shipped" },
+            { status: "Delivered" },
+            { status: "Cancelled" }
+          ],
+          ...(trackingNumberFilter && {
+            tracking_number: {
+              contains: trackingNumberFilter,
+              mode: "insensitive",
+            },
+          }),
+        },
+        include: {
+          order: {
+            include: {
+              users: {
+                select: {
+                  username: true,
+                  email: true,
+                },
+              },
+              address: true,
+            },
+          },
+          order_items: {
+            include: {
+              products: {
+                include: {
+                  product_images: true,
+                },
+              },
+              variant_option: {
+                include: {
+                  option: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-    res.json({ normalOrders: normalOrdersWithImages });
-  } catch (error) {
-    console.error("❌ Error loading shop orders:", error);
-    res.status(500).json({ message: "Internal server error" });
+      // ✅ แปลงรูปให้เป็น URL เต็ม
+      const normalOrdersWithImages = normalOrders.map((order) => ({
+        ...order,
+        order_items: order.order_items.map((item) => {
+          const prod = item.products;
+          const productImages = prod.product_images.map((img) => ({
+            ...img,
+            image_url: getFullUrl(img.image_url),
+          }));
+
+          return {
+            ...item,
+            products: {
+              ...prod,
+              product_images: productImages,
+            },
+          };
+        }),
+      }));
+
+      // ✅ log ตรวจสอบข้อมูลที่ส่งออก
+      //console.log(JSON.stringify(normalOrdersWithImages, null, 2));
+
+      res.json({ normalOrders: normalOrdersWithImages });
+    } catch (error) {
+      console.error("❌ Error loading shop orders:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
+
 
 /**
  * PATCH /orders/tracking
@@ -143,15 +164,24 @@ shoporderRoute.patch("/orders/status", authenticateToken, authstore, async (req:
   }
 
   try {
-    const result = await prisma.order_shops.updateMany({
-      where: { order_shop_id: orderShopIdNum, shop_id: shopId },
-      data: { status: status.trim() },
+    // ตรวจสอบว่า order มีอยู่จริงและเป็นของร้านค้านี้
+    const order = await prisma.order_shops.findFirst({
+      where: { 
+        order_shop_id: orderShopIdNum, 
+        shop_id: shopId,
+      }
     });
 
-    if (result.count === 0) {
-       res.status(404).json({ error: "ไม่พบคำสั่งซื้อหรือคุณไม่มีสิทธิ์" });
-       return;
+    if (!order) {
+      res.status(404).json({ error: "ไม่พบคำสั่งซื้อหรือคุณไม่มีสิทธิ์" });
+      return;
     }
+
+    // อัปเดตสถานะ
+    await prisma.order_shops.update({
+      where: { order_shop_id: orderShopIdNum },
+      data: { status: status.trim() },
+    });
 
     res.json({ message: "อัปเดตสถานะคำสั่งซื้อเรียบร้อย" });
   } catch (err) {

@@ -174,9 +174,6 @@ export const getShopOrderHistory = async (
   trackingNumber?: string
 ): Promise<ShopOrderResponse> => {
   try {
-    console.log(
-      trackingNumber ? { tracking_number: trackingNumber } : {}
-    );
     const response = await axios.get<ShopOrderResponse>(
       `${API_URL}/api/shoporderhistory`,
       {
@@ -187,6 +184,7 @@ export const getShopOrderHistory = async (
         params: trackingNumber ? { tracking_number: trackingNumber } : {},
       }
     );
+    //console.log(JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error: any) {
     console.error(
@@ -204,10 +202,7 @@ export const updateTrackingNumber = async (
 ): Promise<void> => {
   try {
     const payload = { orderShopId, trackingNumber };
-    console.log(
-      "📤 PATCH /orders/tracking request body:",
-      JSON.stringify(payload, null, 2)
-    );
+
     const response = await axios.patch(
       `${API_URL}/api/orders/tracking`,
       payload,
@@ -235,10 +230,6 @@ export const updateStatus = async (
 ): Promise<void> => {
   try {
     const payload = { orderShopId, status };
-    console.log(
-      "📤 PATCH /orders/status request body:",
-      JSON.stringify(payload, null, 2)
-    );
     const response = await axios.patch(`${API_URL}/api/orders/status`, payload, {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
@@ -247,7 +238,12 @@ export const updateStatus = async (
       JSON.stringify(response.data, null, 2)
     );
   } catch (error: any) {
-    console.error("❌ updateStatus error:", error.response?.data || error.message);
+    console.error("❌ updateStatus error details:", {
+      responseData: error.response?.data,
+      message: error.message,
+      status: error.response?.status,
+      fullError: error
+    });
     throw error;
   }
 };
