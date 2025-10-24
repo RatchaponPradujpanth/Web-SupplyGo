@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCartSummary } from '@/service/api/getCartSummary';
 import type { CheckoutItem, CreateOrderPayload } from '@/types/type';
 import { loadaddress } from '@/service/api/loadaddress';
@@ -10,11 +10,12 @@ import { createOrder } from '@/service/api/createorder';
 
 export default function CheckoutPage() {
   const [summary, setSummary] = useState<{ cart_id: number; items: CheckoutItem[]; totalAmount: number } | null>(null);
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
+  const [selectedAddressData, setSelectedAddressData] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatingOrder, setCreatingOrder] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const addressId = searchParams.get('addressId');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +23,12 @@ export default function CheckoutPage() {
       if (!token) {
         alert("กรุณาเข้าสู่ระบบ");
         router.push('/');
+        return;
+      }
+
+      if (!addressId) {
+        alert("กรุณาเลือกที่อยู่จัดส่ง");
+        router.push('/cart');
         return;
       }
 
@@ -42,12 +49,15 @@ export default function CheckoutPage() {
 
         setSummary(data);
 
+        // โหลดที่อยู่ที่เลือก
         const addrData = await loadaddress(token);
-        console.log("Address data:", addrData);
-        setAddresses(addrData);
-
-        if (addrData.length > 0) {
-          setSelectedAddress(addrData[0].address_id);
+        const selectedAddr = addrData.find(addr => addr.address_id === Number(addressId));
+        if (selectedAddr) {
+          setSelectedAddressData(selectedAddr);
+        } else {
+          alert("ไม่พบที่อยู่ที่เลือก");
+          router.push('/cart');
+          return;
         }
       } catch (err) {
         console.error(err);
@@ -58,15 +68,15 @@ export default function CheckoutPage() {
     };
 
     fetchData();
-  }, [router]);
+  }, [router, addressId]);
 
   if (loading) return <div className="p-6 text-gray-600">กำลังโหลด...</div>;
 
   if (!summary || summary.items.length === 0)
     return <div className="p-6 text-gray-500">ยังไม่มีสินค้าที่จะชำระเงิน</div>;
 
-  if (addresses.length === 0)
-    return <div className="p-6 text-gray-500">ไม่พบที่อยู่จัดส่ง กรุณาเพิ่มที่อยู่ก่อน</div>;
+  if (!selectedAddressData)
+    return <div className="p-6 text-gray-500">ไม่พบที่อยู่จัดส่ง</div>;
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -85,18 +95,13 @@ export default function CheckoutPage() {
   }, {} as Record<string, number>);
 
   // Log important state before render
-  console.log("Selected address:", selectedAddress);
+  console.log("Selected address:", selectedAddressData);
   console.log("Total amount:", totalAmount);
   console.log("Subtotals by shop:", subtotalsByShop);
 
-  if (selectedAddress === null) {
-    alert('กรุณาเลือกที่อยู่จัดส่ง');
-    return null;  // ป้องกัน render ผิดพลาด
-  }
-
   // เตรียม payload ให้ตรง type ของ backend (แก้ไขตาม API ใหม่)
   const createOrderPayload: CreateOrderPayload = {
-    addressId: selectedAddress,
+    addressId: Number(addressId),
     totalAmount,
     cartItems: summary.items.map(item => {
       console.log("Processing item for payload:", {
@@ -127,10 +132,6 @@ export default function CheckoutPage() {
       router.push('/');
       return;
     }
-    if (!selectedAddress) {
-      alert('กรุณาเลือกที่อยู่จัดส่ง');
-      return;
-    }
 
     console.log("Sending createOrderPayload:", createOrderPayload);
 
@@ -138,7 +139,7 @@ export default function CheckoutPage() {
       setCreatingOrder(true);
       const response = await createOrder(token, createOrderPayload);
       alert('สร้างคำสั่งซื้อสำเร็จ');
-      router.push(`/payment?addressId=${selectedAddress}&orderId=${response.order_id}`);
+      router.push(`/payment?addressId=${addressId}&orderId=${response.order_id}`);
     } catch (error) {
       alert('สร้างคำสั่งซื้อไม่สำเร็จ');
       console.error(error);
@@ -151,19 +152,29 @@ export default function CheckoutPage() {
     <div className="p-6 max-w-4xl mx-auto bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">💳 สรุปการชำระเงิน</h1>
 
-      <div className="mb-6">
-        <label className="block mb-2 font-semibold">📍 เลือกที่อยู่จัดส่ง</label>
-        <select
-          value={selectedAddress ?? ''}
-          onChange={(e) => setSelectedAddress(Number(e.target.value))}
-          className="border rounded px-3 py-2 w-full"
-        >
-          {addresses.map((addr) => (
-            <option key={addr.address_id} value={addr.address_id}>
-              {addr.firstname} {addr.lastname} - {addr.phone_number} | {addr.house_number} {addr.street} {addr.sub_district} {addr.district} {addr.province} {addr.postal_code}
-            </option>
-          ))}
-        </select>
+      {/* แสดงที่อยู่ที่เลือก (ไม่สามารถแก้ไขได้) */}
+      <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">📍</span>
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 mb-1">ที่อยู่จัดส่ง</h3>
+            <p className="text-gray-700">
+              {selectedAddressData.firstname} {selectedAddressData.lastname}
+            </p>
+            <p className="text-gray-600 text-sm">
+              📞 {selectedAddressData.phone_number}
+            </p>
+            <p className="text-gray-700 mt-1">
+              {selectedAddressData.house_number} {selectedAddressData.street} {selectedAddressData.sub_district} {selectedAddressData.district} {selectedAddressData.province} {selectedAddressData.postal_code}
+            </p>
+          </div>
+          <button
+            onClick={() => router.push('/cart')}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            เปลี่ยน
+          </button>
+        </div>
       </div>
 
       <ul className="space-y-4">

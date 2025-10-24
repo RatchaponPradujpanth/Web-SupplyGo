@@ -14,23 +14,13 @@ searchRoute.get('/search/suggestions', async (req: Request, res: Response): Prom
       return;
     }
 
-    // ค้นหาสินค้าที่ชื่อเริ่มต้นหรือมีคำที่ค้นหา (เรียงตามความเกี่ยวข้อง)
+    // ค้นหาสินค้าจากชื่อเท่านั้น (ไม่รวม description)
     const products = await prisma.products.findMany({
       where: {
-        OR: [
-          {
-            product_name: {
-              contains: query,
-              mode: 'insensitive' // case-insensitive search
-            }
-          },
-          {
-            product_description: {
-              contains: query,
-              mode: 'insensitive'
-            }
-          }
-        ]
+        product_name: {
+          contains: query,
+          mode: 'insensitive' // case-insensitive search
+        }
       },
       select: {
         product_id: true,

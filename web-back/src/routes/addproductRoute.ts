@@ -140,37 +140,120 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       if (req.files && req.files.length > 0) {
         console.log("📸 Uploading product images...");
         try {
-          for (const file of req.files) {
+          for (let i = 0; i < req.files.length; i++) {
+            const file = req.files[i];
+            const imagePath = `/uploads/products/${file.filename}`;
+            
             await prisma.product_images.create({
               data: {
                 product_id: newProduct.product_id,
-                image_url: file.filename,
-                is_primary: false
+                image_url: imagePath,
+                is_primary: i === 0, // รูปแรกเป็น primary
+                sort_order: i
               },
             });
+            console.log(`✅ Image ${i + 1} saved: ${imagePath} (primary: ${i === 0})`);
           }
           console.log("✅ Product images uploaded successfully");
         } catch (imageError) {
           console.error("❌ Error uploading images:", imageError);
           // ไม่ return error เพราะสินค้าสร้างแล้ว
         }
+      } else {
+        console.warn("⚠️ No images provided for product");
       }
 
-      // บันทึก batches (จำนวนสินค้า)
-      if (parsedBatches && parsedBatches.length > 0) {
-        console.log("📦 Processing batches...");
+      // ✅ บันทึก options และ variants
+      if (parsedOptions.length > 0 && parsedVariants.length > 0) {
+        console.log("🎨 Creating product options and variants...");
         
-        // ถ้าไม่มี variants ให้สร้าง default variant
-        if (parsedVariants.length === 0) {
-          console.log("🔄 No variants, creating default variant...");
-          const defaultVariant = await prisma.product_variants.create({
+        // 1. สร้าง product_options
+        const createdOptions: { [key: string]: number } = {};
+        for (const opt of parsedOptions) {
+          if (opt.name && opt.values && opt.values.length > 0) {
+            const productOption = await prisma.product_options.create({
+              data: {
+                product_id: newProduct.product_id,
+                name: opt.name
+              }
+            });
+            createdOptions[opt.name] = productOption.option_id;
+            console.log(`✅ Created option: ${opt.name} (ID: ${productOption.option_id})`);
+          }
+        }
+
+        // 2. สร้าง variants และ variant_options
+        for (let i = 0; i < parsedVariants.length; i++) {
+          const variantData = parsedVariants[i];
+          
+          // สร้าง variant
+          const variant = await prisma.product_variants.create({
             data: {
               product_id: newProduct.product_id,
-              sku: `DEFAULT-${newProduct.product_id}`,
-              price: parseFloat(price)
+              sku: variantData.sku || `VAR-${newProduct.product_id}-${i + 1}`,
+              price: parseFloat(variantData.price) || parseFloat(price)
             }
           });
-          console.log("✅ Default variant created:", defaultVariant.variant_id);
+          console.log(`✅ Created variant: ${variant.sku} (ID: ${variant.variant_id})`);
+
+          // 3. สร้าง variant_options (เชื่อมโยง variant กับ option values)
+          if (variantData.option_values && Array.isArray(variantData.option_values)) {
+            for (let j = 0; j < variantData.option_values.length; j++) {
+              const optValue = variantData.option_values[j];
+              const optName = parsedOptions[j]?.name;
+              
+              if (optName && createdOptions[optName]) {
+                await prisma.variant_options.create({
+                  data: {
+                    variant_id: variant.variant_id,
+                    option_id: createdOptions[optName],
+                    value: optValue
+                  }
+                });
+                console.log(`✅ Linked variant option: ${optName} = ${optValue}`);
+              }
+            }
+          }
+
+          // 4. สร้าง batches สำหรับ variant นี้
+          if (parsedBatches[i] && Array.isArray(parsedBatches[i])) {
+            let totalQuantity = 0;
+            for (const batch of parsedBatches[i]) {
+              const qty = parseInt(batch.quantity) || parseInt(variantData.stock_quantity) || 0;
+              
+              if (qty > 0) {
+                await prisma.product_batches.create({
+                  data: {
+                    product_id: newProduct.product_id,
+                    variant_id: variant.variant_id,
+                    batch_number: batch.batch_number || `BATCH-${variant.variant_id}-${Date.now()}`,
+                    manufactured_date: batch.manufactured_date ? new Date(batch.manufactured_date) : null,
+                    expiry_date: batch.expiry_date ? new Date(batch.expiry_date) : null,
+                    quantity: qty
+                  }
+                });
+                totalQuantity += qty;
+                console.log(`✅ Batch created for variant ${variant.sku}: quantity ${qty}`);
+              }
+            }
+            console.log(`📊 Total stock for variant ${variant.sku}: ${totalQuantity}`);
+          }
+        }
+        
+        console.log("✅ All variants and options created successfully!");
+      }
+      // ถ้าไม่มี variants ให้สร้าง default variant
+      else if (parsedBatches && parsedBatches.length > 0) {
+        console.log("📦 Processing batches...");
+        console.log("🔄 No variants, creating default variant...");
+        const defaultVariant = await prisma.product_variants.create({
+          data: {
+            product_id: newProduct.product_id,
+            sku: `DEFAULT-${newProduct.product_id}`,
+            price: parseFloat(price)
+          }
+        });
+        console.log("✅ Default variant created:", defaultVariant.variant_id);
 
           // บันทึก batches สำหรับ default variant
           if (parsedBatches[0] && Array.isArray(parsedBatches[0])) {
@@ -201,7 +284,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
               console.warn("⚠️ WARNING: Product has 0 stock! Please add quantity in batches.");
             }
           }
-        }
       } else {
         console.warn("⚠️ No batches provided! Product will have 0 stock.");
       }

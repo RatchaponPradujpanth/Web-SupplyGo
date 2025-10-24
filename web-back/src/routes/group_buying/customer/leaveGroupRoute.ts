@@ -44,10 +44,12 @@ leaveGroupRoute.post("/leave-group", authenticateToken, async (req: Request, res
         throw new Error("ไม่สามารถออกจากกลุ่มได้ เนื่องจากกลุ่มนี้ยืนยันแล้ว");
       }
 
-      // 3️⃣ อัปเดตสมาชิกว่าออกแล้ว
+      // 3️⃣ อัปเดตสมาชิกว่าออกแล้ว (ผู้ใช้ออกเอง)
       await tx.group_members.update({
         where: { group_members_id: member.group_members_id },
-        data: { left_at: new Date() },
+        data: { 
+          left_at: new Date()
+        },
       });
 
       // 4️⃣ คืน point ให้ผู้ใช้

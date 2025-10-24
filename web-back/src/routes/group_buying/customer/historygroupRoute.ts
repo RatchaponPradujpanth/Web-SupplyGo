@@ -51,6 +51,23 @@ historygroupRoute.get("/history-group", authenticateToken, async (req: Request, 
       const user_in_group = !gm.left_at;
       const addresses = gm.member_addresses.map(ma => ma.address);
 
+      // 🔍 คำนวณเหตุผลการยกเลิก/ออกจากกลุ่ม (เฉพาะ 2 กรณี)
+      let cancellation_type = null;
+      let cancellation_message = null;
+      
+      if (gm.left_at) {
+        // ผู้ใช้ออกจากกลุ่มแล้ว
+        if (group.status === "cancelled") {
+          // กรณีที่ 1: เจ้าของร้านกดปิดร้านค้า (ก่อนกดสร้าง order)
+          cancellation_type = "shop_cancelled";
+          cancellation_message = "เจ้าของร้านปิดกลุ่มนี้แล้ว";
+        } else {
+          // กรณีที่ 2: ลูกค้ากดออกจากกลุ่มเอง
+          cancellation_type = "user_left";
+          cancellation_message = "คุณออกจากกลุ่มนี้แล้ว";
+        }
+      }
+
       const orders = group.group_orders.map(order => ({
         group_order_id: order.group_order_id,
         total_amount: order.total_amount,
@@ -81,6 +98,8 @@ historygroupRoute.get("/history-group", authenticateToken, async (req: Request, 
         points_per_member: group.points_per_member,
         current_members: currentMembers,
         user_in_group,
+        cancellation_type,        // ✅ เพิ่มประเภทการยกเลิก
+        cancellation_message,     // ✅ เพิ่มข้อความอธิบาย
         addresses,
         orders
       };

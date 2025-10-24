@@ -46,10 +46,12 @@ cancelgrouporderRoute.post("/cancel-group-order", authenticateToken, authstore, 
           },
         });
 
-        // ทำเครื่องหมายว่า member ออกจาก group
+        // ทำเครื่องหมายว่า member ออกจาก group (ร้านค้ายกเลิก)
         await tx.group_members.update({
           where: { group_members_id: member.group_members_id },
-          data: { left_at: new Date() },
+          data: { 
+            left_at: new Date()
+          },
         });
       }
 

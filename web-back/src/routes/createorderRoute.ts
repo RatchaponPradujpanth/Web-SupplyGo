@@ -175,15 +175,9 @@ createorderRoute.post("/create-order", authenticateToken, async (req: Request, r
         }
       }
 
-      // ลบสินค้าในตะกร้าผู้ใช้
-      const userCart = await tx.cart.findFirst({
-        where: { user_id: userId },
-        select: { cart_id: true },
-      });
-      if (userCart) {
-        await tx.cart_items.deleteMany({ where: { cart_id: userCart.cart_id } });
-        console.log(`🗑️ Cleared cart for user: ${userId}`);
-      }
+      // ❌ ไม่ลบตะกร้าที่นี่ เพราะยังไม่ได้ชำระเงิน
+      // ตะกร้าจะถูกลบหลังจากชำระเงินสำเร็จใน payment webhook/callback
+      console.log(`✅ Order created but cart items preserved until payment is completed`);
 
       return newOrder;
     });

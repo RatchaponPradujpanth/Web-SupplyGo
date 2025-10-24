@@ -66,19 +66,31 @@ export default function AddProductPage() {
   };
 
   const generateVariants = () => {
+    console.log('🔍 Options before filtering:', options);
+    
     const cartesian = (arrays: string[][]): string[][] =>
       arrays.reduce<string[][]>((acc, curr) => acc.flatMap((a) => curr.map((c) => [...a, c])), [[]]);
 
+    // กรอง values ที่ไม่ว่างเปล่า
     const filteredValues = options.map((opt) => opt.values.filter((v) => v.trim() !== ''));
+    console.log('🔍 Filtered values:', filteredValues);
+    
+    // เช็คว่ามี option ไหนที่ไม่มี value เลย
     if (filteredValues.some((vals) => vals.length === 0)) {
-      toast.error('กรุณากรอกค่าตัวเลือกให้ครบทุก option');
+      toast.error('❌ กรุณากรอกค่าตัวเลือกให้ครบทุก option (เช่น กรอก "แดง", "น้ำเงิน")');
       return;
     }
 
     const combos = cartesian(filteredValues);
+    console.log('✅ Generated combinations:', combos);
+    
     const newVariants = combos.map((combo) => ({ sku: '', price: 0, stock_quantity: 0, option_values: combo }));
+    console.log('✅ Generated variants:', newVariants);
+    
     setVariants(newVariants);
     setBatches(combos.map(() => [{ batch_number: '', manufactured_date: '', expiry_date: '', quantity: '' }]));
+    
+    toast.success(`✅ สร้าง ${newVariants.length} ตัวเลือกสำเร็จ!`);
   };
 
   const handleVariantChange = (index: number, field: 'sku' | 'price' | 'stock_quantity', value: string) => {

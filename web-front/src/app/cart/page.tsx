@@ -3,13 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cartUser } from '@/service/api/loadcart';
-import type { CartItemWithExtra } from '@/types/type';
+import type { CartItemWithExtra, Address } from '@/types/type';
 import { removefromcart } from '@/service/api/removefromcart';
+import { loadaddress } from '@/service/api/loadaddress';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItemWithExtra[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,6 +32,13 @@ export default function CartPage() {
           0
         );
         setTotal(totalPrice);
+
+        // โหลดที่อยู่
+        const addressData = await loadaddress(token);
+        setAddresses(addressData);
+        if (addressData.length > 0) {
+          setSelectedAddressId(addressData[0].address_id);
+        }
       } catch (error) {
         console.error('❌ เกิดข้อผิดพลาดในการโหลดตะกร้า:', error);
         setCartItems([]);
@@ -213,9 +223,50 @@ export default function CartPage() {
                   <span>฿{finalTotal.toLocaleString()}</span>
                 </div>
               </div>
+              {/* เลือกที่อยู่จัดส่ง */}
+              {addresses.length > 0 ? (
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    📍 ที่อยู่จัดส่ง
+                  </label>
+                  <select
+                    value={selectedAddressId ?? ''}
+                    onChange={(e) => setSelectedAddressId(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    {addresses.map((addr) => (
+                      <option key={addr.address_id} value={addr.address_id}>
+                        {addr.firstname} {addr.lastname} - {addr.house_number} {addr.sub_district} {addr.district} {addr.province}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">ยังไม่มีที่อยู่จัดส่ง</p>
+                  <button
+                    onClick={() => router.push('/profile?tab=addresses')}
+                    className="text-sm text-blue-600 hover:underline mt-1"
+                  >
+                    เพิ่มที่อยู่ใหม่
+                  </button>
+                </div>
+              )}
+
               <button
-                onClick={() => router.push('/checkout')}
-                className="block mt-4 w-full text-center rounded-full bg-blue-600 text-white py-3 hover:bg-blue-700 transition-colors"
+                onClick={() => {
+                  if (!selectedAddressId) {
+                    alert('กรุณาเลือกที่อยู่จัดส่ง');
+                    return;
+                  }
+                  router.push(`/checkout?addressId=${selectedAddressId}`);
+                }}
+                disabled={addresses.length === 0}
+                className={`block mt-4 w-full text-center rounded-full py-3 transition-colors ${
+                  addresses.length === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
                 Proceed to Checkout
               </button>

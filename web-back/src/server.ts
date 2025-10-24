@@ -66,6 +66,7 @@ app.use('/stripe-webhook', express.raw({ type: 'application/json' }), webhookRou
 app.use(express.json());
 app.use(cors());
 app.use('/upload', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'))); // ✅ เพิ่ม /uploads สำหรับรูปภาพสินค้า
 app.use('/images',express.static(path.join(__dirname, 'picture')));
 app.use("/api",registerRoute);
 app.use("/api",loginRoute);

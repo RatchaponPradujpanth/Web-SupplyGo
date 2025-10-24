@@ -69,19 +69,31 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
   };
 
   const generateVariants = () => {
+    console.log('🔍 Options before filtering:', options);
+    
     const cartesian = (arrays: string[][]): string[][] =>
       arrays.reduce<string[][]>((acc, curr) => acc.flatMap((a) => curr.map((c) => [...a, c])), [[]]);
 
+    // กรอง values ที่ไม่ว่างเปล่า
     const filteredValues = options.map((opt) => opt.values.filter((v) => v.trim() !== ''));
+    console.log('🔍 Filtered values:', filteredValues);
+    
+    // เช็คว่ามี option ไหนที่ไม่มี value เลย
     if (filteredValues.some((vals) => vals.length === 0)) {
-      toast.error('กรุณากรอกค่าตัวเลือกให้ครบทุก option');
+      toast.error('❌ กรุณากรอกค่าตัวเลือกให้ครบทุก option (เช่น กรอก "แดง", "น้ำเงิน")');
       return;
     }
 
     const combos = cartesian(filteredValues);
+    console.log('✅ Generated combinations:', combos);
+    
     const newVariants = combos.map((combo) => ({ sku: '', price: 0, stock_quantity: 0, option_values: combo }));
+    console.log('✅ Generated variants:', newVariants);
+    
     setVariants(newVariants);
     setBatches(combos.map(() => [{ batch_number: '', manufactured_date: '', expiry_date: '', quantity: '' }]));
+    
+    toast.success(`✅ สร้าง ${newVariants.length} ตัวเลือกสำเร็จ! กรุณากรอกราคาและจำนวนคงเหลือด้านล่าง`);
   };
 
   const handleVariantChange = (index: number, field: 'sku' | 'price' | 'stock_quantity', value: string) => {
@@ -311,6 +323,66 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
           >
             สร้างตัวเลือกย่อย (Variants)
           </button>
+
+          {variants.length > 0 && (
+            <div className="space-y-4 mt-6">
+              <h4 className="font-semibold text-md">✅ ตัวเลือกที่สร้างแล้ว ({variants.length} รายการ)</h4>
+              {variants.map((variant, vi) => (
+                <div key={vi} className="border p-4 rounded-lg bg-white shadow-sm">
+                  <div className="font-medium mb-3 text-blue-700">
+                    📦 {variant.option_values.join(' - ')}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        SKU
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="รหัสสินค้า"
+                        value={variant.sku}
+                        onChange={(e) => handleVariantChange(vi, 'sku', e.target.value)}
+                        className="w-full border rounded px-3 py-2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        💰 ราคา (บาท)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        min={0}
+                        step={0.01}
+                        value={variant.price}
+                        onChange={(e) => handleVariantChange(vi, 'price', e.target.value)}
+                        className="w-full border rounded px-3 py-2"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        📦 จำนวนคงเหลือ
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        min={0}
+                        step={1}
+                        value={variant.stock_quantity}
+                        onChange={(e) => handleVariantChange(vi, 'stock_quantity', e.target.value)}
+                        className="w-full border rounded px-3 py-2"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex justify-between mt-4">
             <button onClick={() => setStep(2)} type="button" className="text-gray-600">

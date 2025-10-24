@@ -100,6 +100,26 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
       },
     });
     console.log(`✅ Order ${orderId} fully paid at ${thailandTime.toISOString()}`);
+
+    // 🗑️ ลบตะกร้าหลังจากชำระเงินสำเร็จ
+    const orderData = await prisma.order.findUnique({
+      where: { order_id: Number(orderId) },
+      select: { user_id: true },
+    });
+
+    if (orderData?.user_id) {
+      const userCart = await prisma.cart.findFirst({
+        where: { user_id: orderData.user_id },
+        select: { cart_id: true },
+      });
+
+      if (userCart) {
+        await prisma.cart_items.deleteMany({
+          where: { cart_id: userCart.cart_id },
+        });
+        console.log(`🗑️ Cart cleared for user ${orderData.user_id} after successful payment`);
+      }
+    }
   }
 }
 

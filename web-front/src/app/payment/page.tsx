@@ -94,6 +94,11 @@ function PaymentFormContent() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderIdFromUrl = urlParams.get('orderId');
         const orderIdToSend = orderIdFromUrl ? Number(orderIdFromUrl) : undefined;
+        
+        // Set orderId จาก URL ทันที (ถ้ามี)
+        if (orderIdFromUrl) {
+          setOrderId(Number(orderIdFromUrl));
+        }
 
         const addressList = await loadaddress(token);
         if (!addressList || addressList.length === 0) {
@@ -106,7 +111,7 @@ function PaymentFormContent() {
         const paymentRes: PaymentResponse = await createMultiVendorPayment(token, orderIdToSend);
 
         setPaymentList(paymentRes.paymentIntents);
-        setOrderId(paymentRes.order_id);
+        setOrderId(paymentRes.order_id); // อัปเดตจาก response อีกครั้ง (เผื่อไม่มีใน URL)
         setOrderInfo({ total_amount: paymentRes.total_amount });
 
         setMessage(null);
@@ -187,8 +192,13 @@ function PaymentFormContent() {
       const cancelRes = await cancelorder(token, orderId);
 
       if (cancelRes.status === 'cancelled') {
-        setMessage({ type: 'success', text: 'ยกเลิกคำสั่งซื้อสำเร็จ' });
+        setMessage({ type: 'success', text: 'ยกเลิกคำสั่งซื้อสำเร็จ กำลังนำคุณกลับไปหน้าตะกร้า...' });
         setPaymentList([]);
+        
+        // Redirect ไปหน้า cart หลังจาก 1.5 วินาที
+        setTimeout(() => {
+          router.push('/cart');
+        }, 1500);
       } else {
         setMessage({ type: 'error', text: 'ไม่สามารถยกเลิกคำสั่งซื้อได้' });
       }
@@ -318,14 +328,20 @@ function PaymentFormContent() {
         </>
       )}
 
-      <button
-        type="button"
-        onClick={handleCancelOrder}
-        disabled={loading || !orderId}
-        className="flex-1 mt-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-md font-semibold"
-      >
-        {loading ? 'กำลังยกเลิก...' : 'ยกเลิกคำสั่งซื้อ'}
-      </button>
+      {!paidSuccess && (
+        <button
+          type="button"
+          onClick={handleCancelOrder}
+          disabled={loading || !orderId}
+          className={`w-full mt-4 py-3 rounded-md font-semibold transition ${
+            loading || !orderId
+              ? 'bg-gray-400 cursor-not-allowed text-gray-600'
+              : 'bg-red-500 hover:bg-red-600 text-white'
+          }`}
+        >
+          {loading ? 'กำลังยกเลิก...' : 'ยกเลิกคำสั่งซื้อ'}
+        </button>
+      )}
     </div>
   );
 }

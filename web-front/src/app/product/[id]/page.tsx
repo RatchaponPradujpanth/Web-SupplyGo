@@ -89,6 +89,10 @@ export default function ProductDetailPage() {
         const response = await axios.get(`${API_URL}/api/products/${productId}`, { headers });
         const productData = response.data;
 
+        console.log('🔍 Product data from API:', productData);
+        console.log('🔍 Product variants:', productData.product_variants);
+        console.log('🔍 Product options:', productData.product_options);
+
         setProduct(productData);
         
         // ตั้งรูปแรกเป็นรูปหลัก
@@ -230,6 +234,9 @@ export default function ProductDetailPage() {
     });
     return acc;
   }, {} as Record<string, Set<string>>) || {};
+
+  console.log('🔍 Grouped options:', groupedOptions);
+  console.log('🔍 Number of option groups:', Object.keys(groupedOptions).length);
 
   if (loading) {
     return (
