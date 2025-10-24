@@ -12,7 +12,7 @@ manageGroupsRoute.get(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const shopId = req.user?.shop_id;
-      console.log("👤 Shop ID:", shopId);
+      //console.log("👤 Shop ID:", shopId);
 
       if (!shopId) {
         console.log("❌ shop_id ไม่ถูกต้อง");
@@ -120,6 +120,7 @@ manageGroupsRoute.get(
         };
       });
 
+      console.log(groups)
       // ส่งผลลัพธ์พร้อม point ของร้าน
       res.status(200).json({
         store_balance: storeBalance,

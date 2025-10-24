@@ -425,20 +425,23 @@ export interface GroupBuyingResult {
   user_in_group: boolean;
 }
 
-// ถ้าใช้ `members` ต้องมี type ด้วย
-// export interface GroupOrderUI {
-//   group_order_id: number;      // ✅ ต้องมี เพราะ frontend ใช้
-//   group_buying_id: number;     // ✅ มีแล้ว
-//   total_amount: number;        // ✅ ต้องมี (ถ้า frontend แสดงยอดรวม)
-//   status: string;
-//   created_at: string;
-
-//   // ✅ field แทน `group` เดิม
-//   group: GroupBuying;           // frontend ใช้ order.group.xxx
-
-//   items?: GroupItem[];          // ถ้า frontend render รายการสินค้ากลุ่ม
-//   member_orders?: any[];        // อันนี้ optional
-// }
+export interface GroupOrderItem {
+  group_order_item_id: number;
+  group_order_id: number;
+  product_id: number;
+  quantity: number;
+  price_per_unit: string;
+  product: {
+    product_id: number;
+    product_name: string;
+    product_description: string;
+    price: string;
+    category_id: number;
+    status: string;
+    created_date: string;
+    updated_date: string;
+  };
+}
 
 export interface GroupItem {
   order_item_id: number;
@@ -594,6 +597,44 @@ export interface AdminDashboardApiResponse {
     }[];
   };
 }
+// เพิ่ม interface นี้สำหรับ API response ของ getGrouporder
+export interface GroupOrderResponse {
+  group_buying_id: number;
+  required_members: number;
+  total_items: number;
+  status: string;
+  created_at: string;
+  group_name: string;
+  description: string;
+  product_name: string;
+  product_image: string;
+  price: number;
+  expire_at: string;
+  items_per_member: number;
+  product: {
+    product_id: number;
+    product_name: string;
+    product_description: string;
+    price: string;
+    category_id: number;
+    status: string;
+    created_date: string;
+    updated_date: string;
+    product_images?: Array<{ image_url: string }>;
+  };
+  variant: any | null;
+  members: {
+    group_members_id: number;
+    group_buying_id: number;
+    user_id: number;
+    joined_at: string;
+    left_at: string | null;
+    user: {
+      username: string;
+      email: string;
+    };
+  }[];
+}
 
 
 // ========================
@@ -721,3 +762,17 @@ export interface AdminOrderHistoryResponse {
   data: AdminOrderHistoryOrder[];
 }
 
+export interface DailySales {
+  [date: string]: number; // '2025-10-20': 1200
+}
+
+export interface ProductSales {
+  product_id: number;
+  product_name: string | null;
+  quantity_sold: number;
+}
+
+export interface GraphSellResponse {
+  dailySales: DailySales;
+  productSales: ProductSales[];
+}
