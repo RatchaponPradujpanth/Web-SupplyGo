@@ -32,6 +32,17 @@ migrations/
 uploads/
 prisma/
 
+# Seed and utility scripts
+**/seed-*.ts
+**/delete-*.ts
+**/check-*.ts
+web-back/prisma/seed-products-v2.ts
+web-back/prisma/seed-categories.ts
+web-back/prisma/delete-all-products.ts
+web-back/prisma/delete-all-products-complete.ts
+web-back/prisma/delete-specific-products.ts
+web-back/prisma/check-and-fix-images.ts
+
 # IDEs
 .vscode/
 .idea/
