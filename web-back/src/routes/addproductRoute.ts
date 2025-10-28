@@ -8,7 +8,6 @@ const prisma = new PrismaClient();
 
 addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductImage.array('images', 10), async (req: Request, res: Response) => {
 
-
   try {
     const userId = req.user?.user_id;
     const shopId = req.user?.shop_id;
@@ -38,7 +37,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       batches,
     } = req.body;
 
-    // ตรวจสอบข้อมูลที่จำเป็น
     if (!product_name || !price || !category_id) {
       console.error("❌ Missing required fields");
       res.status(400).json({ 
@@ -49,12 +47,11 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
           category_id: !category_id
         }
       });
+      return;
     }
 
-    // middleware authstore จะตรวจสอบ role = "store" และ shop_id ให้แล้ว
     console.log("✅ User is authorized as store owner");
 
-    // แปลง options / variants / batches
     let parsedOptions = [];
     let parsedVariants = [];
     let parsedBatches = [];
@@ -75,7 +72,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       batches: parsedBatches
     });
 
-    // ✅ ตรวจสอบว่าร้านนี้มีสินค้าชื่อซ้ำกันหรือไม่
     console.log("🔍 Checking for duplicate product name in shop...");
     const existingProduct = await prisma.product_owners.findFirst({
       where: {
@@ -100,9 +96,9 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         message: `สินค้าชื่อ "${product_name}" มีอยู่ในร้านแล้ว`,
         existing_product_id: existingProduct.products.product_id
       });
+      return;
     }
 
-    // สร้างสินค้าใหม่
     console.log("💾 Creating product...");
     try {
       const newProduct = await prisma.products.create({
@@ -117,13 +113,8 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
 
       console.log("✅ Product created successfully:", newProduct.product_id);
 
-      // สร้าง shop ownership
-      // ✅ แก้ไข: ตรวจสอบว่า userId เป็น string ก่อน parseInt
       const userIdNumber = typeof userId === 'string' ? parseInt(userId) : userId;
-      
-      const userShop = await prisma.shops.findFirst({
-        where: { user_id: userIdNumber }
-      });
+      const userShop = await prisma.shops.findFirst({ where: { user_id: userIdNumber } });
 
       if (userShop) {
         await prisma.product_owners.create({
@@ -135,10 +126,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         console.log("✅ Product ownership created");
       }
 
-      // ✅ แก้ไข: Type assertion สำหรับ req.files เป็น File[]
       const uploadedFiles = req.files as Express.Multer.File[];
-      
-      // หากมีไฟล์รูปภาพ ให้บันทึกลงฐานข้อมูล
       if (uploadedFiles && uploadedFiles.length > 0) {
         console.log("📸 Uploading product images...");
         try {
@@ -150,7 +138,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
               data: {
                 product_id: newProduct.product_id,
                 image_url: imagePath,
-                is_primary: i === 0, // รูปแรกเป็น primary
+                is_primary: i === 0,
                 sort_order: i
               },
             });
@@ -159,17 +147,14 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
           console.log("✅ Product images uploaded successfully");
         } catch (imageError) {
           console.error("❌ Error uploading images:", imageError);
-          // ไม่ return error เพราะสินค้าสร้างแล้ว
         }
       } else {
         console.warn("⚠️ No images provided for product");
       }
 
-      // ✅ บันทึก options และ variants
       if (parsedOptions.length > 0 && parsedVariants.length > 0) {
         console.log("🎨 Creating product options and variants...");
         
-        // 1. สร้าง product_options
         const createdOptions: { [key: string]: number } = {};
         for (const opt of parsedOptions) {
           if (opt.name && opt.values && opt.values.length > 0) {
@@ -184,11 +169,9 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
           }
         }
 
-        // 2. สร้าง variants และ variant_options
         for (let i = 0; i < parsedVariants.length; i++) {
           const variantData = parsedVariants[i];
           
-          // สร้าง variant
           const variant = await prisma.product_variants.create({
             data: {
               product_id: newProduct.product_id,
@@ -198,7 +181,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
           });
           console.log(`✅ Created variant: ${variant.sku} (ID: ${variant.variant_id})`);
 
-          // 3. สร้าง variant_options (เชื่อมโยง variant กับ option values)
           if (variantData.option_values && Array.isArray(variantData.option_values)) {
             for (let j = 0; j < variantData.option_values.length; j++) {
               const optValue = variantData.option_values[j];
@@ -217,7 +199,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
             }
           }
 
-          // 4. สร้าง batches สำหรับ variant นี้
           if (parsedBatches[i] && Array.isArray(parsedBatches[i])) {
             let totalQuantity = 0;
             for (const batch of parsedBatches[i]) {
@@ -226,7 +207,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
               if (qty > 0) {
                 await prisma.product_batches.create({
                   data: {
-                    product_id: newProduct.product_id,
+                    product_id: null, // ✅ มี variant → product_id = null
                     variant_id: variant.variant_id,
                     batch_number: batch.batch_number || `BATCH-${variant.variant_id}-${Date.now()}`,
                     manufactured_date: batch.manufactured_date ? new Date(batch.manufactured_date) : null,
@@ -244,7 +225,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         
         console.log("✅ All variants and options created successfully!");
       }
-      // ถ้าไม่มี variants ให้สร้าง default variant
       else if (parsedBatches && parsedBatches.length > 0) {
         console.log("📦 Processing batches...");
         console.log("🔄 No variants, creating default variant...");
@@ -257,35 +237,34 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         });
         console.log("✅ Default variant created:", defaultVariant.variant_id);
 
-          // บันทึก batches สำหรับ default variant
-          if (parsedBatches[0] && Array.isArray(parsedBatches[0])) {
-            let totalQuantity = 0;
-            for (const batch of parsedBatches[0]) {
-              const qty = parseInt(batch.quantity) || 0;
-              
-              if (qty > 0) {
-                await prisma.product_batches.create({
-                  data: {
-                    product_id: newProduct.product_id,
-                    variant_id: defaultVariant.variant_id,
-                    batch_number: batch.batch_number || `BATCH-${Date.now()}`,
-                    manufactured_date: batch.manufactured_date ? new Date(batch.manufactured_date) : null,
-                    expiry_date: batch.expiry_date ? new Date(batch.expiry_date) : null,
-                    quantity: qty
-                  }
-                });
-                totalQuantity += qty;
-                console.log(`✅ Batch created: ${batch.batch_number} with quantity: ${qty}`);
-              } else {
-                console.warn(`⚠️ Skipping batch with invalid quantity: ${batch.quantity}`);
-              }
-            }
-            console.log(`📊 Total stock quantity: ${totalQuantity}`);
+        if (parsedBatches[0] && Array.isArray(parsedBatches[0])) {
+          let totalQuantity = 0;
+          for (const batch of parsedBatches[0]) {
+            const qty = parseInt(batch.quantity) || 0;
             
-            if (totalQuantity === 0) {
-              console.warn("⚠️ WARNING: Product has 0 stock! Please add quantity in batches.");
+            if (qty > 0) {
+              await prisma.product_batches.create({
+                data: {
+                  product_id: newProduct.product_id, // ✅ ไม่มี variant → เก็บ product_id
+                  variant_id: null,
+                  batch_number: batch.batch_number || `BATCH-${Date.now()}`,
+                  manufactured_date: batch.manufactured_date ? new Date(batch.manufactured_date) : null,
+                  expiry_date: batch.expiry_date ? new Date(batch.expiry_date) : null,
+                  quantity: qty
+                }
+              });
+              totalQuantity += qty;
+              console.log(`✅ Batch created: ${batch.batch_number} with quantity: ${qty}`);
+            } else {
+              console.warn(`⚠️ Skipping batch with invalid quantity: ${batch.quantity}`);
             }
           }
+          console.log(`📊 Total stock quantity: ${totalQuantity}`);
+          
+          if (totalQuantity === 0) {
+            console.warn("⚠️ WARNING: Product has 0 stock! Please add quantity in batches.");
+          }
+        }
       } else {
         console.warn("⚠️ No batches provided! Product will have 0 stock.");
       }

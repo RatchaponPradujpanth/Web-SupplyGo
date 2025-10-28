@@ -21,10 +21,6 @@ interface InsufficientStockItem {
   variant_info?: string;
 }
 
-/**
- * POST /api/check-stock
- * เช็คว่าสินค้าในตะกร้ามีสต็อกเพียงพอหรือไม่
- */
 checkStockRoute.post("/check-stock", authenticateToken, async (req: Request, res: Response): Promise<void> => {
   console.log("🔍 Starting stock check...");
   console.log("📝 Request body:", JSON.stringify(req.body, null, 2));
