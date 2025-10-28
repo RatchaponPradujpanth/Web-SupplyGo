@@ -11,7 +11,6 @@ export const historygroup = async (token:string):Promise<GroupBuying[]> =>{
         });
 
         const data = response.data;
-        console.log('API Response (raw):', data);
 
         // Normalize response: backend may return { groups: [...] } or [...]
         if (Array.isArray(data)) {

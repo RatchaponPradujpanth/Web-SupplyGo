@@ -3,7 +3,7 @@ import type { GroupOrderUI } from '@/types/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// type ใหม่: response ของ API คือ { groups: GroupOrderUI[] }
+
 export interface GetGroupOrderHistoryResponse {
   groups: GroupOrderUI[];
 }
@@ -16,11 +16,6 @@ export const getOrderHistory = async (token: string): Promise<GetGroupOrderHisto
         'Content-Type': 'application/json',
       },
     });
-
-    // log แบบสวย ๆ
-    console.log('✅ Order history loaded:', response.data);
-    console.log('Raw response data:', JSON.stringify(response.data, null, 2));
-
     return response.data;
   } catch (error: any) {
     console.error('❌ โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ:', error.message);

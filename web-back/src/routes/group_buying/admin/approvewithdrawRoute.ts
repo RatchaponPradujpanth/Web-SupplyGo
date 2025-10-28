@@ -61,9 +61,9 @@ approvewithdrawRoute.post(
         clientSecret: paymentIntent.client_secret,
         withdrawal,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("❌ Approve withdrawal failed:", error);
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: error});
     }
   }
 );

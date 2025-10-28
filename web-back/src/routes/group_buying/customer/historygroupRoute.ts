@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient , product_variants , shops,products,product_images } from "@prisma/client";
 import { authenticateToken } from "../../../middleware/authMiddleware";
 
 const historygroupRoute = Router();
@@ -106,7 +106,7 @@ historygroupRoute.get(
             product_id: group.product_id,
             product: group.product,
             shop: group.shop,
-            status: group.status,
+            //status: group.status, 
             required_members: group.required_members,
             total_items: group.total_items,
             points_per_group: group.points_per_group,
@@ -126,13 +126,9 @@ historygroupRoute.get(
 
       const result = Object.values(groupedResult);
 
-      // log JSON สวย ๆ
-      console.log("===== Group History Result =====");
-      console.log(JSON.stringify({ groups: result }, null, 2));
-
       res.json({ groups: result });
-    } catch (err: any) {
-      console.error("Error fetching group history:", err);
+    } catch (error) {
+      console.error("Error fetching group history:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }

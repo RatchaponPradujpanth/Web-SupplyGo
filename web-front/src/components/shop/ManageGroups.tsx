@@ -39,8 +39,8 @@ export default function ManageGroups() {
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (err: any) {
-      alert(err.message || "สร้างออเดอร์ไม่สำเร็จ ❌");
+    } catch (error) {
+      console.log(error)
     }
   };
 
@@ -54,8 +54,8 @@ export default function ManageGroups() {
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (err: any) {
-      alert(err.message || "ยกเลิกออเดอร์ไม่สำเร็จ 🚫");
+    } catch (error) {
+      console.log(error)
     }
   };
 

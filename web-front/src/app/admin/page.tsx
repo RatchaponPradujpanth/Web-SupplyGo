@@ -65,8 +65,8 @@ export default function AdminDashboardPage() {
         }
         const res = await admindashboard(token);
         setData(res);
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch dashboard");
+      } catch (error) {
+        setError("Failed to fetch dashboard");
       } finally {
         setLoading(false);
       }
@@ -87,8 +87,8 @@ export default function AdminDashboardPage() {
           }
           const res = await loadShopProducts(token);
           setProducts(res);
-        } catch (err: any) {
-          setError(err.message || "Failed to load products");
+        } catch (error) {
+          setError("Failed to load products");
         }
       };
       fetchProducts();
@@ -105,8 +105,8 @@ export default function AdminDashboardPage() {
           if (!token) throw new Error("No token found");
           const res = await paymentHistory(token);
           setPaymentData(res);
-        } catch (err: any) {
-          setError(err.message || "Failed to load payment history");
+        } catch (error) {
+          setError("Failed to load payment history");
         } finally {
           setLoading(false);
         }
@@ -125,8 +125,8 @@ export default function AdminDashboardPage() {
           if (!token) throw new Error("No token found");
           const res = await allOrderHistory(token);
           setOrdersData(res);
-        } catch (err: any) {
-          setError(err.message || "Failed to load orders");
+        } catch (error) {
+          setError("Failed to load orders");
         } finally {
           setLoading(false);
         }
@@ -145,8 +145,8 @@ export default function AdminDashboardPage() {
           if (!token) throw new Error("No token found");
           const res = await getPendingWithdrawals(token);
           setWithdrawals(res.withdrawals || []);
-        } catch (err: any) {
-          setError(err.message || "Failed to load withdrawals");
+        } catch (error) {
+          setError("Failed to load withdrawals");
         } finally {
           setLoading(false);
         }
@@ -230,7 +230,7 @@ export default function AdminDashboardPage() {
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  🏠 Dashboard
+                  🏠 หน้าหลัก
                 </button>
                 <button
                   onClick={() => setActiveSidebar("users")}

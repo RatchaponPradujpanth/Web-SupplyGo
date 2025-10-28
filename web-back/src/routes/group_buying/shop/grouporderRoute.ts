@@ -131,12 +131,10 @@ grouporderRoute.patch(
         }
       });
 
-    } catch (err: any) {
-      console.error("❌ อัปเดตเลขพัสดุล้มเหลว:", err);
+    } catch (error) {
+      console.error("❌ อัปเดตเลขพัสดุล้มเหลว:", error);
       res.status(500).json({ 
         error: "Internal server error", 
-        details: err.message,
-        stack: err.stack
       });
     }
   }

@@ -40,9 +40,9 @@ export interface CheckoutSummary {
   totalAmount: number;
 }
 
-export interface LoginResponse {
-  token: string;
-}
+// export interface LoginResponse {
+//   token: string;
+// }
 
 export interface Product {
   product_id: number;
@@ -79,11 +79,7 @@ interface CartItem {
 }
 
 
-import type { CartResponse } from "@/types/type";
-// interface CartResponse {
-//   cart_id: number | null;
-//   items: CartItem[];
-// }
+
 
 export interface OrderHistoryResponse {
   orders: {
@@ -150,75 +146,75 @@ export interface OrderHistoryResponse {
 //   }
 // };
 
-export const loginUser = async (
-  username: string,
-  password: string
-): Promise<string> => {
-  try {
-    const response = await axios.post<LoginResponse>(`${API_URL}/api/login`, {
-      username,
-      password,
-    });
+// export const loginUser = async (
+//   username: string,
+//   password: string
+// ): Promise<string> => {
+//   try {
+//     const response = await axios.post<LoginResponse>(`${API_URL}/api/login`, {
+//       username,
+//       password,
+//     });
 
-    const { token } = response.data || {};
+//     const { token } = response.data || {};
 
-    if (!token) {
-      throw new Error("Login failed: Missing token ");
-    }
+//     if (!token) {
+//       throw new Error("Login failed: Missing token ");
+//     }
 
-    localStorage.setItem("token", token); // เก็บ token ตรงนี้เลย
+//     localStorage.setItem("token", token); // เก็บ token ตรงนี้เลย
 
-    return token;
-  } catch (error: unknown) {
-    // handle error
-    throw error;
-  }
-};
+//     return token;
+//   } catch (error: unknown) {
+//     // handle error
+//     throw error;
+//   }
+// };
 
-export const loadUsername = async (token: string): Promise<string> => {
-  try {
-    const response = await axios.get<{ username: string }>(
-      `${API_URL}/api/loadusername`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+// export const loadUsername = async (token: string): Promise<string> => {
+//   try {
+//     const response = await axios.get<{ username: string }>(
+//       `${API_URL}/api/loadusername`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
 
-    return response.data.username;
-  } catch (error) {
-    console.error("Load username error:", error);
-    throw error;
-  }
-};
+//     return response.data.username;
+//   } catch (error) {
+//     console.error("Load username error:", error);
+//     throw error;
+//   }
+// };
 
-export const loadproduct = async (token: string): Promise<Product[]> => {
-  if (!token) throw new Error("No token provided");
-  try {
-    const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+// export const loadproduct = async (token: string): Promise<Product[]> => {
+//   if (!token) throw new Error("No token provided");
+//   try {
+//     const response = await axios.get<Product[]>(`${API_URL}/api/manageproducts`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
 
-    console.log("✅ Products fetched:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    const errorMsg =
-      err.response?.data?.message || err.message || "Failed to load products";
+//     console.log("✅ Products fetched:", response.data);
+//     return response.data;
+//   } catch (error: unknown) {
+//     const err = error as AxiosError<{ message?: string }>;
+//     const errorMsg =
+//       err.response?.data?.message || err.message || "Failed to load products";
 
-    // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
-    if (errorMsg === "No products found") {
-      console.warn("⚠️ No products found, returning empty list.");
-      return [];
-    }
+//     // ถ้าแค่ไม่มีสินค้า ก็ return [] ไปเลย
+//     if (errorMsg === "No products found") {
+//       console.warn("⚠️ No products found, returning empty list.");
+//       return [];
+//     }
 
-    console.error("Error fetching products:", errorMsg);
-    throw new Error(errorMsg);
-  }
-};
+//     console.error("Error fetching products:", errorMsg);
+//     throw new Error(errorMsg);
+//   }
+// };
 
 export const loadstorename = async (
   token: string
@@ -295,21 +291,21 @@ export const confirmStripeConnect = async (
   }
 };
 
-export const cartUser = async (token: string): Promise<CartResponse> => {
-  try {
-    const response = await axios.get<CartResponse>(`${API_URL}/api/cart`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // ต้องใส่ token
-      },
-    });
+// export const cartUser = async (token: string): Promise<CartResponse> => {
+//   try {
+//     const response = await axios.get<CartResponse>(`${API_URL}/api/cart`, {
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`, // ต้องใส่ token
+//       },
+//     });
 
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ โหลดตะกร้าไม่ได้:", error.message);
-    throw error;
-  }
-};
+//     return response.data;
+//   } catch (error: any) {
+//     console.error("❌ โหลดตะกร้าไม่ได้:", error.message);
+//     throw error;
+//   }
+// };
 
 
 export type ShopPaymentIntent = {
@@ -419,43 +415,43 @@ export const addproduct = async (
 //   }
 // };
 
-export async function fetchUserRole(token: string): Promise<string> {
-  try {
-    const res = await axios.get<{ role: string }>(`${API_URL}/api/check-role`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return res.data.role;
-  } catch (error) {
-    console.error("Error fetching user role:", error);
-    throw error;
-  }
-}
+// export async function fetchUserRole(token: string): Promise<string> {
+//   try {
+//     const res = await axios.get<{ role: string }>(`${API_URL}/api/check-role`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+//     return res.data.role;
+//   } catch (error) {
+//     console.error("Error fetching user role:", error);
+//     throw error;
+//   }
+// }
 
-export const submitOrder = async (
-  token: string,
-  cartId: number,
-  address_id: number
-): Promise<{ order_id: number; message: string }> => {
-  try {
-     const response = await axios.post(
-      `${API_URL}/api/order-success`,
-      { cartId, address_id },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+// export const submitOrder = async (
+//   token: string,
+//   cartId: number,
+//   address_id: number
+// ): Promise<{ order_id: number; message: string }> => {
+//   try {
+//      const response = await axios.post(
+//       `${API_URL}/api/order-success`,
+//       { cartId, address_id },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
 
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ บันทึกคำสั่งซื้อไม่สำเร็จ:", error.response?.data || error.message);
-    throw error;
-  }
-};
+//     return response.data;
+//   } catch (error: any) {
+//     console.error("❌ บันทึกคำสั่งซื้อไม่สำเร็จ:", error.response?.data || error.message);
+//     throw error;
+//   }
+// };
 
 export interface PaymentIntentInfo {
   shop_id: number;

@@ -58,8 +58,8 @@ export default function CreateGroupPage() {
       setLoading(true);
       const response: CreateGroupResponse = await creategroup(token, payload);
       setMessage(response.message);
-    } catch (err: any) {
-      setMessage(`❌ Error: ${err.message || "เกิดข้อผิดพลาด"}`);
+    } catch (error) {
+      setMessage(` Error:เกิดข้อผิดพลาด`);
     } finally {
       setLoading(false);
     }

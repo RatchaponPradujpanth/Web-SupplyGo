@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 checkjoingroupRoute.get("/check-join", authenticateToken, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id; // ดึง user id จาก token
+    const userId = req.user?.user_id; // ดึง user id จาก token
     if (!userId) {
        res.status(401).json({ message: "Unauthorized" });
         return
@@ -32,7 +32,6 @@ checkjoingroupRoute.get("/check-join", authenticateToken, async (req: Request, r
     });
     return
   } catch (error) {
-    console.error("Error in /check-join:", error);
      res.status(500).json({ success: false, message: "Server error" });
     return
     }

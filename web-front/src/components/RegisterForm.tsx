@@ -32,12 +32,12 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
       const result = await RegisterUser(username, password, email, role);
       
       if (result.email) {
-        setShowMessage('📧 ส่ง OTP ไปยังอีเมลแล้ว กรุณาตรวจสอบ');
+        setShowMessage('📧 ได้ส่งรหัสยืนยัน (OTP) ไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมาย');
         setTimeout(() => {
-          router.push(`/verify-otp?email=${encodeURIComponent(result.email)}`);
+          router.push(`/verify-otp?email=${encodeURIComponent(result.email ?? '')}`);
         }, 2000);
       } else {
-        setShowMessage('🎉 สมัครสำเร็จ! กรุณาล็อกอิน...');
+        setShowMessage('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ...');
         setTimeout(() => {
           setShowMessage(null);
           onSuccess();
@@ -49,7 +49,7 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
         }, 2000);
       }
     } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : 'การสมัครไม่สำเร็จ, โปรดลองใหม่อีกครั้ง';
+      const errorMsg = error instanceof Error ? error.message : 'การสมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
       setShowMessage(`❌ ${errorMsg}`);
       setTimeout(() => setShowMessage(null), 3000);
     }
@@ -57,6 +57,7 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
 
   return (
     <div className="relative">
+      {/* Toast Message */}
       <AnimatePresence>
         {showMessage && (
           <motion.div
@@ -71,31 +72,32 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
         )}
       </AnimatePresence>
 
+      {/* Register Card */}
       <div className="bg-white rounded-card shadow-card p-8 w-full max-w-lg">
-        <h1 className="text-2xl font-semibold text-center">Create your account</h1>
+        <h1 className="text-2xl font-semibold text-center">สร้างบัญชีของคุณ</h1>
         <div className="mt-6 grid md:grid-cols-2 gap-3">
           <input
-            placeholder="Full name"
+            placeholder="ชื่อผู้ใช้"
             className="bg-bgpage rounded-input px-4 py-2 outline-none"
             value={username}
             onChange={e => setUsername(e.target.value)}
           />
           <input
-            placeholder="Email"
+            placeholder="อีเมล"
             type="email"
             className="bg-bgpage rounded-input px-4 py-2 outline-none"
             value={email}
             onChange={e => setEmail(e.target.value)}
           />
           <input
-            placeholder="Password"
+            placeholder="รหัสผ่าน"
             type="password"
             className="bg-bgpage rounded-input px-4 py-2 outline-none"
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
           <input
-            placeholder="Confirm password"
+            placeholder="ยืนยันรหัสผ่าน"
             type="password"
             className="bg-bgpage rounded-input px-4 py-2 outline-none"
             value={confirmPassword}
@@ -106,15 +108,15 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
             value={role}
             onChange={e => setRole(e.target.value as RoleType)}
           >
-            <option value="customer">Register as customer</option>
-            <option value="store">Register as store</option>
-            <option value="admin">Register as admin</option>
+            <option value="customer">สมัครเป็นลูกค้า</option>
+            <option value="store">สมัครเป็นร้านค้า</option>
+            <option value="admin">สมัครเป็นผู้ดูแลระบบ</option>
           </select>
           <button
             onClick={handleRegister}
             className="md:col-span-2 rounded-pill bg-primary text-white py-3 hover:bg-blue-700 transition-all duration-300"
           >
-            Sign up
+            สมัครสมาชิก
           </button>
         </div>
       </div>

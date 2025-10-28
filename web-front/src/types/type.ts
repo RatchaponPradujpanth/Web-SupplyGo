@@ -271,16 +271,17 @@ export interface PaymentIntentInfo {
 // ========================
 export interface Address {
   address_id: number;
+  address_type: string;
+  district: string;
   firstname: string;
+  house_number: string;
   lastname: string;
   phone_number: number;
-  house_number: string;
+  postal_code: number;
+  province: string;
   street: string;
   sub_district: string;
-  district: string;
-  province: string;
-  postal_code: number;
-  address_type: string;
+  user_id: number;
 }
 
 // ========================

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { historygroup } from '@/service/api/groupsharing/historygroup';
-import type { GroupBuying } from '@/types/type';
+import type { GroupBuying } from '@/types/GroupBuying';
 
 export default function MyGroupsPage() {
   const [groups, setGroups] = useState<GroupBuying[]>([]);

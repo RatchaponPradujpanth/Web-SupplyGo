@@ -224,11 +224,11 @@ model shops {
 
 model users {
   user_id            Int                      @id @default(autoincrement())
-  username           String?                  @unique
-  password           String?
-  email              String?                  @unique
+  username           String                  @unique
+  password           String
+  email              String                  @unique
   registration_date  DateTime?                @default(now()) @db.Timestamp(6)
-  role               String?
+  role               String
 
   address            address[]
   cart               cart?

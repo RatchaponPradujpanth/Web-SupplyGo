@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadUsername, fetchUserRole } from '@/service/apis';
+import { loadUsername } from '@/service/api/loadusername';
 import { loadPublicProducts, loadShopProducts } from '@/service/api/loadproduct';
 import { addtocart } from '@/service/api/addtocart';
 import { getCategories } from '@/service/api/category';
@@ -10,6 +10,7 @@ import type { Product, Category } from '@/types/type';
 import ProductCard from '@/components/customer/ProductCard';
 import ProductDetail from '@/components/customer/ProductDetail';
 import Footer from '@/components/layout/Footer';
+import { fetchUserRole } from '@/service/api/fetchrole';
 
 export default function UserDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);

@@ -163,9 +163,7 @@ function PaymentFormContent() {
       setMessage({ type: 'success', text: ' ชำระเงินสำเร็จ กำลังนำคุณกลับไปหน้าประวัติ...' });
       setPaidSuccess(true);
 
-      setTimeout(() => {
-        router.push('/order');
-      }, 2000);
+       
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'เกิดข้อผิดพลาดขณะชำระเงิน' });
       setPaidSuccess(false);

@@ -78,15 +78,15 @@ export default function CreateGroupForm() {
     };
 
     try {
-      setLoading(true);
-      const response: CreateGroupResponse = await creategroup(token, payload);
-      setMessage({ text: response.message || "สร้างกลุ่มสำเร็จ!", type: 'success' });
-    } catch (err: any) {
-      setMessage({ text: `❌ Error: ${err.message || "เกิดข้อผิดพลาดในการสร้างกลุ่ม"}`, type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  const response: CreateGroupResponse = await creategroup(token, payload);
+  setMessage({ text: response.message || "สร้างกลุ่มสำเร็จ!", type: 'success' });
+} catch (error) {
+  setMessage({ text: "❌ Error: เกิดข้อผิดพลาดในการสร้างกลุ่ม", type: 'error' });
+} finally {
+  setLoading(false);
+}
+  }
 
   return (
   <div className="p-6 sm:p-8 lg:p-12 w-full max-w-[90%] lg:max-w-6xl mx-auto my-10 bg-white rounded-2xl shadow-xl border border-gray-100 transform transition-all duration-300 hover:shadow-2xl">

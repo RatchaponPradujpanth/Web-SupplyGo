@@ -40,11 +40,6 @@ createTopupRoute.post("/topup-point", authenticateToken, async (req: Request, re
       },
     });
 
-    console.log('✅ PaymentIntent created:');
-    console.log('  id:', paymentIntent.id);
-    console.log('  amount:', paymentIntent.amount);
-    console.log('  metadata:', JSON.stringify(paymentIntent.metadata, null, 2));
-
     // 🔹 2. สร้าง transaction record ในฐานข้อมูล
     const topup = await prisma.point_transactions.create({
       data: {
@@ -66,9 +61,9 @@ createTopupRoute.post("/topup-point", authenticateToken, async (req: Request, re
     });
 
     console.log('📤 Response sent to frontend with client_secret');
-  } catch (error: any) {
-    console.error('❌ Error creating topup:', error.message);
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    console.error('❌ Error creating topup:', error);
+    res.status(500).json({ error });
   }
 });
 

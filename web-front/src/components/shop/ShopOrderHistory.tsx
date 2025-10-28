@@ -87,9 +87,8 @@ function TrackingInput({
       setSaved(true);
       setMessage("✅ บันทึกเรียบร้อยแล้ว");
       if (onSaved) onSaved(tracking.trim());
-    } catch (err: any) {
-      console.error(err);
-      setMessage(`❌ ${err.message || "เกิดข้อผิดพลาด"}`);
+    } catch (error) {
+      console.error(error);
     } finally {
       setSaving(false);
     }
@@ -252,9 +251,9 @@ export default function ShopOrderHistory() {
       await updateStatus(token, orderShopId, newStatus);
       alert("✅ อัปเดตสถานะสำเร็จ");
       await fetchData();
-    } catch (err: any) {
-      console.error("❌ อัปเดตสถานะล้มเหลว:", err);
-      const errorMessage = err.response?.data?.error || err.message || "เกิดข้อผิดพลาดในการอัปเดตสถานะ";
+    } catch (error) {
+      console.error("❌ อัปเดตสถานะล้มเหลว:", error);
+      const errorMessage = "เกิดข้อผิดพลาดในการอัปเดตสถานะ";
       alert(`❌ ${errorMessage}`);
     } finally {
       setSavingIds((prev) => prev.filter((id) => id !== String(orderShopId)));

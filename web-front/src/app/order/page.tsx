@@ -341,7 +341,7 @@ export default function OrderHistoryPage() {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              <span className="text-xl mr-2">�</span>
+              <span className="text-xl mr-2">👝</span>
               การสั่งซื้อปกติ
             </button>
             
@@ -370,7 +370,7 @@ export default function OrderHistoryPage() {
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
-              <span className="text-lg">�</span>
+              <span className="text-lg">👝</span>
               <div className="mt-1">ที่ต้องจัดส่ง</div>
               {statusTab === 'to_ship' && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-600"></div>
@@ -460,11 +460,7 @@ export default function OrderHistoryPage() {
                         </div>
                       )}
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      group.status === 'active' ? 'bg-green-100 text-green-800' :
-                      group.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                      group.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                      group.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                    <div className={` ${
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {group.status === 'active' ? '🟢 เปิดรับ' :

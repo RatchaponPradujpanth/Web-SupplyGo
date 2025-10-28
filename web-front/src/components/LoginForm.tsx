@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { loginUser } from "@/service/apis";
+import { loginUser } from "@/service/api/login";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -44,11 +44,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         setShowMessage(null);
         setIsLoading(false);
         
-        // ใช้ callback หรือ router
         if (onSuccess) {
           onSuccess();
         } else {
-          router.push('/'); // redirect ไปหน้าแรก
+          router.push('/'); // กลับไปหน้าแรก
         }
       }, 2000);
       
@@ -70,7 +69,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div className="relative w-full max-w-md">
-      {/* Toast Message */}
+      {/* Toast Message
       <AnimatePresence>
         {showMessage && (
           <motion.div
@@ -91,7 +90,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             {showMessage.message}
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Login Card */}
       <motion.div 
@@ -101,15 +100,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         className="bg-white p-8 rounded-card shadow-card"
       >
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-semibold text-textmain">Login</h2>
-          <p className="text-textmuted text-sm mt-2">Welcome back to SupplyGo</p>
+          <h2 className="text-2xl font-semibold text-textmain">เข้าสู่ระบบ</h2>
+          <p className="text-textmuted text-sm mt-2">ยินดีต้อนรับกลับสู่ระบบ SupplyGo</p>
         </div>
 
         <div className="space-y-4">
           <div>
             <input
               type="email"
-              placeholder="Email"
+              placeholder="กรอกชื่อผู้ใช้ของคุณ"
               className="w-full bg-bgpage rounded-input px-4 py-3 text-textmain placeholder-textmuted outline-none border border-transparent focus:border-primary/30 focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               value={username}
               onChange={e => setUsername(e.target.value)}
@@ -121,7 +120,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <div>
             <input
               type="password"
-              placeholder="Password"
+              placeholder="กรอกรหัสผ่าน"
               className="w-full bg-bgpage rounded-input px-4 py-3 text-textmain placeholder-textmuted outline-none border border-transparent focus:border-primary/30 focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -147,27 +146,18 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 กำลังเข้าสู่ระบบ...
               </span>
             ) : (
-              'Login'
+              'เข้าสู่ระบบ'
             )}
           </motion.button>
         </div>
 
-        <div className="mt-6 text-center">
-          <a 
-            href="/forgot-password" 
-            className="text-primary hover:text-primary/80 text-sm transition-colors"
-          >
-            Forgot password?
-          </a>
-        </div>
-
         <p className="mt-8 text-sm text-center text-textmuted">
-          No account?{' '}
+          ยังไม่มีบัญชีใช่ไหม?{' '}
           <a 
             href="/register" 
             className="text-primary hover:text-primary/80 font-medium transition-colors"
           >
-            Create one
+            สมัครสมาชิก
           </a>
         </p>
       </motion.div>

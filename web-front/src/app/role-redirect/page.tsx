@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchUserRole } from '@/service/apis';
+import { fetchUserRole } from '@/service/api/fetchrole';
 
 export default function RoleRedirect() {
   const router = useRouter();

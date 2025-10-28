@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import Footer from '@/components/layout/Footer';
-import { fetchUserRole } from '@/service/apis';
+import { fetchUserRole } from '@/service/api/fetchrole';
 
 interface ProductImage {
   id: number;
@@ -88,10 +88,6 @@ export default function ProductDetailPage() {
 
         const response = await axios.get(`${API_URL}/api/products/${productId}`, { headers });
         const productData = response.data;
-
-        console.log('🔍 Product data from API:', productData);
-        console.log('🔍 Product variants:', productData.product_variants);
-        console.log('🔍 Product options:', productData.product_options);
 
         setProduct(productData);
         
@@ -261,8 +257,6 @@ export default function ProductDetailPage() {
     return acc;
   }, {} as Record<string, Set<string>>) || {};
 
-  console.log('🔍 Grouped options:', groupedOptions);
-  console.log('🔍 Number of option groups:', Object.keys(groupedOptions).length);
 
   if (loading) {
     return (
@@ -293,7 +287,7 @@ export default function ProductDetailPage() {
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Breadcrumb */}
         <nav className="text-sm text-textmuted mb-6">
-          <Link href="/" className="hover:text-primary">Home</Link>
+          <Link href="/" className="hover:text-primary">หน้าหลัก</Link>
           {product.category_name && (
             <>
               <span className="mx-2">/</span>
@@ -303,7 +297,7 @@ export default function ProductDetailPage() {
             </>
           )}
           <span className="mx-2">/</span>
-          <span className="text-textmain">Product</span>
+          <span className="text-textmain">สินค้า</span>
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
@@ -402,7 +396,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-textmain mb-3">Qty</h3>
+              <h3 className="text-sm font-medium text-textmain mb-3">จำนวน</h3>
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -426,13 +420,13 @@ export default function ProductDetailPage() {
                 onClick={handleAddToCart}
                 className="flex-1 py-3 bg-secondary text-textmain font-semibold rounded-lg hover:bg-secondary/90 transition shadow-md"
               >
-                Add to Cart
+                เพิ่มลงตะกร้า
               </button>
               <button
                 onClick={handleBuyNow}
                 className="flex-1 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition shadow-md"
               >
-                Buy Now
+                ซื้อตอนนี้
               </button>
             </div>
 
@@ -447,7 +441,7 @@ export default function ProductDetailPage() {
                       : 'text-textmuted hover:text-textmain'
                   }`}
                 >
-                  Description
+                  รายละเอียด
                 </button>
                 <button
                   onClick={() => setActiveTab('specs')}
@@ -457,7 +451,7 @@ export default function ProductDetailPage() {
                       : 'text-textmuted hover:text-textmain'
                   }`}
                 >
-                  Specs
+                  คุณลักษณะ
                 </button>
               </div>
 
@@ -470,12 +464,12 @@ export default function ProductDetailPage() {
               {activeTab === 'specs' && (
                 <div className="text-textmuted">
                   <ul className="space-y-2">
-                    <li><strong>Product ID:</strong> {product.product_id}</li>
+                    <li><strong>รหัสสินค้า:</strong> {product.product_id}</li>
                     {product.category_name && (
-                      <li><strong>Category:</strong> {product.category_name}</li>
+                      <li><strong>ประเภทสินค้า:</strong> {product.category_name}</li>
                     )}
                     {product.product_variants && product.product_variants.length > 0 && (
-                      <li><strong>Variants:</strong> {product.product_variants.length} options available</li>
+                      <li><strong>ตัวเลือก:</strong> {product.product_variants.length} ตัวเลือกย่อย</li>
                     )}
                   </ul>
                 </div>
@@ -486,7 +480,7 @@ export default function ProductDetailPage() {
 
         {/* Related Products Section */}
         <section className="mt-16">
-          <h2 className="text-2xl font-bold mb-6">Related products</h2>
+          <h2 className="text-2xl font-bold mb-6">สินค้าแนะนำ</h2>
           {relatedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedProducts.map((relatedProduct) => {
@@ -530,7 +524,7 @@ export default function ProductDetailPage() {
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-white rounded-card shadow-card p-4 text-center text-textmuted">
                   <div className="aspect-square bg-gray-100 rounded-lg mb-4"></div>
-                  <p>No related products</p>
+                  <p>ไม่มีสินค้าแนะนำ</p>
                 </div>
               ))}
             </div>

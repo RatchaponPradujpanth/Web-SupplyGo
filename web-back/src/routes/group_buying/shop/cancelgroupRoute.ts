@@ -70,9 +70,9 @@ cancelgrouporderRoute.post("/cancel-group-order", authenticateToken, authstore, 
 
     res.json({ message: "Group order cancelled and points refunded successfully", group: result });
 
-  } catch (err: any) {
-    console.error("Error cancelling group order:", err);
-    res.status(500).json({ message: err.message || "Internal server error" });
+  } catch (error) {
+    console.error("Error cancelling group order:", error);
+    res.status(500).json({ error : "Internal server error"});
   }
 });
 

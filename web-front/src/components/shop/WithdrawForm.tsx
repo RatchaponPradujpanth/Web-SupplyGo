@@ -34,9 +34,9 @@ export default function WithdrawPage() {
     try {
       const res = await withdraw(token, points);
       setResult(res);
-    } catch (err: any) {
-      console.error("Withdraw error:", err);
-      setError(err?.response?.data?.message || "ถอน Point ล้มเหลว");
+    } catch (error) {
+      console.error("Withdraw error:", error);
+      setError("ถอน Point ล้มเหลว");
     } finally {
       setLoading(false);
     }

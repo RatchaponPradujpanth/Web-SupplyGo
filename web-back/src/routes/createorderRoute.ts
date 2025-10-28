@@ -184,18 +184,13 @@ createorderRoute.post("/create-order", authenticateToken, async (req: Request, r
 
     console.log(`🎉 Order created successfully - Order ID: ${result.order_id}`);
     res.status(201).json({ message: "สร้างคำสั่งซื้อสำเร็จ", order_id: result.order_id });
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Create order error:", error);
     
     // Log more detailed error information
     if (error instanceof Error) {
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
-    }
-    
-    // Check if it's a Prisma error
-    if (error.code) {
-      console.error("Error code:", error.code);
     }
     
     res.status(500).json({ 

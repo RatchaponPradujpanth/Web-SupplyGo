@@ -6,11 +6,8 @@ import { PrismaClient } from "@prisma/client";
 const addproductRoute = Router();
 const prisma = new PrismaClient();
 
-addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductImage.array('images', 10), async (req: any, res: any) => {
-  console.log("🔍 Starting addproduct process...");
-  console.log("📝 Request body:", req.body);
-  console.log("📁 Files:", req.files);
-  console.log("👤 User from token:", req.user);
+addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductImage.array('images', 10), async (req: Request, res: Response) => {
+
 
   try {
     const userId = req.user?.user_id;
@@ -18,12 +15,14 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
 
     if (!userId) {
       console.error("❌ No user ID in token");
-      return res.status(401).json({ message: "ไม่พบ user ID ใน token" });
+       res.status(401).json({ message: "ไม่พบ user ID ใน token" });
+       return
     }
 
     if (!shopId) {
       console.error("❌ No shop ID in token");
-      return res.status(403).json({ message: "ไม่พบข้อมูลร้านค้า" });
+       res.status(403).json({ message: "ไม่พบข้อมูลร้านค้า" });
+      return
     }
 
     console.log("👤 User ID from token:", userId);
@@ -34,10 +33,6 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       product_description,
       price,
       category_id,
-      target_amount,
-      end_time,
-      max_group_size,
-      quantity,
       options,
       variants,
       batches,
@@ -46,7 +41,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
     // ตรวจสอบข้อมูลที่จำเป็น
     if (!product_name || !price || !category_id) {
       console.error("❌ Missing required fields");
-      return res.status(400).json({ 
+      res.status(400).json({ 
         message: "กรุณากรอกข้อมูลที่จำเป็น",
         missing: {
           product_name: !product_name,
@@ -70,7 +65,8 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       parsedBatches = typeof batches === "string" ? JSON.parse(batches) : batches || [];
     } catch (parseError) {
       console.error("❌ JSON parsing error:", parseError);
-      return res.status(400).json({ message: "ข้อมูล JSON ไม่ถูกต้อง" });
+       res.status(400).json({ message: "ข้อมูล JSON ไม่ถูกต้อง" });
+      return
     }
 
     console.log("📦 Parsed data:", {
@@ -100,7 +96,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
 
     if (existingProduct) {
       console.error("❌ Product name already exists in this shop");
-      return res.status(409).json({ 
+       res.status(409).json({ 
         message: `สินค้าชื่อ "${product_name}" มีอยู่ในร้านแล้ว`,
         existing_product_id: existingProduct.products.product_id
       });
@@ -122,8 +118,11 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       console.log("✅ Product created successfully:", newProduct.product_id);
 
       // สร้าง shop ownership
+      // ✅ แก้ไข: ตรวจสอบว่า userId เป็น string ก่อน parseInt
+      const userIdNumber = typeof userId === 'string' ? parseInt(userId) : userId;
+      
       const userShop = await prisma.shops.findFirst({
-        where: { user_id: parseInt(userId) }
+        where: { user_id: userIdNumber }
       });
 
       if (userShop) {
@@ -136,12 +135,15 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         console.log("✅ Product ownership created");
       }
 
+      // ✅ แก้ไข: Type assertion สำหรับ req.files เป็น File[]
+      const uploadedFiles = req.files as Express.Multer.File[];
+      
       // หากมีไฟล์รูปภาพ ให้บันทึกลงฐานข้อมูล
-      if (req.files && req.files.length > 0) {
+      if (uploadedFiles && uploadedFiles.length > 0) {
         console.log("📸 Uploading product images...");
         try {
-          for (let i = 0; i < req.files.length; i++) {
-            const file = req.files[i];
+          for (let i = 0; i < uploadedFiles.length; i++) {
+            const file = uploadedFiles[i];
             const imagePath = `/uploads/products/${file.filename}`;
             
             await prisma.product_images.create({
@@ -294,7 +296,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
       });
     } catch (productError) {
       console.error("❌ Error creating product:", productError);
-      return res.status(500).json({ 
+       res.status(500).json({ 
         message: "เกิดข้อผิดพลาดในการสร้างสินค้า",
         error: productError instanceof Error ? productError.message : "Unknown error"
       });

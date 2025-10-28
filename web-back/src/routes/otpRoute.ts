@@ -1,12 +1,12 @@
 import { Router, Request, Response } from "express";
 import nodemailer from "nodemailer";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient , users } from "@prisma/client";
 
 const otpRoute = Router();
 const prisma = new PrismaClient();
 
 // เก็บ OTP ชั่วคราว (production ควรใช้ Redis)
-const otpStore: Record<string, { otp: string; expires: number; userData: any }> = {};
+const otpStore: Record<string, { otp: string; expires: number; userData: users }> = {};
 
 // สร้าง OTP 6 หลัก
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -21,7 +21,7 @@ otpRoute.post("/send-otp", async (req: Request, res: Response) => {
   otpStore[email] = { otp, expires, userData };
   
   try {
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
@@ -48,16 +48,19 @@ otpRoute.post("/verify-otp", async (req: Request, res: Response) => {
   
   const stored = otpStore[email];
   if (!stored) {
-    return res.status(400).json({ message: "ไม่พบ OTP" });
+    res.status(400).json({ message: "ไม่พบ OTP" });
+    return
   }
   
   if (Date.now() > stored.expires) {
     delete otpStore[email];
-    return res.status(400).json({ message: "OTP หมดอายุ" });
+    res.status(400).json({ message: "OTP หมดอายุ" });
+    return
   }
   
   if (stored.otp !== otp) {
-    return res.status(400).json({ message: "OTP ไม่ถูกต้อง" });
+    res.status(400).json({ message: "OTP ไม่ถูกต้อง" });
+    return
   }
   
   try {

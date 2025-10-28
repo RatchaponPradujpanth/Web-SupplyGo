@@ -17,9 +17,8 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
 
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-  } catch (err: any) {
-    console.log('⚠️ Webhook signature verification failed.', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
+  } catch (error) {
+    res.status(400).send(`Webhook Error`);
     return
   }
 
@@ -53,7 +52,6 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
             approved_at: new Date(),
           },
         });
-        console.log('✅ Withdrawal completed');
       }
 
       // ✅ Case: Order payment
@@ -183,8 +181,8 @@ webhookRoute.post('/', express.raw({ type: 'application/json' }), async (req: Re
     }
 
     res.status(200).send({ received: true });
-  } catch (err: any) {
-    console.error('❌ Error processing webhook:', err.message);
+  } catch (error) {
+    console.error('❌ Error processing webhook:');
     res.status(500).send('Internal Server Error');
   }
 });

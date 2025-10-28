@@ -110,7 +110,7 @@ export default function CartPage() {
   return (
     <div className="bg-gray-50 min-h-screen font-inter text-gray-800">
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        <h1 className="text-2xl font-semibold mb-4">Cart</h1>
+        <h1 className="text-2xl font-semibold mb-4">ตะกร้าของฉัน</h1>
 
         {cartItems.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
@@ -123,11 +123,10 @@ export default function CartPage() {
               <table className="w-full text-sm">
                 <thead className="text-left text-gray-600">
                   <tr>
-                    <th className="p-4">Item</th>
-                    <th className="p-4">Price</th>
-                    <th className="p-4">Qty</th>
-                    <th className="p-4">Subtotal</th>
-                    <th className="p-4">Action</th>
+                    <th className="p-4">สินค้า</th>
+                    <th className="p-4">ราคา</th>
+                    <th className="p-4">จำนวน</th>
+                    <th className="p-4">ราคารวม</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -208,7 +207,7 @@ export default function CartPage() {
                           onClick={() => handleRemoveItem(item)}
                           className="text-red-500 hover:text-red-700 text-sm font-medium"
                         >
-                          Remove
+                          ลบสินค้า
                         </button>
                       </td>
                     </tr>
@@ -219,19 +218,19 @@ export default function CartPage() {
 
             {/* Summary Sidebar */}
             <aside className="bg-white rounded-lg shadow-sm p-5 h-max">
-              <h2 className="font-semibold text-lg">Summary</h2>
+              <h2 className="font-semibold text-lg">ราคารวม</h2>
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
+                  <span>สรุปยอดชำระ</span>
                   <span>฿{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span className="text-green-600 font-medium">Free</span>
+                  <span>ค่าจัดส่ง</span>
+                  <span className="text-green-600 font-medium">ฟรี</span>
                 </div>
                 <hr className="my-2" />
                 <div className="flex justify-between font-semibold text-base">
-                  <span>Total</span>
+                  <span>ยอดรวม</span>
                   <span>฿{finalTotal.toLocaleString()}</span>
                 </div>
               </div>
@@ -280,7 +279,7 @@ export default function CartPage() {
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                Proceed to Checkout
+                ไปหน้าชำระเงิน
               </button>
             </aside>
           </div>

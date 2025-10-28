@@ -39,8 +39,8 @@ export default function ManageGroups() {
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (err: any) {
-      alert(err.message || "สร้างออเดอร์ไม่สำเร็จ ❌");
+    } catch (error) {
+      console.log(error)
     }
   };
 
@@ -54,8 +54,8 @@ export default function ManageGroups() {
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (err: any) {
-      alert(err.message || "ยกเลิกออเดอร์ไม่สำเร็จ 🚫");
+    } catch (error) {
+      console.log(error)
     }
   };
 
@@ -380,8 +380,8 @@ function TrackingInput({
       setMessage("✅ บันทึกสำเร็จ");
       if (onSave) onSave(tracking);
       setTimeout(() => setMessage(""), 3000);
-    } catch (err: any) {
-      setMessage(`❌ ${err.message || "เกิดข้อผิดพลาด"}`);
+    } catch (error) {
+      setMessage(`❌ ${message || "เกิดข้อผิดพลาด"}`);
       setTimeout(() => setMessage(""), 3000);
     } finally {
       setSaving(false);

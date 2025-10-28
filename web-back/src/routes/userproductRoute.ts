@@ -64,7 +64,7 @@ userproductRoute.get("/products/:id", async (req: Request, res: Response): Promi
     };
 
     const productImages = product.product_images.map((img) => ({
-      id: img.id,
+      id: img.product_images_id,
       image_url: img.image_url, // ✅ ไม่ต้องเพิ่ม full URL ให้ frontend จัดการเอง
       is_primary: img.is_primary,
       sort_order: img.sort_order,
@@ -174,7 +174,7 @@ userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Pr
 
     const products = foundproduct.map((prod) => {
       const productImages = prod.product_images.map((img) => ({
-        id: img.id, // ✅ ใช้ชื่อที่ถูกต้อง
+        id: img.product_images_id, // ✅ ใช้ชื่อที่ถูกต้อง
         image_url: getFullUrl(img.image_url),
         is_primary: img.is_primary,
         sort_order: img.sort_order,

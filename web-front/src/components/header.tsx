@@ -4,7 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
-import { loadUsername, fetchUserRole } from '@/service/apis';
+import { fetchUserRole } from '@/service/api/fetchrole';
+import { loadUsername } from '@/service/api/loadusername';
 
 interface SearchSuggestion {
   product_id: number;
@@ -122,7 +123,7 @@ export default function Header() {
     <header className="bg-white shadow-card sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary"></div>
+          
           <span className="font-semibold text-lg">SupplyGo</span>
           {role && (
             <span className="ml-3 rounded-pill bg-primary/10 text-primary px-3 py-1 text-xs font-medium">
@@ -278,7 +279,7 @@ export default function Header() {
                 onClick={() => router.push('/cart')}
                 className="rounded-pill px-3 py-2 hover:bg-primary/10 hover:text-primary text-sm whitespace-nowrap"
               >
-                Cart
+                ตะกร้า
               </button>
             </>
           )}

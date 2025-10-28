@@ -3,10 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  loadUsername,
   loadstorename,
   regisstripe,
-  fetchUserRole,
 } from "@/service/apis";
 import type { Product } from "@/types/type";
 import AddProductForm from "@/components/AddProductForm";
@@ -17,6 +15,10 @@ import CreateGroupForm from "@/components/shop/CreateGroupForm";
 import ShopGraphDashboard from "@/components/shop/ShopGraphDashboard";
 import WithdrawPage from "@/components/shop/WithdrawForm";
 import ManageGroups from "@/components/shop/ManageGroups";
+import { fetchUserRole } from '@/service/api/fetchrole';
+import { loadUsername } from "@/service/api/loadusername";
+
+
 
 export default function StoreDashboardPage() {
   const [username, setUsername] = useState("");

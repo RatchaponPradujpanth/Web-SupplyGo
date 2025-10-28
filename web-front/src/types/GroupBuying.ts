@@ -55,6 +55,8 @@ export interface GroupBuying {
   points_per_group: number;
   points_per_member: number;
   items_per_member?: number;
+  updated_at: string;
+  joined_at?: string | null;   // ✅ เพิ่มวันที่เข้าร่วม
   current_members?: number;
   members?: any[];
   user_in_group: boolean;

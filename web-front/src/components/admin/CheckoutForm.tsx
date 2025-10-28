@@ -47,9 +47,8 @@ export default function CheckoutForm({ withdrawal, token, onSuccess }: CheckoutF
       }
 
       onSuccess();
-    } catch (err: any) {
-      console.error(err);
-      alert("❌ ล้มเหลว: " + err.message);
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
