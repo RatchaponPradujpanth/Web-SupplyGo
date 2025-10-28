@@ -19,7 +19,6 @@ export const managegroup = async (token: string): Promise<ManageGroupsResponse> 
       },
     });
 
-    console.log("✅ Groups fetched:", response.data);
     return response.data;
   } catch (err: unknown) {
     const error = err as AxiosError<{ message?: string }>;

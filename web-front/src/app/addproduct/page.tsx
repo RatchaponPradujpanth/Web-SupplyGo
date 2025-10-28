@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
 import { addproduct } from '@/service/apis';
 import { getCategories } from '@/service/api/category';
@@ -66,14 +67,11 @@ export default function AddProductPage() {
   };
 
   const generateVariants = () => {
-    console.log('🔍 Options before filtering:', options);
-    
     const cartesian = (arrays: string[][]): string[][] =>
       arrays.reduce<string[][]>((acc, curr) => acc.flatMap((a) => curr.map((c) => [...a, c])), [[]]);
 
     // กรอง values ที่ไม่ว่างเปล่า
     const filteredValues = options.map((opt) => opt.values.filter((v) => v.trim() !== ''));
-    console.log('🔍 Filtered values:', filteredValues);
     
     // เช็คว่ามี option ไหนที่ไม่มี value เลย
     if (filteredValues.some((vals) => vals.length === 0)) {
@@ -82,10 +80,8 @@ export default function AddProductPage() {
     }
 
     const combos = cartesian(filteredValues);
-    console.log('✅ Generated combinations:', combos);
     
     const newVariants = combos.map((combo) => ({ sku: '', price: 0, stock_quantity: 0, option_values: combo }));
-    console.log('✅ Generated variants:', newVariants);
     
     setVariants(newVariants);
     setBatches(combos.map(() => [{ batch_number: '', manufactured_date: '', expiry_date: '', quantity: '' }]));
@@ -148,7 +144,7 @@ export default function AddProductPage() {
 
       toast.success('เพิ่มสินค้าสำเร็จ');
       router.push('/dashboard/products');
-    } catch (error) {
+    } catch {
       toast.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
     } finally {
       setLoading(false);
@@ -242,12 +238,18 @@ export default function AddProductPage() {
               {imageFiles.map((file, i) => {
                 const url = URL.createObjectURL(file);
                 return (
-                  <div key={i} className="relative">
-                    <img src={url} alt={`preview-${i}`} className="w-full h-24 object-cover rounded border" />
+                  <div key={i} className="relative h-24">
+                    <Image 
+                      src={url} 
+                      alt={`preview-${i}`} 
+                      fill
+                      sizes="(max-width: 768px) 33vw, 25vw"
+                      className="object-cover rounded border" 
+                    />
                     <button
                       type="button"
                       onClick={() => setImageFiles(imageFiles.filter((_, idx) => idx !== i))}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs z-10"
                     >
                       ✕
                     </button>

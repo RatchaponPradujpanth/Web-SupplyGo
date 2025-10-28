@@ -1,45 +1,35 @@
-import axios, { AxiosError } from 'axios';
+import apiClient from '@/utils/apiClient';
 import type { Product } from '@/types/type';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+/**
+ * Product API Service
+ */
 
-// 1️⃣ สำหรับผู้ใช้ทั่วไป (public)
+/**
+ * โหลดสินค้าสำหรับผู้ใช้ทั่วไป (ไม่ต้องล็อกอิน)
+ * @returns Promise<Product[]>
+ */
 export const loadPublicProducts = async (): Promise<Product[]> => {
   try {
-    const url = `${API_URL}/api/loaduserproduct`;
-
-
-    const response = await axios.get<Product[]>(url);
-    console.log("✅ [loadPublicProducts] Data received:", response.data);
-
-    return response.data;
-  } catch (error: unknown) {
+    const products = await apiClient.get<Product[]>('/api/loaduserproduct');
+    return products || [];
+  } catch (error) {
     console.error("❌ [loadPublicProducts] Error fetching public products:", error);
     return [];
   }
 };
 
-// 2️⃣ สำหรับผู้ขายหรือแอดมินที่ล็อกอินแล้ว
-export const loadShopProducts = async (token: string): Promise<Product[]> => {
+/**
+ * โหลดสินค้าสำหรับผู้ใช้ที่ล็อกอินแล้ว
+ * @param _token - Authentication token (handled by apiClient)
+ * @returns Promise<Product[]>
+ */
+export const loadShopProducts = async (): Promise<Product[]> => {
   try {
-    const url = `${API_URL}/api/loaduserproduct`;
-
-
-    const response = await axios.get<Product[]>(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    console.log("✅ [loadShopProducts] Data received:", response.data);
-
-    return response.data;
-  } catch (error: unknown) {
+    const products = await apiClient.get<Product[]>('/api/loaduserproduct');
+    return products || [];
+  } catch (error) {
     console.error("❌ [loadShopProducts] Error fetching shop products:", error);
-
-    // Optional: แสดง error response ถ้ามี
-    if (axios.isAxiosError(error)) {
-      console.error("🧾 Axios error response:", error.response?.data);
-    }
-
     return [];
   }
 };

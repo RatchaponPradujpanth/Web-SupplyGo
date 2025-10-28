@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { managegroup } from "@/service/api/groupsharing/managegroup";
 import { confirmGroupOrder } from "@/service/api/groupsharing/confirmgrouporder";
@@ -7,7 +8,7 @@ import type { GroupOrderResponse } from "@/types/type";
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState<GroupOrderResponse[]>([]);
-  const [storeBalance, setStoreBalance] = useState<number>(0);
+  const [, setStoreBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,11 +18,10 @@ export default function ManageGroups() {
         if (!token) return;
 
         const data = await managegroup(token);
-        console.log("จัดการกลุ่ม", JSON.stringify(data, null, 2));
         setGroups(data.groups);
         setStoreBalance(data.store_balance);
-      } catch (error: any) {
-        console.error("Error fetching groups:", error.message || error);
+      } catch {
+        // Error handling - could add user-facing error message here
       } finally {
         setLoading(false);
       }
@@ -92,7 +92,7 @@ export default function ManageGroups() {
         ) : (
           <div className="space-y-6">
             {groups.map((g, index) => {
-              const members = g.members || [];
+              const members = g.members as any || [];
               const activeMembers = members.filter((m: any) => !m.left_at);
               const isFull = activeMembers.length >= g.required_members;
               const leftMembers = members.filter((m: any) => m.left_at);
@@ -380,8 +380,8 @@ function TrackingInput({
       setMessage("✅ บันทึกสำเร็จ");
       if (onSave) onSave(tracking);
       setTimeout(() => setMessage(""), 3000);
-    } catch (error) {
-      setMessage(`❌ ${message || "เกิดข้อผิดพลาด"}`);
+    } catch {
+      setMessage("❌ เกิดข้อผิดพลาด");
       setTimeout(() => setMessage(""), 3000);
     } finally {
       setSaving(false);

@@ -35,10 +35,9 @@ export const approveWithdrawal = async (
       }
     );
 
-    console.log("✅ Withdrawal approved:", response.data);
     return response.data;
-  } catch (error: any) {
-    console.error("❌ Approve withdrawal error:", error.response?.data || error.message);
+  } catch (error) {
+    console.error("❌ Approve withdrawal error:", error);
     throw error;
   }
 };

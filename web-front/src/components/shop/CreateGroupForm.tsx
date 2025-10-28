@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
+import Image from 'next/image';
 import { creategroup, CreateGroupRequest, CreateGroupResponse } from "@/service/api/groupsharing/creategroup";
 import { loadproduct } from "@/service/api/shopproduct";
 import type { Product } from "@/types/type";
@@ -14,7 +15,7 @@ export default function CreateGroupForm() {
   const [required_members, setRequiredMembers] = useState<number>(1);
   const [total_items, setTotalItems] = useState<number>(1);
   const [items_per_member, setItemsPerMember] = useState<number>(1);
-  const [status, setStatus] = useState<string>("open");
+  const [status] = useState<string>("open");
   const [points_per_group, setPointsPerGroup] = useState<number>(0);
   const [points_per_member, setPointsPerMember] = useState<number>(0);
   const [group_name, setGroupName] = useState<string>("");
@@ -81,7 +82,7 @@ export default function CreateGroupForm() {
   setLoading(true);
   const response: CreateGroupResponse = await creategroup(token, payload);
   setMessage({ text: response.message || "สร้างกลุ่มสำเร็จ!", type: 'success' });
-} catch (error) {
+} catch {
   setMessage({ text: "❌ Error: เกิดข้อผิดพลาดในการสร้างกลุ่ม", type: 'error' });
 } finally {
   setLoading(false);
@@ -126,7 +127,15 @@ export default function CreateGroupForm() {
           {/* Product Image Preview */}
           <div className="w-28 h-28 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden">
             {productImage ? (
-              <img src={productImage} alt={selectedProduct?.product_name ?? 'product'} className="w-full h-full object-cover" />
+              <div className="relative w-full h-full">
+                <Image 
+                  src={productImage} 
+                  alt={selectedProduct?.product_name ?? 'product'} 
+                  fill
+                  sizes="112px"
+                  className="object-cover" 
+                />
+              </div>
             ) : (
               <span className="text-xs text-gray-400">ไม่มีรูปสินค้า</span>
             )}
@@ -207,20 +216,20 @@ function InputGroup({ title, children }: InputGroupProps) {
     );
 }
 
-interface InputProps {
+interface InputProps<T = string | number> {
   label: string;
   type?: string;
-  value: any;
+  value: T;
   min?: number;
   placeholder?: string;
-  onChange: (val: any) => void;
+  onChange: (val: T) => void;
 }
-function Input({ label, type = "text", value, min, placeholder, onChange }: InputProps) {
+function Input<T extends string | number>({ label, type = "text", value, min, placeholder, onChange }: InputProps<T>) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (type === 'number') {
-        onChange(Number(e.target.value));
+        onChange(Number(e.target.value) as T);
     } else {
-        onChange(e.target.value);
+        onChange(e.target.value as T);
     }
   }
 
@@ -265,22 +274,22 @@ function Textarea({ label, value, placeholder, onChange }: TextareaProps) {
   );
 }
 
-interface SelectProps {
+interface SelectProps<T = number | string> {
   label: string;
-  value: any;
+  value: T;
   placeholder?: string;
-  onChange: (val: any) => void;
-  options: { value: any; label: string }[];
+  onChange: (val: T) => void;
+  options: { value: T; label: string }[];
   disabled?: boolean;
 }
-function Select({ label, value, onChange, placeholder, options, disabled = false }: SelectProps) {
+function Select<T extends number | string>({ label, value, onChange, placeholder, options, disabled = false }: SelectProps<T>) {
   return (
     <div>
       <label className="block mb-2 text-sm font-medium text-gray-700">{label}</label>
       <div className="relative">
         <select 
-          value={value} 
-          onChange={e => onChange(e.target.value)} 
+          value={value as string | number} 
+          onChange={e => onChange(e.target.value as T)} 
           disabled={disabled}
           // Enhanced Select Styling with custom arrow/appearance
           className={`border border-gray-300 appearance-none p-3 w-full rounded-lg bg-white pr-10 cursor-pointer 

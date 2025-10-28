@@ -1,129 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadUsername } from '@/service/api/loadusername';
-import { loadPublicProducts, loadShopProducts } from '@/service/api/loadproduct';
-import { addtocart } from '@/service/api/addtocart';
-import { getCategories } from '@/service/api/category';
-import type { Product, Category } from '@/types/type';
+import type { Product } from '@/types/type';
 import ProductCard from '@/components/customer/ProductCard';
 import ProductDetail from '@/components/customer/ProductDetail';
 import Footer from '@/components/layout/Footer';
-import { fetchUserRole } from '@/service/api/fetchrole';
+import { useAuth } from '@/hooks/useAuth';
+import { useProducts } from '@/hooks/useProducts';
+import { addtocart } from '@/service/api/addtocart';
+import { getDisplayPrice } from '@/utils/price';
+import { getCategoryIcon } from '@/utils/ui';
 
-export default function UserDashboardPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+export default function HomePage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [categoryScrollPosition, setCategoryScrollPosition] = useState(0);
-
   const router = useRouter();
-  const categoryScrollRef = React.useRef<HTMLDivElement>(null);
-
-  // Mapping icon สำหรับ category (frontend)
-  const categoryIcons: Record<string, string> = {
-    Electronics: '🔌',
-    Fashion: '👕',
-    'Home & Kitchen': '🍳',
-    Beauty: '🧴',
-    Sports: '🏋️',
-    Furniture: '🛋️',
-    Baby: '🍼',
-    Tools: '🧰',
-  };
-
-  // ฟังก์ชัน format ราคา
-  const formatPrice = (price: number | null | undefined) => {
-    if (price == null) return 'ติดต่อร้านค้า';
-    return new Intl.NumberFormat('th-TH', {
-      style: 'currency',
-      currency: 'THB',
-      minimumFractionDigits: 2,
-    }).format(price);
-  };
-
-  const getDisplayPrice = (product: Product, variantId?: number | null) => {
-    if (product.product_variants && product.product_variants.length > 0) {
-      if (variantId) {
-        const selectedVariant = product.product_variants.find(v => v.variant_id === variantId);
-        return formatPrice(selectedVariant?.price);
-      } else {
-        const prices = product.product_variants
-          .map(v => v.price)
-          .filter((p): p is number => p !== null);
-        if (prices.length === 0) return 'ติดต่อร้านค้า';
-        if (prices.length === 1) return formatPrice(prices[0]);
-        return `${formatPrice(Math.min(...prices))} - ${formatPrice(Math.max(...prices))}`;
-      }
-    } else {
-      return formatPrice(product.price);
-    }
-  };
-
-  // โหลดข้อมูล user + products + categories
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      let token = localStorage.getItem('token');
-      let userRole = null;
-
-      // ตรวจสอบ token และ role
-      if (token) {
-        try {
-          userRole = await fetchUserRole(token);
-        } catch {
-          console.warn("⚠️ Token invalid or expired, loading public products...");
-          localStorage.removeItem('token');
-          token = null; // reset token
-        }
-      }
-
-      // ถ้าเป็น store redirect ออกไป
-      if (userRole === 'store') {
-        router.push('/store/dashboard');
-        return;
-      }
-
-      // โหลด products และ categories (ไม่ว่าจะมี token หรือไม่)
-      try {
-        if (token && userRole !== null) {
-          await loadUsername(token);
-          const userProducts = await loadShopProducts(token);
-          setProducts(userProducts);
-        } else {
-          const publicProducts = await loadPublicProducts();
-          setProducts(publicProducts);
-        }
-
-        const cats = await getCategories();
-        setCategories(cats);
-      } catch (err) {
-        console.error('🚫 Error loading dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [router]);
-
-
-  // ฟังก์ชัน login check
-  const requireLogin = (action: () => void) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('⚠️ กรุณาเข้าสู่ระบบก่อนทำรายการ');
-      router.push('/login');
-      return;
-    }
-    action();
-  };
+  const { requireAuth } = useAuth();
+  const { products, categories, loading, getShuffledProducts } = useProducts();
 
   // เพิ่มสินค้าในตะกร้า
   const handleAddToCart = async (productId: number, quantity: number, variantId?: number, optionValueIds?: number[]) => {
-    requireLogin(async () => {
+    requireAuth(async () => {
       try {
         await addtocart(productId, quantity, variantId, optionValueIds);
         alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
@@ -144,9 +41,9 @@ export default function UserDashboardPage() {
     router.push(`/product/${product.product_id}`);
   };
 
-  const handleCategoryClick = async (categoryName: string) => {
-    // ไปหน้า /category/[slug] หรือดึง products ตาม category
-    router.push(`/category/${categoryName.toLowerCase().replace(/\s+/g, '-')}`);
+  const handleCategoryClick = (categoryName: string) => {
+    const slug = categoryName.toLowerCase().replace(/\s+/g, '-');
+    router.push(`/category/${slug}`);
   };
 
   if (selectedProduct) {
@@ -160,8 +57,8 @@ export default function UserDashboardPage() {
     );
   }
 
-  // Shuffle products แบบสุ่ม และเอาแค่ 12 ชิ้น (3 แถว)
-  const shuffledProducts = [...products].sort(() => Math.random() - 0.5).slice(0, 12);
+  // Get shuffled products (12 items for 3 rows)
+  const shuffledProducts = getShuffledProducts(12);
 
   return (
     <div className="min-h-screen bg-bgpage">
@@ -182,7 +79,7 @@ export default function UserDashboardPage() {
                   🤝 เริ่มการซื้อแบบกลุ่ม
                 </button>
                 <button
-                  onClick={() => requireLogin(() => router.push('/cart'))}
+                  onClick={() => requireAuth(() => router.push('/cart'))}
                   className="rounded-pill px-6 py-3 bg-white text-primary font-semibold hover:bg-gray-50 transition shadow-md"
                 >
                   🛒 ดูตะกร้าสินค้า
@@ -198,7 +95,7 @@ export default function UserDashboardPage() {
         {/* Quick Actions */}
         <section className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
           <button
-            onClick={() => requireLogin(() => router.push('/order'))}
+            onClick={() => requireAuth(() => router.push('/order'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">📦</div>
@@ -207,7 +104,7 @@ export default function UserDashboardPage() {
           </button>
 
           <button
-            onClick={() => requireLogin(() => router.push('/profile'))}
+            onClick={() => requireAuth(() => router.push('/profile'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
             <div className="text-4xl mb-2 group-hover:scale-110 transition">👤</div>
@@ -244,7 +141,7 @@ export default function UserDashboardPage() {
                     className="bg-white rounded-card shadow-card p-4 flex flex-col items-center hover:shadow-md hover:scale-105 transition group"
                   >
                     <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-2xl group-hover:bg-primary/20 transition">
-                      {categoryIcons[cat.category_name] || '📦'}
+                      {getCategoryIcon(cat.category_name)}
                     </div>
                     <span className="mt-2 text-xs md:text-sm font-medium text-center line-clamp-2">
                       {cat.category_name}

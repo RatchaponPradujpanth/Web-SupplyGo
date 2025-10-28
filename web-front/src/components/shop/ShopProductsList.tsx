@@ -20,8 +20,7 @@ export default function ShopProductsList() {
           return;
         }
 
-        const res = await loadShopProducts(token);
-        console.log("✅ [ShopProductsList] Loaded products:", res);
+        const res = await loadShopProducts();
         setProducts(res);
       } catch (error) {
         console.error("❌ Error loading products:", error);

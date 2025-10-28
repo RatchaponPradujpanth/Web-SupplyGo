@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { AdminOrderHistoryOrder } from "@/types/type";
 
 interface OrdersListProps {
@@ -82,11 +83,15 @@ export default function OrdersList({ orders }: OrdersListProps) {
                       className="flex gap-3 bg-gray-50 rounded p-2"
                     >
                       {item.products.product_images?.[0]?.image_url && (
-                        <img
-                          src={item.products.product_images[0].image_url}
-                          alt={item.products.product_name ?? ""}
-                          className="w-16 h-16 object-cover rounded"
-                        />
+                        <div className="relative w-16 h-16">
+                          <Image
+                            src={item.products.product_images[0].image_url}
+                            alt={item.products.product_name ?? ""}
+                            fill
+                            sizes="64px"
+                            className="object-cover rounded"
+                          />
+                        </div>
                       )}
                       <div className="flex-1 text-sm">
                         <div className="font-medium">

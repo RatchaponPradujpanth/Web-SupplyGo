@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from 'next/image';
 import {
   getShopOrderHistory,
   updateStatus,
@@ -142,7 +143,7 @@ export default function ShopOrderHistory() {
   const [orders, setOrders] = useState<NormalOrderUI[]>([]);
   const [statusInputs, setStatusInputs] = useState<{ [key: string]: string }>({});
   const [savingIds, setSavingIds] = useState<string[]>([]);
-  const [trackingFilter, setTrackingFilter] = useState("");
+  const [trackingFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
   // แปลงข้อมูลจาก API ให้ตรงกับ UI
@@ -212,18 +213,6 @@ export default function ShopOrderHistory() {
         initialStatus[os.order_shop_id] = os.status;
       });
       setStatusInputs(initialStatus);
-
-      // 🧾 log ดูข้อมูลทั้งหมด
-      console.log("📦 Orders received:", normalOrders);
-      normalOrders.forEach((o) =>
-        console.log("➡️", {
-          order_shop_id: o.order_shop_id,
-          tracking_number: o.tracking_number,
-          status: o.status,
-          subtotal: o.subtotal,
-          user: o.user_info?.username,
-        })
-      );
     } catch (err) {
       console.error("❌ โหลดข้อมูลล้มเหลว:", err);
       setOrders([]);
@@ -234,6 +223,7 @@ export default function ShopOrderHistory() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackingFilter]);
 
   const handleStatusChange = (orderShopId: number, value: string) => {
@@ -348,11 +338,15 @@ export default function ShopOrderHistory() {
                     className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
                   >
                     {item.image_url && (
-                      <img
-                        src={item.image_url}
-                        alt={item.product_name}
-                        className="w-16 h-16 object-cover rounded-lg border"
-                      />
+                      <div className="relative w-16 h-16">
+                        <Image
+                          src={item.image_url}
+                          alt={item.product_name}
+                          fill
+                          sizes="64px"
+                          className="object-cover rounded-lg border"
+                        />
+                      </div>
                     )}
                     <div className="flex-1">
                       <div className="font-medium text-gray-800">{item.product_name}</div>

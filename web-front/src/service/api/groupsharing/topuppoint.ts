@@ -20,12 +20,10 @@ export const createTopupPointPayment = async (token: string, points: number): Pr
       }
     );
 
-    console.log("✅ createTopupPointPayment response:", response.data);
-
     // คืน client_secret ของ Stripe
     return response.data.client_secret;
-  } catch (error: any) {
-    console.error("❌ สร้าง topup payment ไม่สำเร็จ:", error.message);
+  } catch (error) {
+    console.error("❌ สร้าง topup payment ไม่สำเร็จ:", error);
     throw error;
   }
 };

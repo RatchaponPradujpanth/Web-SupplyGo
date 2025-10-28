@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -21,12 +21,6 @@ export const cancelorder = async (token : string , orderId : number):Promise<can
         );
 
     const data: cancelledorderResponse = response.data;
-
-    if (data.status) {
-      console.log(`Order ${orderId} status updated:`, data.status);
-    } else {
-      console.warn(`Payment not completed for order ${orderId}:`, data.status);
-    }
     return data;
     } catch (error) {
         if (axios.isAxiosError(error)) {

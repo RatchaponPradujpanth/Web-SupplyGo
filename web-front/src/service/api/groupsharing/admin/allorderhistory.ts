@@ -16,7 +16,6 @@ export const allOrderHistory = async (token: string): Promise<AdminOrderHistoryO
       throw new Error("Failed to fetch all orders");
     }
 
-    console.log("✅ All orders fetched:", response.data.data);
     return response.data.data; // คืน array ของ order
   } catch (error: unknown) {
     const err = error as AxiosError<{ message?: string }>;

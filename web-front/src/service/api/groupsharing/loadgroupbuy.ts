@@ -39,7 +39,6 @@ export const loadgroupbuy = async (token: string): Promise<GroupBuyingResult[]> 
       user_in_group: g.user_in_group || false,
     }));
 
-    console.log("✅ GroupBuying mapped:", mappedGroups);
     return mappedGroups;
 
   } catch (error) {

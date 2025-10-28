@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { cartUser } from '@/service/api/loadcart';
 import type { CartItemWithExtra, Address } from '@/types/type';
 import { removefromcart } from '@/service/api/removefromcart';
@@ -176,19 +177,19 @@ export default function CartPage() {
                         <div className="flex items-center gap-3">
                           <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
                             {item.image ? (
-                              <img
-                                src={
-                                  item.image.startsWith('http')
-                                    ? item.image
-                                    : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`
-                                }
-                                alt={item.product_name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  // Fallback to placeholder if image fails to load
-                                  (e.target as HTMLImageElement).src = '/placeholder.png';
-                                }}
-                              />
+                              <div className="relative w-full h-full">
+                                <Image
+                                  src={
+                                    item.image.startsWith('http')
+                                      ? item.image
+                                      : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`
+                                  }
+                                  alt={item.product_name}
+                                  fill
+                                  className="object-cover"
+                                  sizes="64px"
+                                />
+                              </div>
                             ) : (
                               <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
                                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

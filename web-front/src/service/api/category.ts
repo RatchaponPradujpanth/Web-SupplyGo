@@ -22,8 +22,6 @@ export const getProductsByCategory = async (
     // ✅ Decode URI component ก่อนส่งไป backend (กรณีที่มาจาก URL)
     const decodedCategoryName = decodeURIComponent(categoryName);
     
-    console.log("📤 Fetching products for category:", decodedCategoryName);
-    
     const response = await axios.get<Product[]>(`${API_URL}/api/products`, {
       params: {
         category: decodedCategoryName,
@@ -32,7 +30,6 @@ export const getProductsByCategory = async (
       },
     });
 
-    console.log("✅ Received response:", response.data);
     return response.data;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

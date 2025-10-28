@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import type { Product } from '@/types/type';
 
 interface ProductDetailProps {
@@ -111,11 +112,16 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
           {/* Gallery Section */}
           <div>
             {mainImage ? (
-              <img
-                src={mainImage}
-                alt={product.product_name ?? ''}
-                className="w-full aspect-square object-cover rounded-lg mb-4 border"
-              />
+              <div className="relative w-full aspect-square mb-4">
+                <Image
+                  src={mainImage}
+                  alt={product.product_name ?? ''}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover rounded-lg border"
+                  priority
+                />
+              </div>
             ) : (
               <div className="w-full aspect-square bg-gray-200 flex items-center justify-center rounded-lg mb-4 border">
                 <span className="text-gray-500">ไม่มีรูปภาพ</span>
@@ -125,15 +131,21 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
             {product.product_images && product.product_images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {product.product_images.map((img, idx) => (
-                  <img
+                  <div
                     key={`product-img-${product.product_id}-${img.id || img.product_images_id || idx}`}
-                    src={img.image_url}
-                    alt={img.image_url}
-                    className={`w-full aspect-square object-cover rounded-lg cursor-pointer border-2 transition ${
+                    className={`relative w-full aspect-square cursor-pointer border-2 rounded-lg overflow-hidden transition ${
                       mainImage === img.image_url ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => setMainImage(img.image_url)}
-                  />
+                  >
+                    <Image
+                      src={img.image_url}
+                      alt={img.image_url}
+                      fill
+                      sizes="(max-width: 768px) 25vw, 12vw"
+                      className="object-cover"
+                    />
+                  </div>
                 ))}
               </div>
             )}

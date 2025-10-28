@@ -13,8 +13,6 @@ export async function removefromcart(
       throw new Error("Authentication token is missing");
     }
 
-    console.log("🔍 Debug - Removing item:", { product_id, variant_id, variant_option_ids });
-
     const response = await axios.delete(
       `${API_URL}/api/remove-cart`, 
       {

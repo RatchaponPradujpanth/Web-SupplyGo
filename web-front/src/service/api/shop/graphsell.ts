@@ -17,7 +17,6 @@ export const getGraphSell = async (
       }
     );
 
-    console.log(response.data);
     return response.data;
   } catch (error) {
     console.error("❌ Error fetching graph sell:", error);

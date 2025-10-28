@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import type { Product } from '@/types/type';
 
 interface ProductCardProps {
@@ -26,15 +27,19 @@ export default function ProductCard({ product, onSelect, getDisplayPrice }: Prod
     >
       {/* รูปสินค้า */}
       <div className="relative w-full aspect-square mb-2 rounded-lg overflow-hidden">
-        <img
+        <Image
           src={mainImage}
           alt={product.product_name ?? ''}
-          className="w-full h-full object-cover rounded-lg transition duration-300 hover:opacity-0"
+          fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          className="object-cover rounded-lg transition duration-300 hover:opacity-0"
         />
-        <img
+        <Image
           src={hoverImage}
           alt={product.product_name ?? ''}
-          className="absolute top-0 left-0 w-full h-full object-cover rounded-lg opacity-0 transition duration-300 hover:opacity-100"
+          fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          className="object-cover rounded-lg opacity-0 transition duration-300 hover:opacity-100"
         />
       </div>
 

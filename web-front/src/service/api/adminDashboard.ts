@@ -11,7 +11,6 @@ export const admindashboard = async (token: string): Promise<AdminDashboardApiRe
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    console.log("✅ dashboard fetched:", response.data);
     return response.data;
   } catch (error) {
     const err = error as AxiosError<{ message?: string }>;

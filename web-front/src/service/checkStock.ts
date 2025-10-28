@@ -31,8 +31,6 @@ export const checkStock = async (
   cartItems: CheckStockItem[]
 ): Promise<CheckStockResponse> => {
   try {
-    console.log("🔍 Checking stock for items:", cartItems);
-
     const response = await axios.post<CheckStockResponse>(
       `${API_URL}/api/check-stock`,
       { cartItems },
@@ -44,15 +42,9 @@ export const checkStock = async (
       }
     );
 
-    console.log("✅ Stock check response:", response.data);
     return response.data;
-  } catch (error: any) {
-    console.error("❌ Stock check failed:", error.message);
-    
-    if (error.response) {
-      console.error("📄 Response data:", error.response.data);
-      console.error("🔢 Response status:", error.response.status);
-    }
+  } catch (error) {
+    console.error("❌ Stock check failed:", error);
     
     throw error;
   }

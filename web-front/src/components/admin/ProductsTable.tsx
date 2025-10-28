@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface Product {
   product_id: number;
   product_name: string | null;
@@ -35,11 +37,15 @@ export default function ProductsTable({ products }: ProductsTableProps) {
               <td className="p-3">{p.status ?? "-"}</td>
               <td className="p-3">
                 {p.product_images?.length ? (
-                  <img
-                    src={p.product_images[0].image_url}
-                    alt={p.product_name ?? ""}
-                    className="w-16 h-16 object-cover rounded"
-                  />
+                  <div className="relative w-16 h-16">
+                    <Image
+                      src={p.product_images[0].image_url}
+                      alt={p.product_name ?? ""}
+                      fill
+                      sizes="64px"
+                      className="object-cover rounded"
+                    />
+                  </div>
                 ) : (
                   "-"
                 )}

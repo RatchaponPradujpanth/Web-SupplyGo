@@ -135,7 +135,6 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
   const token = localStorage.getItem('token');
-  console.log('💡 Token:', token); // 🔍 ตรวจสอบ token
 
   if (!token) {
     alert('⚠️ กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
@@ -147,7 +146,6 @@ export default function ProductDetailPage() {
     // ถ้ามี variants ต้องเลือกให้ครบ
     if (product?.product_options && product.product_options.length > 0) {
       const allSelected = product.product_options.every(opt => selectedOptions[opt.name]);
-      console.log('💡 All options selected:', allSelected, selectedOptions); // 🔍 ดู selectedOptions
       if (!allSelected) {
         alert('⚠️ กรุณาเลือกตัวเลือกสินค้าให้ครบ');
         return;
@@ -161,19 +159,16 @@ export default function ProductDetailPage() {
         const matched = variant.variant_options.every(opt => 
           selectedOptions[opt.option_name] === opt.value
         );
-        console.log('💡 Checking variant:', variant.variant_id, 'matched?', matched);
         return matched;
       });
       variantId = matchedVariant?.variant_id || null;
     }
-    console.log('💡 Matched variantId:', variantId);
 
     const payload = {
       product_id: product?.product_id,
       quantity,
       variant_id: variantId,
     };
-    console.log('💡 Payload to add to cart:', payload);
 
     await axios.post(
       `${API_URL}/api/addtocart`,
@@ -186,7 +181,6 @@ export default function ProductDetailPage() {
       }
     );
 
-    console.log('✅ Product added to cart successfully');
     alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
     router.push('/cart');
   } catch (error) {

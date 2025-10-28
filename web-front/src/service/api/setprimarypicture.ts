@@ -1,5 +1,4 @@
 import axios, { AxiosError } from 'axios';
-import type { Product } from '@/types/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -16,11 +15,7 @@ export const primarypicture = async (productId: number, imageId: number): Promis
       throw new Error('Token not found. Please login again.');
     }
 
-    console.log('🔗 Request URL:', `${API_URL}/api/primary-picture`);
-    console.log('📦 Request Data:', { productId, imageId });
-    console.log('🔑 Token exists:', !!token);
-
-    const response = await axios.patch(
+    await axios.patch(
       `${API_URL}/api/primary-picture`,
       {
         productId,
@@ -35,7 +30,6 @@ export const primarypicture = async (productId: number, imageId: number): Promis
       }
     );
 
-    console.log('✅ Success:', response.data);
     alert("ตั้งรูปหลักสำเร็จ");
 
   } catch (error) {

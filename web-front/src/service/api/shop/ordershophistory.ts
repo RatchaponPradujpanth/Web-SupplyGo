@@ -184,13 +184,9 @@ export const getShopOrderHistory = async (
         params: trackingNumber ? { tracking_number: trackingNumber } : {},
       }
     );
-    //console.log(JSON.stringify(response.data, null, 2));
     return response.data;
-  } catch (error: any) {
-    console.error(
-      "❌ โหลดข้อมูลคำสั่งซื้อร้านค้าไม่สำเร็จ:",
-      error.response?.data || error.message
-    );
+  } catch (error) {
+    console.error("❌ โหลดข้อมูลคำสั่งซื้อร้านค้าไม่สำเร็จ:", error);
     throw error;
   }
 };
@@ -203,22 +199,15 @@ export const updateTrackingNumber = async (
   try {
     const payload = { orderShopId, trackingNumber };
 
-    const response = await axios.patch(
+    await axios.patch(
       `${API_URL}/api/orders/tracking`,
       payload,
       {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       }
     );
-    console.log(
-      "📥 Backend response:",
-      JSON.stringify(response.data, null, 2)
-    );
-  } catch (error: any) {
-    console.error(
-      "❌ updateTrackingNumber error:",
-      error.response?.data || error.message
-    );
+  } catch (error) {
+    console.error("❌ updateTrackingNumber error:", error);
     throw error;
   }
 };
@@ -230,20 +219,11 @@ export const updateStatus = async (
 ): Promise<void> => {
   try {
     const payload = { orderShopId, status };
-    const response = await axios.patch(`${API_URL}/api/orders/status`, payload, {
+    await axios.patch(`${API_URL}/api/orders/status`, payload, {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
-    console.log(
-      "📥 Backend response:",
-      JSON.stringify(response.data, null, 2)
-    );
-  } catch (error: any) {
-    console.error("❌ updateStatus error details:", {
-      responseData: error.response?.data,
-      message: error.message,
-      status: error.response?.status,
-      fullError: error
-    });
+  } catch (error) {
+    console.error("❌ updateStatus error details:", error);
     throw error;
   }
 };
