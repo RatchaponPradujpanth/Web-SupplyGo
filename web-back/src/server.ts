@@ -55,11 +55,12 @@ import graphsellRoute from "./routes/shop/graphsellRoute";
 import otpRoute from './routes/otpRoute';
 import profileRoute from "./routes/profileRoute";
 import searchRoute from "./routes/searchRoute";
+import checkStockRoute from "./routes/checkStockRoute";
 
 
 
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5001;
 const app = express();
 app.use('/stripe-webhook', express.raw({ type: 'application/json' }), webhookRoute);
 app.use(express.json());
@@ -116,10 +117,10 @@ app.use("/api",categoryproductRoute)
 app.use("/api",updatestatusRoute);
 app.use("/api",grouporderRoute)
 app.use("/api",graphsellRoute)
-
 app.use("/api",profileRoute);
 app.use("/api",otpRoute);
 app.use("/api",searchRoute);
+app.use("/api",checkStockRoute)
 
 
 

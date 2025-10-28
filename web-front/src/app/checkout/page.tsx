@@ -6,13 +6,16 @@ import { getCartSummary } from '@/service/api/getCartSummary';
 import type { CheckoutItem, CreateOrderPayload } from '@/types/type';
 import { loadaddress } from '@/service/api/loadaddress';
 import type { Address } from '@/types/type';
-import { createOrder } from '@/service/api/createorder'; 
+import { createOrder } from '@/service/api/createorder';
+import { checkStock, type InsufficientStockItem } from '@/service/checkStock';
 
 export default function CheckoutPage() {
   const [summary, setSummary] = useState<{ cart_id: number; items: CheckoutItem[]; totalAmount: number } | null>(null);
   const [selectedAddressData, setSelectedAddressData] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [checkingStock, setCheckingStock] = useState(false);
+  const [insufficientStockItems, setInsufficientStockItems] = useState<InsufficientStockItem[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const addressId = searchParams.get('addressId');
@@ -36,7 +39,6 @@ export default function CheckoutPage() {
         const data = await getCartSummary(token);
         console.log("Cart summary data:", data);
 
-        // เช็คว่ามี product_id และ variant options จริงไหมในข้อมูล
         if (data?.items?.length) {
           data.items.forEach((item: CheckoutItem, index: number) => {
             console.log(`Item ${index + 1}:`, {
@@ -49,7 +51,9 @@ export default function CheckoutPage() {
 
         setSummary(data);
 
-        // โหลดที่อยู่ที่เลือก
+        // เช็คสต็อกจาก Backend
+        await checkStockAvailability(token, data);
+
         const addrData = await loadaddress(token);
         const selectedAddr = addrData.find(addr => addr.address_id === Number(addressId));
         if (selectedAddr) {
@@ -70,6 +74,36 @@ export default function CheckoutPage() {
     fetchData();
   }, [router, addressId]);
 
+  // ฟังก์ชันเช็คสต็อกจาก Backend
+  const checkStockAvailability = async (token: string, data: { items: CheckoutItem[] }) => {
+    try {
+      setCheckingStock(true);
+      
+      // เตรียมข้อมูลสำหรับเช็คสต็อก
+      const stockCheckItems = data.items.map(item => ({
+        productId: item.product_id,
+        quantity: item.quantity,
+        variantId: item.variant_id || null,
+      }));
+
+      const stockResult = await checkStock(token, stockCheckItems);
+
+      if (!stockResult.available && stockResult.insufficientItems) {
+        setInsufficientStockItems(stockResult.insufficientItems);
+        console.log("⚠️ Insufficient stock items:", stockResult.insufficientItems);
+      } else {
+        setInsufficientStockItems([]);
+        console.log("✅ All items have sufficient stock");
+      }
+    } catch (error) {
+      console.error("❌ Error checking stock:", error);
+      // ถ้าเช็คสต็อกล้มเหลว ก็ยังให้ดำเนินการต่อได้
+      // แต่จะเช็คอีกครั้งตอน create order
+    } finally {
+      setCheckingStock(false);
+    }
+  };
+
   if (loading) return <div className="p-6 text-gray-600">กำลังโหลด...</div>;
 
   if (!summary || summary.items.length === 0)
@@ -80,13 +114,11 @@ export default function CheckoutPage() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  // คำนวณยอดรวมทั้งหมด
   const totalAmount = summary.items.reduce(
     (sum, item) => sum + Number(item.total_price),
     0
   );
 
-  // คำนวณ subtotal แยกตามร้าน (shop_name)
   const subtotalsByShop = summary.items.reduce((acc, item) => {
     const shop = item.shop_name;
     if (!acc[shop]) acc[shop] = 0;
@@ -94,12 +126,10 @@ export default function CheckoutPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Log important state before render
   console.log("Selected address:", selectedAddressData);
   console.log("Total amount:", totalAmount);
   console.log("Subtotals by shop:", subtotalsByShop);
 
-  // เตรียม payload ให้ตรง type ของ backend (แก้ไขตาม API ใหม่)
   const createOrderPayload: CreateOrderPayload = {
     addressId: Number(addressId),
     totalAmount,
@@ -119,8 +149,8 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         price_per_unit: item.price_per_unit,
         shopId: item.shop_id,
-        variant_id: item.variant_id || null, // เพิ่ม variant_id
-        variant_option_ids: item.variant_options?.map(vo => vo.variant_option_id) || [], // แก้เป็น array
+        variant_id: item.variant_id || null,
+        variant_option_ids: item.variant_options?.map(vo => vo.variant_option_id) || [],
         total_price: item.total_price,
       };
     }),
@@ -133,6 +163,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    // เช็คสต็อกอีกครั้งก่อนสร้าง order (Real-time check)
+    if (insufficientStockItems.length > 0) {
+      alert('มีสินค้าบางรายการมีจำนวนไม่เพียงพอ กรุณาตรวจสอบและแก้ไขจำนวนสินค้าในตะกร้า');
+      return;
+    }
+
     console.log("Sending createOrderPayload:", createOrderPayload);
 
     try {
@@ -140,19 +176,83 @@ export default function CheckoutPage() {
       const response = await createOrder(token, createOrderPayload);
       alert('สร้างคำสั่งซื้อสำเร็จ');
       router.push(`/payment?addressId=${addressId}&orderId=${response.order_id}`);
-    } catch (error) {
-      alert('สร้างคำสั่งซื้อไม่สำเร็จ');
+    } catch (error: any) {
+      // ถ้า Backend ตอบกลับว่าสต็อกไม่พอ
+      if (error.response?.data?.message?.includes('Stock not enough')) {
+        alert('สินค้าหมดสต็อกขณะทำการสั่งซื้อ กรุณาลองใหม่อีกครั้ง');
+        // รีเฟรชข้อมูล
+        window.location.reload();
+      } else {
+        alert('สร้างคำสั่งซื้อไม่สำเร็จ');
+      }
       console.error(error);
     } finally {
       setCreatingOrder(false);
     }
   };
 
+  // หาสินค้าที่สต็อกไม่พอจาก Backend response
+  const getInsufficientStockInfo = (productId: number, variantId?: number | null) => {
+    return insufficientStockItems.find(
+      item => item.product_id === productId && item.variant_id === variantId
+    );
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">💳 สรุปการชำระเงิน</h1>
 
-      {/* แสดงที่อยู่ที่เลือก (ไม่สามารถแก้ไขได้) */}
+      {/* แสดง Loading ขณะเช็คสต็อก */}
+      {checkingStock && (
+        <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <span className="text-blue-700">กำลังตรวจสอบสต็อกสินค้า...</span>
+          </div>
+        </div>
+      )}
+
+      {/* แสดงข้อความเตือนเมื่อสต็อกไม่เพียงพอ */}
+      {!checkingStock && insufficientStockItems.length > 0 && (
+        <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1">
+              <h3 className="font-bold text-red-800 mb-2">สินค้าในสต็อกไม่เพียงพอ</h3>
+              <p className="text-sm text-red-700 mb-3">
+                กรุณาแก้ไขจำนวนสินค้าในตะกร้าก่อนทำการสั่งซื้อ
+              </p>
+              <ul className="space-y-2">
+                {insufficientStockItems.map((item, index) => (
+                  <li key={index} className="p-3 bg-white rounded border border-red-200">
+                    <p className="font-semibold text-gray-800">{item.product_name}</p>
+                    {item.variant_info && (
+                      <p className="text-sm text-gray-600">ตัวเลือก: {item.variant_info}</p>
+                    )}
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="text-sm text-red-600 font-medium">
+                        คุณต้องการ: {item.requested_quantity} ชิ้น
+                      </span>
+                      <span className="text-sm text-gray-500">|</span>
+                      <span className="text-sm text-orange-600 font-medium">
+                        มีเหลือเพียง: {item.available_stock} ชิ้น
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => router.push('/cart')}
+                className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition"
+              >
+                กลับไปแก้ไขตะกร้าสินค้า
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* แสดงที่อยู่ที่เลือก */}
       <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
         <div className="flex items-start gap-3">
           <span className="text-2xl">📍</span>
@@ -178,41 +278,66 @@ export default function CheckoutPage() {
       </div>
 
       <ul className="space-y-4">
-        {summary.items.map((item) => (
-          <li key={item.cart_item_id} className="border p-4 rounded">
-            <p>สินค้า: <strong>{item.product_name}</strong></p>
-            <p>ร้าน: {item.shop_name}</p>
-            <p>จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}</p>
-            <p>รวมรายการ: ฿{Number(item.total_price).toFixed(2)}</p>
-            
-            {/* แสดง variant options ถ้ามี */}
-            {item.variant_options && item.variant_options.length > 0 && (
-              <div className="mt-2 p-2 bg-gray-50 rounded">
-                <p className="text-sm font-medium text-gray-700 mb-1">ตัวเลือกสินค้า:</p>
-                <div className="flex flex-wrap gap-1">
-                  {item.variant_options.map(vo => (
-                    <span
-                      key={vo.variant_option_id}
-                      className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
-                    >
-                      {vo.option_name}: {vo.value}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+        {summary.items.map((item) => {
+          const insufficientInfo = getInsufficientStockInfo(item.product_id, item.variant_id);
+          const isStockInsufficient = !!insufficientInfo;
+          
+          return (
+            <li 
+              key={item.cart_item_id} 
+              className={`border p-4 rounded ${isStockInsufficient ? 'bg-red-50 border-red-300' : ''}`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <p>สินค้า: <strong>{item.product_name}</strong></p>
+                  <p>ร้าน: {item.shop_name}</p>
+                  <p>จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}</p>
+                  <p>รวมรายการ: ฿{Number(item.total_price).toFixed(2)}</p>
+                  
+                  {/* แสดง variant options ถ้ามี */}
+                  {item.variant_options && item.variant_options.length > 0 && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded">
+                      <p className="text-sm font-medium text-gray-700 mb-1">ตัวเลือกสินค้า:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {item.variant_options.map(vo => (
+                          <span
+                            key={vo.variant_option_id}
+                            className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                          >
+                            {vo.option_name}: {vo.value}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-            {/* แสดง variant information ถ้ามี */}
-            {item.variant && (
-              <div className="mt-2 text-sm text-gray-600">
-                {item.variant.sku && <p>SKU: {item.variant.sku}</p>}
-                {item.variant.stock_quantity !== undefined && (
-                  <p>คงเหลือ: {item.variant.stock_quantity} ชิ้น</p>
+                  {/* แสดง variant information ถ้ามี */}
+                  {item.variant && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {item.variant.sku && <p>SKU: {item.variant.sku}</p>}
+                    </div>
+                  )}
+                </div>
+
+                {/* แสดงไอคอนเตือนถ้าสต็อกไม่พอ */}
+                {isStockInsufficient && (
+                  <div className="ml-3">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
                 )}
               </div>
-            )}
-          </li>
-        ))}
+
+              {/* แสดงข้อความเตือนสำหรับสินค้าแต่ละรายการ */}
+              {isStockInsufficient && insufficientInfo && (
+                <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded">
+                  <p className="text-sm text-red-800 font-medium">
+                    ⚠️ สต็อกไม่เพียงพอ! คุณต้องการ {insufficientInfo.requested_quantity} ชิ้น แต่มีเหลือเพียง {insufficientInfo.available_stock} ชิ้น
+                  </p>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       <div className="mt-6 border-t pt-4">
@@ -231,10 +356,21 @@ export default function CheckoutPage() {
       <div className="mt-4 text-right">
         <button
           onClick={handleCreateOrder}
-          disabled={creatingOrder}
-          className={`px-6 py-2 rounded text-white ${creatingOrder ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} transition`}
+          disabled={creatingOrder || checkingStock || insufficientStockItems.length > 0}
+          className={`px-6 py-2 rounded text-white transition ${
+            creatingOrder || checkingStock || insufficientStockItems.length > 0
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-green-600 hover:bg-green-700'
+          }`}
         >
-          {creatingOrder ? 'กำลังสร้างคำสั่งซื้อ...' : '➡ สร้างคำสั่งซื้อและไปหน้าชำระเงิน'}
+          {creatingOrder 
+            ? 'กำลังสร้างคำสั่งซื้อ...' 
+            : checkingStock
+            ? 'กำลังตรวจสอบสต็อก...'
+            : insufficientStockItems.length > 0
+            ? '❌ ไม่สามารถสั่งซื้อได้ (สต็อกไม่พอ)'
+            : '➡ สร้างคำสั่งซื้อและไปหน้าชำระเงิน'
+          }
         </button>
       </div>
     </div>

@@ -80,11 +80,10 @@ creategroupRoute.post("/create-group", authenticateToken, authstore, async (req:
     console.log("🎉 Group Buying created successfully:", result);
     res.status(201).json({ message: "สร้าง Group Buying สำเร็จ", group: result });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Create group buying error:", error);
     res.status(500).json({
-      message: error.message || "เกิดข้อผิดพลาดในการสร้าง Group Buying",
-      details: error.stack
+      message: "เกิดข้อผิดพลาดในการสร้าง Group Buying",
     });
   }
 });
