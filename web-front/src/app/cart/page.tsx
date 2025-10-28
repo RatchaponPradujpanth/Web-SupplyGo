@@ -6,6 +6,7 @@ import { cartUser } from '@/service/api/loadcart';
 import type { CartItemWithExtra, Address } from '@/types/type';
 import { removefromcart } from '@/service/api/removefromcart';
 import { loadaddress } from '@/service/api/loadaddress';
+import { updateCartQuantity } from '@/service/api/updateCartQuantity';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItemWithExtra[]>([]);
@@ -71,26 +72,65 @@ export default function CartPage() {
     }
   };
 
-  const handleQuantityChange = (itemId: number, newQuantity: number) => {
+  const handleQuantityChange = async (itemId: number, newQuantity: number) => {
     if (newQuantity < 1) return;
 
-    setCartItems(prev => {
-      const updated = prev.map(item => {
-        if (item.cart_item_id === itemId) {
-          const newTotalPrice = Number(item.price_per_unit) * newQuantity;
-          return { ...item, quantity: newQuantity, total_price: newTotalPrice };
-        }
-        return item;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('กรุณาเข้าสู่ระบบใหม่');
+      router.push('/login');
+      return;
+    }
+
+    try {
+      // เรียก API เพื่ออัปเดตจำนวนสินค้าใน backend
+      await updateCartQuantity(token, {
+        cart_item_id: itemId,
+        quantity: newQuantity
       });
 
-      const newTotal = updated.reduce(
-        (acc, item) => acc + Number(item.total_price),
-        0
-      );
-      setTotal(newTotal);
+      // อัปเดต frontend state หลังจาก API สำเร็จ
+      setCartItems(prev => {
+        const updated = prev.map(item => {
+          if (item.cart_item_id === itemId) {
+            const newTotalPrice = Number(item.price_per_unit) * newQuantity;
+            return { ...item, quantity: newQuantity, total_price: newTotalPrice };
+          }
+          return item;
+        });
 
-      return updated;
-    });
+        const newTotal = updated.reduce(
+          (acc, item) => acc + Number(item.total_price),
+          0
+        );
+        setTotal(newTotal);
+
+        return updated;
+      });
+
+    } catch (error) {
+      console.error('❌ อัปเดตจำนวนสินค้าไม่สำเร็จ:', error);
+      
+      // แสดงข้อความแจ้งเตือนให้ผู้ใช้
+      if (error instanceof Error && error.message.includes('เกินจำนวนในสต็อก')) {
+        alert(error.message);
+      } else {
+        alert('ไม่สามารถอัปเดตจำนวนสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      }
+      
+      // โหลดข้อมูลตะกร้าใหม่เพื่อให้แน่ใจว่าข้อมูลถูกต้อง
+      try {
+        const data = await cartUser(token);
+        setCartItems(data.items);
+        const totalPrice = data.items.reduce(
+          (acc, item) => acc + Number(item.total_price),
+          0
+        );
+        setTotal(totalPrice);
+      } catch (reloadError) {
+        console.error('❌ โหลดตะกร้าใหม่ไม่สำเร็จ:', reloadError);
+      }
+    }
   };
 
   if (loading) {

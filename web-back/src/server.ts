@@ -25,6 +25,7 @@ import orderhistoryRoute from "./routes/orderhistoryRoute";
 import shoporderRoute from "./routes/shoporderRoute";
 import primarypictureRoute from "./routes/primarypictureRoute";
 import removecartitemRoute from "./routes/removecartitemRoute";
+import updatecartRoute from "./routes/updatecartRoute";
 import savetransactionRoute from "./routes/savetransactionRoute";
 import createorderRoute from "./routes/createorderRoute";
 import loadbalanceRoute from "./routes/group_buying/loadbalanceRoute";
@@ -91,6 +92,7 @@ app.use("/api",orderhistoryRoute);
 app.use("/api",shoporderRoute)
 app.use("/api",primarypictureRoute);
 app.use("/api",removecartitemRoute)
+app.use("/api",updatecartRoute)
 app.use("/api",savetransactionRoute )
 app.use("/api",createorderRoute)
 app.use("/api",loadbalanceRoute)
