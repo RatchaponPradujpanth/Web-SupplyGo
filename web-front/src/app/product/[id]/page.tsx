@@ -8,6 +8,8 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import Footer from '@/components/layout/Footer';
 import { fetchUserRole } from '@/service/api/fetchrole';
+import { addtocart } from '@/service/api/addtocart';
+
 
 interface ProductImage {
   id: number;
@@ -135,8 +137,6 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
   const token = localStorage.getItem('token');
-  console.log('💡 Token:', token); // 🔍 ตรวจสอบ token
-
   if (!token) {
     alert('⚠️ กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
     router.push('/login');
@@ -144,56 +144,51 @@ export default function ProductDetailPage() {
   }
 
   try {
-    // ถ้ามี variants ต้องเลือกให้ครบ
+    // ตรวจสอบตัวเลือกสินค้า
     if (product?.product_options && product.product_options.length > 0) {
       const allSelected = product.product_options.every(opt => selectedOptions[opt.name]);
-      console.log('💡 All options selected:', allSelected, selectedOptions); // 🔍 ดู selectedOptions
       if (!allSelected) {
         alert('⚠️ กรุณาเลือกตัวเลือกสินค้าให้ครบ');
         return;
       }
     }
 
-    // หา variant_id ที่ตรงกับตัวเลือกที่เลือก
-    let variantId = null;
+    // หา variant_id
+    let variantId: number | undefined;
     if (product?.product_variants && Object.keys(selectedOptions).length > 0) {
       const matchedVariant = product.product_variants.find(variant => {
-        const matched = variant.variant_options.every(opt => 
+        return variant.variant_options.every(opt =>
           selectedOptions[opt.option_name] === opt.value
         );
-        console.log('💡 Checking variant:', variant.variant_id, 'matched?', matched);
-        return matched;
       });
-      variantId = matchedVariant?.variant_id || null;
+      variantId = matchedVariant?.variant_id;
     }
-    console.log('💡 Matched variantId:', variantId);
 
-    const payload = {
+    // แปลง selectedOptions เป็น option_value_id (ถ้ามี)
+    let optionValueIds: number[] | undefined;
+    if (product?.product_variants && Object.keys(selectedOptions).length > 0) {
+      optionValueIds = Object.values(selectedOptions)
+        .map(val => Number(val))
+        .filter(Boolean);
+    }
+
+    console.log('💡 Calling addtocart with:', {
       product_id: product?.product_id,
       quantity,
       variant_id: variantId,
-    };
-    console.log('💡 Payload to add to cart:', payload);
+      option_value_id: optionValueIds,
+    });
 
-    await axios.post(
-      `${API_URL}/api/addtocart`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    await addtocart(product?.product_id!, quantity, variantId, optionValueIds);
 
-    console.log('✅ Product added to cart successfully');
     alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
     router.push('/cart');
-  } catch (error) {
-    console.error('❌ Error adding to cart:', error);
-    alert('❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
+  } catch (error: any) {
+    console.error('❌ Error adding to cart:', error.message || error);
+    alert(`❌ ${error.message || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้'}`);
   }
 };
+
 
 
   const handleBuyNow = async () => {

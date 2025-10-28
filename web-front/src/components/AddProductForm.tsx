@@ -285,36 +285,70 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
         <div>
           <h3 className="font-semibold mb-3 text-lg sm:text-xl">ขั้นตอนที่ 3: ตั้งค่าตัวเลือก (Variants)</h3>
           {options.map((opt, i) => (
-            <div key={i} className="border p-3 rounded mb-3 bg-gray-50">
-              <input
-                type="text"
-                placeholder="ชื่อคุณลักษณะ เช่น สี, ขนาด"
-                value={opt.name}
-                onChange={(e) => handleOptionNameChange(i, e.target.value)}
-                className="w-full mb-2 border rounded px-2 py-1"
-              />
-              {opt.values.map((val, j) => (
-                <input
-                  key={j}
-                  type="text"
-                  placeholder={`ค่า ${j + 1}`}
-                  value={val}
-                  onChange={(e) => handleOptionValueChange(i, j, e.target.value)}
-                  className="w-full mb-1 border rounded px-2 py-1"
-                />
-              ))}
-              <button
-                type="button"
-                onClick={() => addOptionValue(i)}
-                className="text-blue-600 text-sm mt-1"
-              >
-                + เพิ่มค่า
-              </button>
-            </div>
-          ))}
-          <button type="button" onClick={addOption} className="text-green-600 text-sm mb-3">
-            + เพิ่มคุณลักษณะใหม่
-          </button>
+  <div key={i} className="border p-3 rounded mb-3 bg-gray-50 relative">
+    {/* ปุ่มลบ option */}
+    {options.length > 1 && (
+  <button
+    type="button"
+    onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+    className="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-600 font-bold rounded-full w-6 h-6 flex items-center justify-center text-sm transition"
+    title="ลบคุณลักษณะ"
+  >
+    ✕
+  </button>
+)}
+
+
+    <input
+      type="text"
+      placeholder="ชื่อคุณลักษณะ เช่น สี, ขนาด"
+      value={opt.name}
+      onChange={(e) => handleOptionNameChange(i, e.target.value)}
+      className="w-full mb-2 border rounded px-2 py-1"
+    />
+
+    {opt.values.map((val, j) => (
+      <div key={j} className="flex items-center mb-1">
+        <input
+          type="text"
+          placeholder={`ค่า ${j + 1}`}
+          value={val}
+          onChange={(e) => handleOptionValueChange(i, j, e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
+        {/* ปุ่มลบค่าแต่ละ value */}
+        {opt.values.length > 1 && (
+  <button
+    type="button"
+    onClick={() => {
+      const newOptions = [...options];
+      newOptions[i].values = newOptions[i].values.filter((_, idx) => idx !== j);
+      setOptions(newOptions);
+    }}
+    className="ml-2 bg-red-100 hover:bg-red-200 text-red-600 font-semibold rounded-full w-5 h-5 flex items-center justify-center text-xs transition"
+    title="ลบค่า"
+  >
+    ✕
+  </button>
+)}
+
+      </div>
+    ))}
+
+    <button
+      type="button"
+      onClick={() => addOptionValue(i)}
+      className="text-blue-600 text-sm mt-1"
+    >
+      + เพิ่มค่า
+    </button>
+  </div>
+))}
+
+<button type="button" onClick={addOption} className="text-green-600 text-sm mb-3">
+  + เพิ่มคุณลักษณะใหม่
+</button>
+
 
           <button
             type="button"
@@ -396,80 +430,175 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
       )}
 
       {/* STEP 4: Batches */}
-      {step === 4 && (
-        <div>
-          <h3 className="font-semibold mb-2 text-lg sm:text-xl">ขั้นตอนที่ 4: ข้อมูล Batch</h3>
-          {!useVariants ? (
-            <>
-              {simpleBatches.map((batch, i) => (
-                <div key={i} className="border p-3 rounded mb-3">
-                  <input
-                    type="text"
-                    placeholder="เลขล็อต"
-                    value={batch.batch_number}
-                    onChange={(e) => handleSimpleBatchChange(i, 'batch_number', e.target.value)}
-                    className="border rounded px-2 py-1 w-full mb-1"
-                  />
-                  <div className="grid grid-cols-2 gap-2 mb-1">
-                    <input
-                      type="date"
-                      value={batch.manufactured_date}
-                      onChange={(e) => handleSimpleBatchChange(i, 'manufactured_date', e.target.value)}
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                    <input
-                      type="date"
-                      value={batch.expiry_date}
-                      onChange={(e) => handleSimpleBatchChange(i, 'expiry_date', e.target.value)}
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                  </div>
-                  <input
-                    type="number"
-                    placeholder="จำนวน"
-                    value={batch.quantity}
-                    onChange={(e) => handleSimpleBatchChange(i, 'quantity', e.target.value)}
-                    className="border rounded px-2 py-1 w-full mb-1"
-                  />
-                  {simpleBatches.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeSimpleBatch(i)}
-                      className="text-red-600 text-sm"
-                    >
-                      ลบ Batch นี้
-                    </button>
-                  )}
-                </div>
-              ))}
+{step === 4 && (
+  <div>
+    <h3 className="font-semibold mb-2 text-lg sm:text-xl">ขั้นตอนที่ 4: ข้อมูล Batch</h3>
+
+    {!useVariants ? (
+      <>
+        {simpleBatches.map((batch, i) => (
+          <div key={i} className="border p-3 rounded mb-3">
+            <input
+              type="text"
+              placeholder="เลขล็อต"
+              value={batch.batch_number}
+              onChange={(e) => handleSimpleBatchChange(i, 'batch_number', e.target.value)}
+              className="border rounded px-2 py-1 w-full mb-1"
+            />
+            <div className="grid grid-cols-2 gap-2 mb-1">
+  <div className="flex flex-col">
+    <label className="text-sm text-gray-600 mb-1">วันผลิต</label>
+    <input
+      type="date"
+      value={batch.manufactured_date}
+      onChange={(e) => handleSimpleBatchChange(i, 'manufactured_date', e.target.value)}
+      className="border rounded px-2 py-1 w-full"
+    />
+  </div>
+
+  <div className="flex flex-col">
+    <label className="text-sm text-gray-600 mb-1">วันหมดอายุ</label>
+    <input
+      type="date"
+      value={batch.expiry_date}
+      onChange={(e) => handleSimpleBatchChange(i, 'expiry_date', e.target.value)}
+      className="border rounded px-2 py-1 w-full"
+    />
+  </div>
+</div>
+
+            <input
+              type="number"
+              placeholder="จำนวน"
+              value={batch.quantity}
+              onChange={(e) => handleSimpleBatchChange(i, 'quantity', e.target.value)}
+              className="border rounded px-2 py-1 w-full mb-1"
+            />
+            {simpleBatches.length > 1 && (
               <button
                 type="button"
-                onClick={addSimpleBatch}
-                className="text-green-600 text-sm mb-4"
+                onClick={() => removeSimpleBatch(i)}
+                className="text-red-600 text-sm"
               >
-                + เพิ่ม Batch
+                ลบ Batch นี้
               </button>
-            </>
-          ) : (
-            <p className="text-gray-500">Batch สำหรับแต่ละ Variant จะถูกบันทึกในขั้นตอน Variant</p>
-          )}
-
-          <div className="flex justify-between mt-4">
-            <button onClick={() => setStep(useVariants ? 3 : 2)} type="button" className="text-gray-600">
-              ⬅️ กลับ
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`px-6 py-2 rounded font-semibold ${
-                loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 text-white'
-              }`}
-            >
-              {loading ? '⏳ กำลังบันทึก...' : '✅ เพิ่มสินค้า'}
-            </button>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+        <button
+          type="button"
+          onClick={addSimpleBatch}
+          className="text-green-600 text-sm mb-4"
+        >
+          + เพิ่ม Batch
+        </button>
+      </>
+    ) : (
+      <>
+        {variants.length > 0 && (
+          <div className="space-y-4 mt-3">
+            <h4 className="font-semibold mb-2">Batch สำหรับแต่ละ Variant</h4>
+            {variants.map((variant, vi) => (
+              <div key={vi} className="border p-3 rounded mb-3">
+                <div className="font-medium text-blue-700 mb-2">
+                  📦 {variant.option_values.join(' - ')}
+                </div>
+                {batches[vi].map((batch, bi) => (
+                  <div key={bi} className="mb-2">
+                    <input
+                      type="text"
+                      placeholder="เลขล็อต"
+                      value={batch.batch_number}
+                      onChange={(e) => {
+                        const newBatches = [...batches];
+                        newBatches[vi][bi].batch_number = e.target.value;
+                        setBatches(newBatches);
+                      }}
+                      className="border rounded px-2 py-1 w-full mb-1"
+                    />
+                    <div className="grid grid-cols-2 gap-2 mb-1">
+                      <input
+                        type="date"
+                        value={batch.manufactured_date}
+                        onChange={(e) => {
+                          const newBatches = [...batches];
+                          newBatches[vi][bi].manufactured_date = e.target.value;
+                          setBatches(newBatches);
+                        }}
+                        className="border rounded px-2 py-1 w-full"
+                      />
+                      <input
+                        type="date"
+                        value={batch.expiry_date}
+                        onChange={(e) => {
+                          const newBatches = [...batches];
+                          newBatches[vi][bi].expiry_date = e.target.value;
+                          setBatches(newBatches);
+                        }}
+                        className="border rounded px-2 py-1 w-full"
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      placeholder="จำนวน"
+                      value={batch.quantity}
+                      onChange={(e) => {
+                        const newBatches = [...batches];
+                        newBatches[vi][bi].quantity = e.target.value;
+                        setBatches(newBatches);
+                      }}
+                      className="border rounded px-2 py-1 w-full mb-1"
+                    />
+                    {batches[vi].length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newBatches = [...batches];
+                          newBatches[vi] = newBatches[vi].filter((_, i) => i !== bi);
+                          setBatches(newBatches);
+                        }}
+                        className="text-red-600 text-sm"
+                      >
+                        ลบ Batch นี้
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newBatches = [...batches];
+                    newBatches[vi].push({ batch_number: '', manufactured_date: '', expiry_date: '', quantity: '' });
+                    setBatches(newBatches);
+                  }}
+                  className="text-green-600 text-sm mt-1"
+                >
+                  + เพิ่ม Batch
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )}
+
+    <div className="flex justify-between mt-4">
+      <button onClick={() => setStep(useVariants ? 3 : 2)} type="button" className="text-gray-600">
+        ⬅️ กลับ
+      </button>
+      <button
+        type="submit"
+        disabled={loading}
+        className={`px-6 py-2 rounded font-semibold ${
+          loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 text-white'
+        }`}
+      >
+        {loading ? '⏳ กำลังบันทึก...' : '✅ เพิ่มสินค้า'}
+      </button>
+    </div>
+  </div>
+)}
+
     </form>
   </div>
 );
