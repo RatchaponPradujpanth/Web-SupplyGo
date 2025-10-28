@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, cart_items } from "@prisma/client";
 import { authenticateToken } from "../middleware/authMiddleware";
 
 const addtocartRoute = Router();
@@ -67,76 +67,108 @@ console.log("✅ เจอ variant:", variant);
 const totalStock = variant.product_batches.reduce((sum, batch) => sum + (batch.quantity ?? 0), 0);
 console.log("💡 Total stock:", totalStock, "Requested quantity:", quantity);
 
-// ตรวจสอบว่าเกินสต็อกไหม
-if (quantity > totalStock) {
-  throw new Error(`❌ จำนวนสินค้าเกินจำนวนในสต็อก (มี ${totalStock} ชิ้น)`);
+if (variant.product.status !== "active") {
+  throw new Error("สินค้าไม่พร้อมจำหน่าย");
 }
 
-// ถ้าไม่เกิน ให้เพิ่มลงตะกร้าได้
+shop_id = variant.product.product_owners?.[0]?.shop_id;
+price = variant.price ? variant.price.toNumber() : 0;
 
+// ✅ เช็คว่ามีสินค้าชิ้นนี้ในตะกร้าแล้วหรือยัง
+const existingCartItem = await tx.cart_items.findFirst({
+  where: {
+    cart_id: cart.cart_id,
+    product_id,
+    variant_id,
+  },
+});
 
-    if (variant.product.status !== "active") {
-      throw new Error("สินค้าไม่พร้อมจำหน่าย");
-    }
+let finalCartItem: cart_items;
+let isUpdate = false;
 
-    shop_id = variant.product.product_owners?.[0]?.shop_id;
-    price = variant.price ? variant.price.toNumber() : 0;
+if (existingCartItem) {
+  // ถ้ามีอยู่แล้ว ให้เพิ่มจำนวน
+  const newQuantity = existingCartItem.quantity + quantity;
+  
+  // ตรวจสอบว่าเกินสต็อกไหม
+  if (newQuantity > totalStock) {
+    throw new Error(`❌ จำนวนสินค้าเกินจำนวนในสต็อก (มี ${totalStock} ชิ้น)`);
+  }
 
-    const newCartItem = await tx.cart_items.create({
-      data: {
-        cart_id: cart.cart_id,
-        product_id,
-        shop_id,
-        variant_id,
-        quantity,
-        price_per_unit: price,
+  finalCartItem = await tx.cart_items.update({
+    where: { cart_item_id: existingCartItem.cart_item_id },
+    data: { quantity: newQuantity },
+  });
+
+  isUpdate = true;
+  console.log("🔄 อัพเดทจำนวนสินค้าในตะกร้า:", finalCartItem);
+} else {
+  // ถ้ายังไม่มี ให้สร้างใหม่
+  // ตรวจสอบว่าเกินสต็อกไหม
+  if (quantity > totalStock) {
+    throw new Error(`❌ จำนวนสินค้าเกินจำนวนในสต็อก (มี ${totalStock} ชิ้น)`);
+  }
+
+  finalCartItem = await tx.cart_items.create({
+    data: {
+      cart_id: cart.cart_id,
+      product_id,
+      shop_id,
+      variant_id,
+      quantity,
+      price_per_unit: price,
+    },
+  });
+
+  console.log("🛒 เพิ่ม cart_items ใหม่:", finalCartItem);
+
+  // จัดการ option_value_id เฉพาะกรณีสร้างใหม่
+  if (option_value_id && Array.isArray(option_value_id) && option_value_id.length > 0) {
+    console.log("📦 มี option_value_id:", option_value_id);
+
+    const validOptions = await tx.variant_options.findMany({
+      where: {
+        variant_option_id: { in: option_value_id },
+        variant_id: variant_id,
       },
     });
 
-    console.log("🛒 เพิ่ม cart_items แล้ว:", newCartItem);
+    console.log("✅ ตรวจสอบแล้ว validOptions:", validOptions);
 
-    if (option_value_id && Array.isArray(option_value_id) && option_value_id.length > 0) {
-      console.log("📦 มี option_value_id:", option_value_id);
-
-      const validOptions = await tx.variant_options.findMany({
-        where: {
-          variant_option_id: { in: option_value_id },
-          variant_id: variant_id,
-        },
-      });
-
-      console.log("✅ ตรวจสอบแล้ว validOptions:", validOptions);
-
-      if (validOptions.length !== option_value_id.length) {
-        throw new Error("มี option_value_id ที่ไม่ถูกต้อง");
-      }
-
-      const junctionData = option_value_id.map((optionId) => ({
-        cart_item_id: newCartItem.cart_item_id,
-        variant_option_id: optionId,
-      }));
-
-      console.log("🧷 เตรียม insert ไป cart_item_variant_options:", junctionData);
-
-      const inserted = await tx.cart_item_variant_options.createMany({
-        data: junctionData,
-      });
-
-      console.log("📥 บันทึก cart_item_variant_options แล้ว:", inserted);
-    } else {
-      console.log("❕ ไม่มี option_value_id ส่งมา");
+    if (validOptions.length !== option_value_id.length) {
+      throw new Error("มี option_value_id ที่ไม่ถูกต้อง");
     }
 
-    return newCartItem;
+    const junctionData = option_value_id.map((optionId) => ({
+      cart_item_id: finalCartItem.cart_item_id,
+      variant_option_id: optionId,
+    }));
+
+    console.log("🧷 เตรียม insert ไป cart_item_variant_options:", junctionData);
+
+    const inserted = await tx.cart_item_variant_options.createMany({
+      data: junctionData,
+    });
+
+    console.log("📥 บันทึก cart_item_variant_options แล้ว:", inserted);
+  } else {
+    console.log("❕ ไม่มี option_value_id ส่งมา");
+  }
+}
+
+return { cartItem: finalCartItem, isUpdate };
   });
 
-  res.status(201).json({
-    message: "เพิ่มสินค้าลงตะกร้าสำเร็จ (variant)",
-    cart_item: result,
+  res.status(result.isUpdate ? 200 : 201).json({
+    message: result.isUpdate 
+      ? "อัพเดทจำนวนสินค้าในตะกร้าสำเร็จ" 
+      : "เพิ่มสินค้าลงตะกร้าสำเร็จ",
+    cart_item: result.cartItem,
     debug: {
       variant_id,
       option_value_id,
       options_count: option_value_id?.length || 0,
+      action: result.isUpdate ? "updated" : "created",
     },
   });
 }
@@ -173,18 +205,45 @@ if (quantity > totalStock) {
       
       price = productData.price.toNumber();
 
-      // เพิ่มลงตะกร้า กรณีไม่มี variant
-      const newCartItem = await prisma.cart_items.create({
-        data: {
+      // ✅ เช็คว่ามีสินค้าชิ้นนี้ในตะกร้าแล้วหรือยัง (กรณีไม่มี variant)
+      const existingCartItem = await prisma.cart_items.findFirst({
+        where: {
           cart_id: cart.cart_id,
           product_id,
-          shop_id,
-          quantity,
-          price_per_unit: price,
+          variant_id: null,
         },
       });
 
-      res.status(201).json({ message: "เพิ่มสินค้าลงตะกร้าสำเร็จ (ธรรมดา)", cart_item: newCartItem });
+      let finalCartItem;
+
+      if (existingCartItem) {
+        // ถ้ามีอยู่แล้ว ให้เพิ่มจำนวน
+        finalCartItem = await prisma.cart_items.update({
+          where: { cart_item_id: existingCartItem.cart_item_id },
+          data: { quantity: existingCartItem.quantity + quantity },
+        });
+
+        res.status(200).json({ 
+          message: "อัพเดทจำนวนสินค้าในตะกร้าสำเร็จ", 
+          cart_item: finalCartItem 
+        });
+      } else {
+        // ถ้ายังไม่มี ให้สร้างใหม่
+        finalCartItem = await prisma.cart_items.create({
+          data: {
+            cart_id: cart.cart_id,
+            product_id,
+            shop_id,
+            quantity,
+            price_per_unit: price,
+          },
+        });
+
+        res.status(201).json({ 
+          message: "เพิ่มสินค้าลงตะกร้าสำเร็จ", 
+          cart_item: finalCartItem 
+        });
+      }
     }
   } catch (error) {
     console.error("เกิดข้อผิดพลาดในการเพิ่มลงตะกร้า:", error);

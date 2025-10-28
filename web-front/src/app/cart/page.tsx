@@ -200,7 +200,12 @@ export default function CartPage() {
                           </div>
                           <div>
                             <div className="font-medium">{item.product_name}</div>
-                            <div className="text-gray-600 text-xs">SKU: {item.product_id}</div>
+                            {item.variant_info && (
+                              <div className="text-gray-500 text-xs mt-1">
+                                {item.variant_info}
+                              </div>
+                            )}
+                            <div className="text-gray-600 text-xs mt-1">SKU: {item.product_id}</div>
                           </div>
                         </div>
                       </td>

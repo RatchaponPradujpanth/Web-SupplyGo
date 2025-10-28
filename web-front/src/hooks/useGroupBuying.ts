@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { loadbalance } from '@/service/api/loadbalance';
 import { loadgroupbuy } from '@/service/api/groupsharing/loadgroupbuy';
 import { joingroup } from '@/service/api/groupsharing/joingroup';
@@ -19,7 +19,7 @@ export function useGroupBuying() {
     return () => clearInterval(interval);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +44,11 @@ export function useGroupBuying() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleJoinGroup = async (groupId: number, addressId: number, points: number) => {
     try {

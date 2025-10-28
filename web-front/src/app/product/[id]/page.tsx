@@ -55,6 +55,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'description' | 'specs'>('description');
+  const [imageError, setImageError] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -182,7 +183,6 @@ export default function ProductDetailPage() {
     );
 
     alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
-    router.push('/cart');
   } catch (error) {
     console.error('❌ Error adding to cart:', error);
     alert('❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
@@ -191,8 +191,59 @@ export default function ProductDetailPage() {
 
 
   const handleBuyNow = async () => {
-    await handleAddToCart();
-    // จะไปหน้า cart อยู่แล้วจาก handleAddToCart
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('⚠️ กรุณาเข้าสู่ระบบก่อนซื้อสินค้า');
+      router.push('/login');
+      return;
+    }
+
+    try {
+      // ถ้ามี variants ต้องเลือกให้ครบ
+      if (product?.product_options && product.product_options.length > 0) {
+        const allSelected = product.product_options.every(opt => selectedOptions[opt.name]);
+        if (!allSelected) {
+          alert('⚠️ กรุณาเลือกตัวเลือกสินค้าให้ครบ');
+          return;
+        }
+      }
+
+      // หา variant_id ที่ตรงกับตัวเลือกที่เลือก
+      let variantId = null;
+      if (product?.product_variants && Object.keys(selectedOptions).length > 0) {
+        const matchedVariant = product.product_variants.find(variant => {
+          const matched = variant.variant_options.every(opt => 
+            selectedOptions[opt.option_name] === opt.value
+          );
+          return matched;
+        });
+        variantId = matchedVariant?.variant_id || null;
+      }
+
+      const payload = {
+        product_id: product?.product_id,
+        quantity,
+        variant_id: variantId,
+      };
+
+      await axios.post(
+        `${API_URL}/api/addtocart`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      // สำหรับปุ่ม "ซื้อตอนนี้" ให้ redirect ไปหน้าตะกร้า
+      router.push('/cart');
+    } catch (error) {
+      console.error('❌ Error adding to cart:', error);
+      alert('❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
+    }
   };
 
   const getCurrentPrice = () => {
@@ -314,16 +365,17 @@ export default function ProductDetailPage() {
               className="bg-white rounded-card shadow-card overflow-hidden mb-4"
             >
               <div className="aspect-square relative">
-                {selectedImage ? (
+                {selectedImage && !imageError ? (
                   <Image
                     src={selectedImage}
                     alt={product.product_name}
                     fill
                     className="object-contain p-4"
                     priority
+                    onError={() => setImageError(true)}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-6xl">
+                  <div className="w-full h-full flex items-center justify-center text-6xl bg-gray-100">
                     📦
                   </div>
                 )}
@@ -341,7 +393,10 @@ export default function ProductDetailPage() {
                   return (
                     <button
                       key={img.id}
-                      onClick={() => setSelectedImage(imageUrl)}
+                      onClick={() => {
+                        setSelectedImage(imageUrl);
+                        setImageError(false);
+                      }}
                       className={`aspect-square relative bg-white rounded-lg overflow-hidden border-2 transition ${
                         selectedImage === imageUrl
                           ? 'border-primary'
@@ -353,6 +408,14 @@ export default function ProductDetailPage() {
                         alt={`${product.product_name} thumbnail`}
                         fill
                         className="object-contain p-2"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-2xl bg-gray-100">📦</div>';
+                          }
+                        }}
                       />
                     </button>
                   );
@@ -505,6 +568,14 @@ export default function ProductDetailPage() {
                           alt={relatedProduct.product_name}
                           fill
                           className="object-contain p-4 group-hover:scale-105 transition"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-4xl">📦</div>';
+                            }
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">
