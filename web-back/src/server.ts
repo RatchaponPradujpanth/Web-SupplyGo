@@ -57,6 +57,7 @@ import profileRoute from "./routes/profileRoute";
 import searchRoute from "./routes/searchRoute";
 import checkStockRoute from "./routes/checkStockRoute";
 import createstoreRoute from "./routes/shop/createstoreRoute";
+import mygroupRoute from "./routes/group_buying/customer/mygroupRoute";
 
 
 
@@ -123,6 +124,7 @@ app.use("/api",otpRoute);
 app.use("/api",searchRoute);
 app.use("/api",checkStockRoute)
 app.use("/api",createstoreRoute)
+app.use("/api",mygroupRoute);
 
 
 app.listen(PORT, () => {

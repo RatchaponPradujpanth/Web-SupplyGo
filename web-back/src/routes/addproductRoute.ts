@@ -152,6 +152,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         console.warn("⚠️ No images provided for product");
       }
 
+      // ✅ กรณีที่มี variants (สินค้ามีตัวเลือก)
       if (parsedOptions.length > 0 && parsedVariants.length > 0) {
         console.log("🎨 Creating product options and variants...");
         
@@ -199,6 +200,7 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
             }
           }
 
+          // ✅ สร้าง batch สำหรับแต่ละ variant
           if (parsedBatches[i] && Array.isArray(parsedBatches[i])) {
             let totalQuantity = 0;
             for (const batch of parsedBatches[i]) {
@@ -207,8 +209,8 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
               if (qty > 0) {
                 await prisma.product_batches.create({
                   data: {
-                    product_id: null, // ✅ มี variant → product_id = null
-                    variant_id: variant.variant_id,
+                    product_id: null,              // ✅ มี variant → product_id = null
+                    variant_id: variant.variant_id, // ✅ เก็บที่ variant_id
                     batch_number: batch.batch_number || `BATCH-${variant.variant_id}-${Date.now()}`,
                     manufactured_date: batch.manufactured_date ? new Date(batch.manufactured_date) : null,
                     expiry_date: batch.expiry_date ? new Date(batch.expiry_date) : null,
@@ -225,18 +227,13 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
         
         console.log("✅ All variants and options created successfully!");
       }
+      // ✅ กรณีที่ไม่มี variants (สินค้าธรรมดา)
       else if (parsedBatches && parsedBatches.length > 0) {
-        console.log("📦 Processing batches...");
-        console.log("🔄 No variants, creating default variant...");
-        const defaultVariant = await prisma.product_variants.create({
-          data: {
-            product_id: newProduct.product_id,
-            sku: `DEFAULT-${newProduct.product_id}`,
-            price: parseFloat(price)
-          }
-        });
-        console.log("✅ Default variant created:", defaultVariant.variant_id);
-
+        console.log("📦 Processing batches for simple product (no variants)...");
+        
+        // ❌ ลบส่วนสร้าง default variant ออก!
+        // ไม่ต้องสร้าง product_variants เลยสำหรับสินค้าธรรมดา
+        
         if (parsedBatches[0] && Array.isArray(parsedBatches[0])) {
           let totalQuantity = 0;
           for (const batch of parsedBatches[0]) {
@@ -246,20 +243,20 @@ addproductRoute.post("/addproduct", authenticateToken, authstore, uploadProductI
               await prisma.product_batches.create({
                 data: {
                   product_id: newProduct.product_id, // ✅ ไม่มี variant → เก็บ product_id
-                  variant_id: null,
-                  batch_number: batch.batch_number || `BATCH-${Date.now()}`,
+                  variant_id: null,                  // ✅ variant_id = null
+                  batch_number: batch.batch_number || `BATCH-${newProduct.product_id}-${Date.now()}`,
                   manufactured_date: batch.manufactured_date ? new Date(batch.manufactured_date) : null,
                   expiry_date: batch.expiry_date ? new Date(batch.expiry_date) : null,
                   quantity: qty
                 }
               });
               totalQuantity += qty;
-              console.log(`✅ Batch created: ${batch.batch_number} with quantity: ${qty}`);
+              console.log(`✅ Batch created for product ${newProduct.product_id}: ${batch.batch_number} with quantity: ${qty}`);
             } else {
               console.warn(`⚠️ Skipping batch with invalid quantity: ${batch.quantity}`);
             }
           }
-          console.log(`📊 Total stock quantity: ${totalQuantity}`);
+          console.log(`📊 Total stock for simple product: ${totalQuantity}`);
           
           if (totalQuantity === 0) {
             console.warn("⚠️ WARNING: Product has 0 stock! Please add quantity in batches.");

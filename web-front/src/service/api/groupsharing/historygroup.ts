@@ -11,7 +11,7 @@ export const historygroup = async (token:string):Promise<GroupBuying[]> =>{
         });
 
         const data = response.data;
-
+        console.log(data)
         // Normalize response: backend may return { groups: [...] } or [...]
         if (Array.isArray(data)) {
           return data as GroupBuying[];
@@ -21,7 +21,6 @@ export const historygroup = async (token:string):Promise<GroupBuying[]> =>{
           return (data as any).groups as GroupBuying[];
         }
 
-        console.warn('Unexpected history-group response shape, returning empty array');
         return [];
 
   } catch (error) {

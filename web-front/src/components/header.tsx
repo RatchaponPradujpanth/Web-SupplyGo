@@ -201,59 +201,71 @@ export default function Header() {
               </button>
 
               {showUserMenu && (
-                <div
-                  onMouseLeave={() => setShowUserMenu(false)}
-                  className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50"
-                >
-                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <p className="text-sm font-semibold text-gray-800">{username}</p>
-                    {role && <p className="text-xs text-gray-500 mt-1">Role: {role}</p>}
-                  </div>
-                  <div className="py-2">
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        router.push('/profile');
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
-                    >
-                      <span className="text-lg">👤</span>
-                      <span>บัญชีของฉัน</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        router.push('/order');
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
-                    >
-                      <span className="text-lg">📦</span>
-                      <span>การซื้อของฉัน</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        router.push('/mygroups');
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
-                    >
-                      <span className="text-lg">🎯</span>
-                      <span>กลุ่มของฉัน</span>
-                    </button>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        handleLogout();
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-red-50 hover:text-red-600 transition flex items-center gap-3 text-sm text-gray-700"
-                    >
-                      <span className="text-lg">🚪</span>
-                      <span>ออกจากระบบ</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+  <div
+    onMouseLeave={() => setShowUserMenu(false)}
+    className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50"
+  >
+    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+      <p className="text-sm font-semibold text-gray-800">{username}</p>
+      {role && <p className="text-xs text-gray-500 mt-1">Role: {role}</p>}
+    </div>
+
+    <div className="py-2">
+      {/* ✅ บัญชีของฉัน (ทุก role เห็นได้) */}
+      <button
+        onClick={() => {
+          setShowUserMenu(false);
+          router.push('/profile');
+        }}
+        className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+      >
+        <span className="text-lg">👤</span>
+        <span>บัญชีของฉัน</span>
+      </button>
+
+      {/* ✅ แสดงเฉพาะถ้าเป็น customer */}
+      {role === 'customer' && (
+        <>
+          <button
+            onClick={() => {
+              setShowUserMenu(false);
+              router.push('/order');
+            }}
+            className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+          >
+            <span className="text-lg">📦</span>
+            <span>การซื้อของฉัน</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowUserMenu(false);
+              router.push('/mygroups');
+            }}
+            className="w-full px-4 py-3 text-left hover:bg-primary/5 transition flex items-center gap-3 text-sm"
+          >
+            <span className="text-lg">🎯</span>
+            <span>กลุ่มของฉัน</span>
+          </button>
+        </>
+      )}
+
+      {/* ✅ เส้นคั่น + Logout (ทุก role เห็นได้) */}
+      <div className="border-t border-gray-100 my-2"></div>
+      <button
+        onClick={() => {
+          setShowUserMenu(false);
+          handleLogout();
+        }}
+        className="w-full px-4 py-3 text-left hover:bg-red-50 hover:text-red-600 transition flex items-center gap-3 text-sm text-gray-700"
+      >
+        <span className="text-lg">🚪</span>
+        <span>ออกจากระบบ</span>
+      </button>
+    </div>
+  </div>
+)}
+
             </div>
           ) : (
             !isAuthPage && (

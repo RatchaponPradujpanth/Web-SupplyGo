@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { PrismaClient , product_variants , shops,products,product_images } from "@prisma/client";
+import { PrismaClient} from "@prisma/client";
 import { authenticateToken } from "../../../middleware/authMiddleware";
 
 const historygroupRoute = Router();
