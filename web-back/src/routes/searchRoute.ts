@@ -42,7 +42,7 @@ searchRoute.get('/search/suggestions', async (req: Request, res: Response): Prom
       }
     });
 
-    // จัดรูปแบบข้อมูล
+    //  ข้อมูลจะส่งไปแบบที่ maps
     const formattedProducts = products.map(product => ({
       product_id: product.product_id,
       product_name: product.product_name,

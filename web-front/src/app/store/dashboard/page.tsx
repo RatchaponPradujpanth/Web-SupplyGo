@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  loadstorename,
   regisstripe,
 } from "@/service/apis";
 import type { Product } from "@/types/type";
@@ -17,6 +16,7 @@ import WithdrawPage from "@/components/shop/WithdrawForm";
 import ManageGroups from "@/components/shop/ManageGroups";
 import { fetchUserRole } from '@/service/api/fetchrole';
 import { loadUsername } from "@/service/api/loadusername";
+import { loadstorename } from "@/service/api/shop/loadstore";
 
 
 
@@ -69,8 +69,8 @@ export default function StoreDashboardPage() {
       setUsername(name);
 
       const store = await loadstorename(token);
-      setStoreName(store.shop_name);
-      setShopId(store.shop_id);
+setStoreName(store.shop_name || "");  
+    setShopId(store.shop_id);
       setPoints(store.points); 
       setStripeConnected(Boolean(store.stripe_account_id));
     };

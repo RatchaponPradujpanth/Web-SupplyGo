@@ -216,37 +216,37 @@ export interface OrderHistoryResponse {
 //   }
 // };
 
-export const loadstorename = async (
-  token: string
-): Promise<{
-  shop_name: string;
-  shop_id: number;
-  stripe_account_id?: string | null;
-  points: number;
-}> => {
-  try {
-    console.log("📦 loading store with token:", token);
+// export const loadstorename = async (
+//   token: string
+// ): Promise<{
+//   shop_name: string;
+//   shop_id: number;
+//   stripe_account_id?: string | null;
+//   points: number;
+// }> => {
+//   try {
+//     console.log("📦 loading store with token:", token);
 
-    const response = await axios.get<{
-      shop_name: string;
-      shop_id: number;
-      stripe_account_id?: string | null;
-      points: number;
-    }>(`${API_URL}/api/loadstorename`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+//     const response = await axios.get<{
+//       shop_name: string;
+//       shop_id: number;
+//       stripe_account_id?: string | null;
+//       points: number;
+//     }>(`${API_URL}/api/loadstorename`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
 
-    // ถ้าอยาก map เป็นชื่ออื่น เช่น pointstore
-    // const data = { ...response.data, pointstore: response.data.points };
+//     // ถ้าอยาก map เป็นชื่ออื่น เช่น pointstore
+//     // const data = { ...response.data, pointstore: response.data.points };
 
-    return response.data;
-  } catch (error) {
-    console.error("Load store name error:", error);
-    throw error;
-  }
-};
+//     return response.data;
+//   } catch (error) {
+//     console.error("Load store name error:", error);
+//     throw error;
+//   }
+// };
 
 export const regisstripe = async (token: string): Promise<void> => {
   try {
@@ -275,21 +275,21 @@ export const regisstripe = async (token: string): Promise<void> => {
   }
 };
 
-export const confirmStripeConnect = async (
-  acct_id: string,
-  shop_id: string
-): Promise<string> => {
-  try {
-    const response = await axios.get(`${API_URL}/api/connect`, {
-      params: { acct_id, shop_id },
-    });
+// export const confirmStripeConnect = async (
+//   acct_id: string,
+//   shop_id: string
+// ): Promise<string> => {
+//   try {
+//     const response = await axios.get(`${API_URL}/api/connect`, {
+//       params: { acct_id, shop_id },
+//     });
 
-    return response.data; // เช่น "เชื่อมบัญชี Stripe สำเร็จ"
-  } catch (error: any) {
-    console.error("❌ Stripe connect confirm error:", error.message);
-    throw error;
-  }
-};
+//     return response.data; // เช่น "เชื่อมบัญชี Stripe สำเร็จ"
+//   } catch (error: any) {
+//     console.error("❌ Stripe connect confirm error:", error.message);
+//     throw error;
+//   }
+// };
 
 // export const cartUser = async (token: string): Promise<CartResponse> => {
 //   try {

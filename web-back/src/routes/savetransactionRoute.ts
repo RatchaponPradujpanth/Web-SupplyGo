@@ -6,7 +6,6 @@ const savetransactionRoute = Router();
 const prisma = new PrismaClient();
 
 savetransactionRoute.post("/save-transaction", authenticateToken, async (req: Request, res: Response): Promise<void> => {
-  console.log("POST /api/save-transaction called", req.body);
   try {
     const userId = req.user?.user_id;
     let { shopId, orderShopId, paymentIntentId } = req.body;

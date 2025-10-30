@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { useSearchParams, useRouter } from 'next/navigation';
+import { confirmStripeConnect } from '@/service/api/stripe/connectstripe';
 
 export default function ConnectCompletePage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const acct_id = searchParams.get('acct_id');
   const shop_id = searchParams.get('shop_id');
 
@@ -14,32 +15,42 @@ export default function ConnectCompletePage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   useEffect(() => {
-    const confirmConnect = async () => {
-      if (!acct_id || !shop_id) {
-        setMessage('❌ ข้อมูลไม่ครบ');
+  const confirmConnect = async () => {
+    if (!acct_id || !shop_id) {
+      setMessage('❌ ข้อมูลไม่ครบ');
+      setStatus('error');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setMessage('❌ ไม่พบ token กรุณาล็อกอินใหม่');
         setStatus('error');
         return;
       }
 
-      try {
-        const res = await fetch(
-          `${API_URL}/api/connect?acct_id=${acct_id}&shop_id=${shop_id}`
-        );
+      // ✅ ส่งทั้ง acct_id และ token
+      const text = await confirmStripeConnect(acct_id, token);
+      setMessage(`✅ ${text}`);
+      setStatus('success');
 
-        if (!res.ok) throw new Error(await res.text());
+      // ⏱ รอ 2 วินาทีแล้ว redirect อัตโนมัติ
+      setTimeout(() => {
+        router.push('/store/dashboard');
+      }, 2000);
 
-        const text = await res.text();
-        setMessage(`✅ ${text}`);
-        setStatus('success');
-      } catch (err) {
-        console.error(err);
-        setMessage('❌ เกิดข้อผิดพลาดในการเชื่อมบัญชี Stripe');
-        setStatus('error');
-      }
-    };
+    } catch (error) {
+      console.error('❌ Error confirming Stripe connect:', error);
+      setMessage('❌ เกิดข้อผิดพลาดในการเชื่อมบัญชี Stripe');
+      setStatus('error');
+    }
+  };
 
-    confirmConnect();
-  }, [acct_id, shop_id]);
+  confirmConnect();
+}, [acct_id, shop_id, router]);
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
@@ -58,15 +69,7 @@ export default function ConnectCompletePage() {
         >
           {message}
         </p>
-
-        {status === 'success' && (
-          <a
-            href="/dashboard"
-            className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            ← กลับไปยัง Dashboard
-          </a>
-        )}
+        {status === 'success' && <p className="text-gray-500">กำลังพาไปหน้า Dashboard...</p>}
       </div>
     </div>
   );

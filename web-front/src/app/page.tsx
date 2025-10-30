@@ -90,7 +90,7 @@ export default function UserDashboardPage() {
       try {
         if (token && userRole !== null) {
           await loadUsername(token);
-          const userProducts = await loadShopProducts(token);
+          const userProducts = await loadPublicProducts();
           setProducts(userProducts);
         } else {
           const publicProducts = await loadPublicProducts();

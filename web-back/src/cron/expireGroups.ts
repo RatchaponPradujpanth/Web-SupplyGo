@@ -2,10 +2,6 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-/**
- * ฟังก์ชันสำหรับยกเลิกกลุ่มที่หมดอายุ (ไม่เต็มตามเวลาที่กำหนด)
- * ควรรันเป็น cron job ทุก 5-10 นาที
- */
 export async function expireGroupBuyings() {
   console.log("🕐 Running expireGroupBuyings cron job...");
 

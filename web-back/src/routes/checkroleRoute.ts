@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { authenticateToken, authstore } from '../middleware/authMiddleware';
+import { authenticateToken} from '../middleware/authMiddleware';
 
 const checkroleRoute = Router();
 

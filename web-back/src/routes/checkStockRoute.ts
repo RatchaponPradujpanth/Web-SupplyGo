@@ -22,9 +22,6 @@ interface InsufficientStockItem {
 }
 
 checkStockRoute.post("/check-stock", authenticateToken, async (req: Request, res: Response): Promise<void> => {
-  console.log("🔍 Starting stock check...");
-  console.log("📝 Request body:", JSON.stringify(req.body, null, 2));
-
   const { cartItems } = req.body as { cartItems: CheckStockItem[] };
 
   if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
@@ -38,12 +35,6 @@ checkStockRoute.post("/check-stock", authenticateToken, async (req: Request, res
 
     // เช็คสต็อกแต่ละรายการ
     for (const item of cartItems) {
-      console.log(`\n📦 Checking stock for:`, {
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity
-      });
-
       // ดึงข้อมูลสินค้าเพื่อเอาชื่อและร้านค้า
       const product = await prisma.products.findUnique({
         where: { product_id: item.productId },
@@ -87,7 +78,6 @@ checkStockRoute.post("/check-stock", authenticateToken, async (req: Request, res
       });
 
       const availableStock = batch?.quantity || 0;
-      console.log(`📊 Available stock: ${availableStock}, Requested: ${item.quantity}`);
 
       // ถ้าสต็อกไม่พอ
       if (!batch || availableStock < item.quantity) {

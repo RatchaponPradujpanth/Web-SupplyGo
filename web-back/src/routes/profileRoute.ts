@@ -10,24 +10,25 @@ profileRoute.get('/profile', authenticateToken, async (req: Request & { user?: {
   try {
     const userId = req.user!.user_id;
 
-    // Use raw query to avoid TypeScript issues with new fields
-    const user = await prisma.$queryRaw<Array<{
-      user_id: number;
-      username: string | null;
-      email: string | null;
-      role: string | null;
-    }>>`
-      SELECT user_id, username, email, role 
-      FROM users 
-      WHERE user_id = ${userId}
-    `;
+    // ใช้ Prisma ในการดึงข้อมูลจากฐานข้อมูล
+    const user = await prisma.users.findUnique({
+      where: {
+        user_id: userId,
+      },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        role: true,
+      },
+    });
 
-    if (!user || user.length === 0) {
+    if (!user) {
       res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้' });
       return;
     }
 
-    res.status(200).json(user[0]);
+    res.status(200).json(user);
   } catch (error) {
     console.error('❌ ดึงข้อมูลโปรไฟล์ล้มเหลว:', error);
     res.status(500).json({ message: 'ไม่สามารถดึงข้อมูลโปรไฟล์ได้' });
@@ -46,7 +47,7 @@ profileRoute.put('/profile', authenticateToken, async (req: Request & { user?: {
       return;
     }
 
-    // Check if username or email already exists (excluding current user)
+    // ตรวจสอบว่า username หรือ email ซ้ำกับผู้ใช้อื่น
     const existingUser = await prisma.users.findFirst({
       where: {
         OR: [
@@ -67,28 +68,26 @@ profileRoute.put('/profile', authenticateToken, async (req: Request & { user?: {
       }
     }
 
-    // Update user profile using raw SQL
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET username = ${username}, email = ${email}
-      WHERE user_id = ${userId}
-    `;
-
-    // Get updated user data
-    const updatedUser = await prisma.$queryRaw<Array<{
-      user_id: number;
-      username: string | null;
-      email: string | null;
-      role: string | null;
-    }>>`
-      SELECT user_id, username, email, role 
-      FROM users 
-      WHERE user_id = ${userId}
-    `;
+    // อัปเดตข้อมูลโปรไฟล์
+    const updatedUser = await prisma.users.update({
+      where: {
+        user_id: userId,
+      },
+      data: {
+        username,
+        email,
+      },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        role: true,
+      },
+    });
 
     res.status(200).json({
       message: 'อัปเดตโปรไฟล์สำเร็จ',
-      user: updatedUser[0]
+      user: updatedUser,
     });
   } catch (error) {
     console.error('❌ อัปเดตโปรไฟล์ล้มเหลว:', error);

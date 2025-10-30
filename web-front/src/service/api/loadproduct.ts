@@ -22,7 +22,7 @@ export const loadPublicProducts = async (): Promise<Product[]> => {
 // 2️⃣ สำหรับผู้ขายหรือแอดมินที่ล็อกอินแล้ว
 export const loadShopProducts = async (token: string): Promise<Product[]> => {
   try {
-    const url = `${API_URL}/api/loaduserproduct`;
+    const url = `${API_URL}/api/manageproducts`;
 
 
     const response = await axios.get<Product[]>(url, {

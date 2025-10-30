@@ -7,6 +7,7 @@ export const RegisterUser = async (
   password: string,
   email: string,
   role: string,
+  shop_name?: string // ✅ เพิ่มตรงนี้
 ): Promise<{ message: string; email?: string }> => {
   try {
     const response = await axios.post(`${API_URL}/api/register`, {
@@ -14,6 +15,7 @@ export const RegisterUser = async (
       password,
       email,
       role,
+      shop_name, // ✅ ส่งค่าไป backend ด้วย
     });
     return response.data;
   } catch (error: unknown) {

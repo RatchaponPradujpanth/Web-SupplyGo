@@ -18,6 +18,7 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<RoleType>(defaultRole);
+  const [shopName, setShopName] = useState(''); // เพิ่มช่องชื่อร้าน
   const [showMessage, setShowMessage] = useState<string | null>(null);
   const router = useRouter();
 
@@ -28,9 +29,15 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
       return;
     }
 
+    if (role === 'store' && !shopName.trim()) {
+      setShowMessage('❌ กรุณากรอกชื่อร้านค้า');
+      setTimeout(() => setShowMessage(null), 3000);
+      return;
+    }
+
     try {
-      const result = await RegisterUser(username, password, email, role);
-      
+      const result = await RegisterUser(username, password, email, role, shopName);
+
       if (result.email) {
         setShowMessage('📧 ได้ส่งรหัสยืนยัน (OTP) ไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมาย');
         setTimeout(() => {
@@ -46,6 +53,7 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
           setConfirmPassword('');
           setEmail('');
           setRole(defaultRole);
+          setShopName('');
         }, 2000);
       }
     } catch (error: unknown) {
@@ -112,6 +120,15 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
             <option value="store">สมัครเป็นร้านค้า</option>
             <option value="admin">สมัครเป็นผู้ดูแลระบบ</option>
           </select>
+
+          {/* ช่องชื่อร้านอยู่ตำแหน่งเดิม แต่ซ่อนเมื่อไม่ใช่ store */}
+          <input
+            placeholder="ชื่อร้านค้าของคุณ"
+            className={`md:col-span-2 bg-bgpage rounded-input px-4 py-2 outline-none ${role !== 'store' ? 'hidden' : ''}`}
+            value={shopName}
+            onChange={e => setShopName(e.target.value)}
+          />
+
           <button
             onClick={handleRegister}
             className="md:col-span-2 rounded-pill bg-primary text-white py-3 hover:bg-blue-700 transition-all duration-300"

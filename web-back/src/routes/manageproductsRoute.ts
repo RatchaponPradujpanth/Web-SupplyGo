@@ -23,104 +23,143 @@ manageproductsRoute.get(
             some: { shop_id: shopId },
           },
         },
-        select: {
-          product_id: true,
-          product_name: true,
-          product_description: true,
-          price: true,
-          status: true,
-          product_batches: {
-            select: {
-              batch_id: true,
-              batch_number: true,
-              manufactured_date: true,
-              expiry_date: true,
-              quantity: true,
-            },
-          },
+        include: {
           product_variants: {
-            select: {
-              variant_id: true,
-              sku: true,
-              price: true,
-              product_batches: {
-                select: {
-                  batch_id: true,
-                  batch_number: true,
-                  manufactured_date: true,
-                  expiry_date: true,
-                  quantity: true,
-                },
-              },
+            include: {
               variant_options: {
+                include: {
+                  option: true,
+                },
+              },
+              product_batches: true,
+            },
+          },
+          product_images: true,
+          product_owners: {
+            include: {
+              shops: {
                 select: {
-                  value: true,
-                  option: {
-                    select: { name: true },
-                  },
+                  shop_id: true,
+                  shop_name: true,
                 },
               },
             },
           },
+          product_batches: true,
           product_options: {
-            select: {
-              option_id: true,
-              name: true,
+            include: {
+              variant_options: true,
             },
           },
-          product_images: {
-            select: {
-              product_images_id: true,
-              image_url: true,
-              is_primary: true,
-              sort_order: true,
-            },
-          },
+          product_categories: true,
         },
       });
 
       const host = req.headers.host;
       const protocol = req.protocol;
+      const getFullUrl = (path?: string | null) => {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        return `${protocol}://${host}${path.startsWith("/") ? path : "/" + path}`;
+      };
 
-      const productsWithFullImageUrls = products.map((prod) => {
+      const formattedProducts = products.map((prod) => {
+        const productImages = prod.product_images.map((img) => ({
+          id: img.product_images_id,
+          image_url: getFullUrl(img.image_url),
+          is_primary: img.is_primary,
+          sort_order: img.sort_order,
+        }));
+
+        const shops = prod.product_owners.map((po) => ({
+          shop_id: po.shops.shop_id,
+          shop_name: po.shops.shop_name,
+        }));
+
         const primaryImage = prod.product_images.find((img) => img.is_primary);
+        const mainImage = primaryImage
+          ? getFullUrl(primaryImage.image_url)
+          : productImages.length > 0
+          ? productImages[0].image_url
+          : null;
+
+        const variants = prod.product_variants.map((variant) => {
+          const totalStock = variant.product_batches.reduce(
+            (sum, batch) => sum + (batch.quantity || 0),
+            0
+          );
+
+          return {
+            variant_id: variant.variant_id,
+            sku: variant.sku,
+            price: variant.price ? Number(variant.price) : null,
+            total_stock: totalStock,
+            variant_options: variant.variant_options.map((vo) => ({
+              variant_option_id: vo.variant_option_id,
+              option_name: vo.option.name,
+              value: vo.value,
+              option_id: vo.option_id,
+            })),
+            batches: variant.product_batches?.map((batch) => ({
+              batch_id: batch.batch_id,
+              batch_number: batch.batch_number,
+              manufactured_date: batch.manufactured_date?.toISOString() || null,
+              expiry_date: batch.expiry_date?.toISOString() || null,
+              quantity: batch.quantity,
+            })) || [],
+          };
+        });
+
+        const productOptions = prod.product_options.map((opt) => ({
+          option_id: opt.option_id,
+          name: opt.name,
+          product_id: opt.product_id,
+          variant_options: opt.variant_options.map((vo) => ({
+            variant_option_id: vo.variant_option_id,
+            value: vo.value,
+            option_name: opt.name,
+            option_id: opt.option_id,
+          })),
+        }));
+
+        const productBatches = prod.product_batches
+          .filter(batch => !batch.variant_id)
+          .map((batch) => ({
+            batch_id: batch.batch_id,
+            batch_number: batch.batch_number,
+            manufactured_date: batch.manufactured_date?.toISOString() || null,
+            expiry_date: batch.expiry_date?.toISOString() || null,
+            quantity: batch.quantity,
+          }));
+
+        const productTotalStock = productBatches.reduce(
+          (sum, batch) => sum + (batch.quantity || 0),
+          0
+        );
+
+        const variantPrices = prod.product_variants
+          .map((v) => (v.price ? Number(v.price) : null))
+          .filter((p): p is number => p !== null);
+        const minVariantPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : null;
 
         return {
-          ...prod,
-          // ✅ รูปหลักจาก product_images
-          image: primaryImage
-            ? `${protocol}://${host}${primaryImage.image_url}`
-            : null,
-
-          total_stock: prod.product_batches.reduce(
-            (sum: number, b: { quantity: number }) => sum + b.quantity,
-            0
-          ),
-          batches: prod.product_batches,
-
-          product_variants: prod.product_variants.map((variant) => ({
-            ...variant,
-            variant_options: variant.variant_options.map((vo) => ({
-              value: vo.value,
-              option_name: vo.option.name,
-            })),
-            total_stock: variant.product_batches.reduce(
-              (sum: number, b: { quantity: number }) => sum + b.quantity,
-              0
-            ),
-            batches: variant.product_batches,
-          })),
-
-          product_images: prod.product_images.map((img) => ({
-            ...img,
-            image_url: img.image_url
-              ? `${protocol}://${host}${img.image_url}`
-              : null,
-          })),
+          product_id: prod.product_id,
+          product_name: prod.product_name,
+          product_description: prod.product_description,
+          price: prod.price ? Number(prod.price) : minVariantPrice,
+          image: mainImage,
+          status: prod.status,
+          total_stock: productTotalStock,
+          product_images: productImages,
+          product_variants: variants,
+          product_options: productOptions,
+          product_batches: productBatches,
+          shops: shops,
+          category_name: prod.product_categories?.category_name || null,
         };
       });
 
-      res.status(200).json(productsWithFullImageUrls);
+      res.status(200).json(formattedProducts);
     } catch (error) {
       console.error("❌ Error loading manage products:", error);
       res.status(500).json({ message: "Internal server error" });

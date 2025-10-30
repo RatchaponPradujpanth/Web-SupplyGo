@@ -63,11 +63,7 @@ export const authstore = (
   }
 
   // ตรวจสอบ shop_id
-  if (!req.user.shop_id) {
-    console.log("❌ ไม่มี shop_id");
-    res.status(403).json({ message: "ไม่พบข้อมูลร้านค้า กรุณาสร้างร้านก่อน" });
-    return;
-  }
+  
 
   console.log("ผ่านการตรวจสอบ - Shop ID:", req.user.shop_id);
   next();
