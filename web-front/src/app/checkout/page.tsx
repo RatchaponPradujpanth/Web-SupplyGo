@@ -8,6 +8,18 @@ import { loadaddress } from '@/service/api/loadaddress';
 import type { Address } from '@/types/type';
 import { createOrder } from '@/service/api/createorder';
 import { checkStock, type InsufficientStockItem } from '@/service/checkStock';
+import { 
+  CreditCard, 
+  MapPin, 
+  Phone, 
+  AlertCircle, 
+  Package, 
+  Store, 
+  ArrowRight,
+  XCircle,
+  Loader2,
+  ShoppingCart
+} from 'lucide-react';
 
 export default function CheckoutPage() {
   const [summary, setSummary] = useState<{ cart_id: number; items: CheckoutItem[]; totalAmount: number } | null>(null);
@@ -97,20 +109,35 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error("❌ Error checking stock:", error);
-      // ถ้าเช็คสต็อกล้มเหลว ก็ยังให้ดำเนินการต่อได้
-      // แต่จะเช็คอีกครั้งตอน create order
     } finally {
       setCheckingStock(false);
     }
   };
 
-  if (loading) return <div className="p-6 text-gray-600">กำลังโหลด...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
+        <span className="text-gray-600">กำลังโหลด...</span>
+      </div>
+    );
+  }
 
   if (!summary || summary.items.length === 0)
-    return <div className="p-6 text-gray-500">ยังไม่มีสินค้าที่จะชำระเงิน</div>;
+    return (
+      <div className="p-6 flex flex-col items-center justify-center">
+        <ShoppingCart className="w-16 h-16 text-gray-300 mb-3" />
+        <p className="text-gray-500">ยังไม่มีสินค้าที่จะชำระเงิน</p>
+      </div>
+    );
 
   if (!selectedAddressData)
-    return <div className="p-6 text-gray-500">ไม่พบที่อยู่จัดส่ง</div>;
+    return (
+      <div className="p-6 flex flex-col items-center justify-center">
+        <MapPin className="w-16 h-16 text-gray-300 mb-3" />
+        <p className="text-gray-500">ไม่พบที่อยู่จัดส่ง</p>
+      </div>
+    );
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -200,13 +227,16 @@ export default function CheckoutPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">💳 สรุปการชำระเงิน</h1>
+      <div className="flex items-center gap-3 mb-4">
+        <CreditCard className="w-8 h-8 text-blue-600" />
+        <h1 className="text-2xl font-bold">สรุปการชำระเงิน</h1>
+      </div>
 
       {/* แสดง Loading ขณะเช็คสต็อก */}
       {checkingStock && (
         <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
           <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
             <span className="text-blue-700">กำลังตรวจสอบสต็อกสินค้า...</span>
           </div>
         </div>
@@ -216,7 +246,7 @@ export default function CheckoutPage() {
       {!checkingStock && insufficientStockItems.length > 0 && (
         <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">⚠️</span>
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-bold text-red-800 mb-2">สินค้าในสต็อกไม่เพียงพอ</h3>
               <p className="text-sm text-red-700 mb-3">
@@ -243,9 +273,10 @@ export default function CheckoutPage() {
               </ul>
               <button
                 onClick={() => router.push('/cart')}
-                className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition"
+                className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition flex items-center gap-2"
               >
-                กลับไปแก้ไขตะกร้าสินค้า
+                <ShoppingCart className="w-4 h-4" />
+                <span>กลับไปแก้ไขตะกร้าสินค้า</span>
               </button>
             </div>
           </div>
@@ -255,14 +286,15 @@ export default function CheckoutPage() {
       {/* แสดงที่อยู่ที่เลือก */}
       <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">📍</span>
+          <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h3 className="font-semibold text-gray-800 mb-1">ที่อยู่จัดส่ง</h3>
             <p className="text-gray-700">
               {selectedAddressData.firstname} {selectedAddressData.lastname}
             </p>
-            <p className="text-gray-600 text-sm">
-              📞 {selectedAddressData.phone_number}
+            <p className="text-gray-600 text-sm flex items-center gap-1 mt-1">
+              <Phone className="w-4 h-4" />
+              {selectedAddressData.phone_number}
             </p>
             <p className="text-gray-700 mt-1">
               {selectedAddressData.house_number} {selectedAddressData.street} {selectedAddressData.sub_district} {selectedAddressData.district} {selectedAddressData.province} {selectedAddressData.postal_code}
@@ -270,7 +302,7 @@ export default function CheckoutPage() {
           </div>
           <button
             onClick={() => router.push('/cart')}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
           >
             เปลี่ยน
           </button>
@@ -289,10 +321,16 @@ export default function CheckoutPage() {
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <p>สินค้า: <strong>{item.product_name}</strong></p>
-                  <p>ร้าน: {item.shop_name}</p>
-                  <p>จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}</p>
-                  <p>รวมรายการ: ฿{Number(item.total_price).toFixed(2)}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package className="w-5 h-5 text-gray-600" />
+                    <p className="font-semibold">{item.product_name}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <Store className="w-4 h-4" />
+                    <span>{item.shop_name}</span>
+                  </div>
+                  <p className="text-sm">จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}</p>
+                  <p className="text-sm font-semibold">รวมรายการ: ฿{Number(item.total_price).toFixed(2)}</p>
                   
                   {/* แสดง variant options ถ้ามี */}
                   {item.variant_options && item.variant_options.length > 0 && (
@@ -322,16 +360,17 @@ export default function CheckoutPage() {
                 {/* แสดงไอคอนเตือนถ้าสต็อกไม่พอ */}
                 {isStockInsufficient && (
                   <div className="ml-3">
-                    <span className="text-2xl">⚠️</span>
+                    <AlertCircle className="w-6 h-6 text-red-600" />
                   </div>
                 )}
               </div>
 
               {/* แสดงข้อความเตือนสำหรับสินค้าแต่ละรายการ */}
               {isStockInsufficient && insufficientInfo && (
-                <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded">
+                <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-800 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-800 font-medium">
-                    ⚠️ สต็อกไม่เพียงพอ! คุณต้องการ {insufficientInfo.requested_quantity} ชิ้น แต่มีเหลือเพียง {insufficientInfo.available_stock} ชิ้น
+                    สต็อกไม่เพียงพอ! คุณต้องการ {insufficientInfo.requested_quantity} ชิ้น แต่มีเหลือเพียง {insufficientInfo.available_stock} ชิ้น
                   </p>
                 </div>
               )}
@@ -357,20 +396,33 @@ export default function CheckoutPage() {
         <button
           onClick={handleCreateOrder}
           disabled={creatingOrder || checkingStock || insufficientStockItems.length > 0}
-          className={`px-6 py-2 rounded text-white transition ${
+          className={`px-6 py-2 rounded text-white transition inline-flex items-center gap-2 ${
             creatingOrder || checkingStock || insufficientStockItems.length > 0
               ? 'bg-gray-400 cursor-not-allowed' 
               : 'bg-green-600 hover:bg-green-700'
           }`}
         >
-          {creatingOrder 
-            ? 'กำลังสร้างคำสั่งซื้อ...' 
-            : checkingStock
-            ? 'กำลังตรวจสอบสต็อก...'
-            : insufficientStockItems.length > 0
-            ? '❌ ไม่สามารถสั่งซื้อได้ (สต็อกไม่พอ)'
-            : '➡ สร้างคำสั่งซื้อและไปหน้าชำระเงิน'
-          }
+          {creatingOrder ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>กำลังสร้างคำสั่งซื้อ...</span>
+            </>
+          ) : checkingStock ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>กำลังตรวจสอบสต็อก...</span>
+            </>
+          ) : insufficientStockItems.length > 0 ? (
+            <>
+              <XCircle className="w-5 h-5" />
+              <span>ไม่สามารถสั่งซื้อได้ (สต็อกไม่พอ)</span>
+            </>
+          ) : (
+            <>
+              <span>สร้างคำสั่งซื้อและไปหน้าชำระเงิน</span>
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>

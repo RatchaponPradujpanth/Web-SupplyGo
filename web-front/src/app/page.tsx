@@ -11,6 +11,27 @@ import ProductCard from '@/components/customer/ProductCard';
 import ProductDetail from '@/components/customer/ProductDetail';
 import Footer from '@/components/layout/Footer';
 import { fetchUserRole } from '@/service/api/fetchrole';
+import { 
+  Flame, 
+  Users, 
+  ShoppingCart, 
+  Package, 
+  User, 
+  Gift, 
+  ShoppingBag,
+  Zap,
+  Smartphone,
+  Shirt,
+  Home,
+  Sparkles,
+  Dumbbell,
+  Armchair,
+  Baby,
+  Wrench,
+  Box,
+  TrendingUp,
+  DollarSign
+} from 'lucide-react';
 
 export default function UserDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,16 +43,16 @@ export default function UserDashboardPage() {
   const router = useRouter();
   const categoryScrollRef = React.useRef<HTMLDivElement>(null);
 
-  // Mapping icon สำหรับ category (frontend)
-  const categoryIcons: Record<string, string> = {
-    Electronics: '🔌',
-    Fashion: '👕',
-    'Home & Kitchen': '🍳',
-    Beauty: '🧴',
-    Sports: '🏋️',
-    Furniture: '🛋️',
-    Baby: '🍼',
-    Tools: '🧰',
+  // Mapping icon สำหรับ category
+  const categoryIconsMap: Record<string, React.ReactNode> = {
+    Electronics: <Smartphone className="w-6 h-6" />,
+    Fashion: <Shirt className="w-6 h-6" />,
+    'Home & Kitchen': <Home className="w-6 h-6" />,
+    Beauty: <Sparkles className="w-6 h-6" />,
+    Sports: <Dumbbell className="w-6 h-6" />,
+    Furniture: <Armchair className="w-6 h-6" />,
+    Baby: <Baby className="w-6 h-6" />,
+    Tools: <Wrench className="w-6 h-6" />,
   };
 
   // ฟังก์ชัน format ราคา
@@ -170,27 +191,32 @@ export default function UserDashboardPage() {
         <section className="bg-gradient-to-r from-primary to-primary/80 rounded-card shadow-card p-8 md:p-12 mb-8 text-white">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex-1">
-              <h1 className="text-3xl md:text-4xl font-bold mb-3">สินค้าลดราคาวันนี้ 🔥</h1>
+              <div className="flex items-center gap-3 mb-3">
+                <Flame className="w-8 h-8 text-orange-300" />
+                <h1 className="text-3xl md:text-4xl font-bold">สินค้าลดราคาวันนี้</h1>
+              </div>
               <p className="text-lg md:text-xl opacity-90 mb-6">
                 ร่วมกลุ่มซื้อสินค้าเพื่อรับส่วนลดพิเศษ!
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => router.push('/groupbuying')}
-                  className="rounded-pill px-6 py-3 bg-secondary text-textmain font-semibold hover:bg-secondary/90 transition shadow-md"
+                  className="rounded-pill px-6 py-3 bg-secondary text-textmain font-semibold hover:bg-secondary/90 transition shadow-md flex items-center gap-2"
                 >
-                  🤝 เริ่มการซื้อแบบกลุ่ม
+                  <Users className="w-5 h-5" />
+                  <span>เริ่มการซื้อแบบกลุ่ม</span>
                 </button>
                 <button
                   onClick={() => requireLogin(() => router.push('/cart'))}
-                  className="rounded-pill px-6 py-3 bg-white text-primary font-semibold hover:bg-gray-50 transition shadow-md"
+                  className="rounded-pill px-6 py-3 bg-white text-primary font-semibold hover:bg-gray-50 transition shadow-md flex items-center gap-2"
                 >
-                  🛒 ดูตะกร้าสินค้า
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>ดูตะกร้าสินค้า</span>
                 </button>
               </div>
             </div>
-            <div className="hidden md:block text-8xl opacity-20">
-              🎁
+            <div className="hidden md:block opacity-20">
+              <Gift className="w-32 h-32" />
             </div>
           </div>
         </section>
@@ -201,7 +227,9 @@ export default function UserDashboardPage() {
             onClick={() => requireLogin(() => router.push('/order'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
-            <div className="text-4xl mb-2 group-hover:scale-110 transition">📦</div>
+            <div className="flex justify-center mb-2">
+              <Package className="w-10 h-10 text-primary group-hover:scale-110 transition" />
+            </div>
             <h3 className="font-semibold text-sm md:text-base">ประวัติการสั่งซื้อ</h3>
             <p className="text-xs text-textmuted mt-1">ติดตามคำสั่งซื้อ</p>
           </button>
@@ -210,7 +238,9 @@ export default function UserDashboardPage() {
             onClick={() => requireLogin(() => router.push('/profile'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
           >
-            <div className="text-4xl mb-2 group-hover:scale-110 transition">👤</div>
+            <div className="flex justify-center mb-2">
+              <User className="w-10 h-10 text-primary group-hover:scale-110 transition" />
+            </div>
             <h3 className="font-semibold text-sm md:text-base">โปรไฟล์</h3>
             <p className="text-xs text-textmuted mt-1">จัดการบัญชี</p>
           </button>
@@ -219,7 +249,9 @@ export default function UserDashboardPage() {
             onClick={() => router.push('/groupbuying')}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group col-span-2 md:col-span-1"
           >
-            <div className="text-4xl mb-2 group-hover:scale-110 transition">🤝</div>
+            <div className="flex justify-center mb-2">
+              <Users className="w-10 h-10 text-primary group-hover:scale-110 transition" />
+            </div>
             <h3 className="font-semibold text-sm md:text-base">ซื้อแบบกลุ่ม</h3>
             <p className="text-xs text-textmuted mt-1">ประหยัดด้วยกัน</p>
           </button>
@@ -243,8 +275,8 @@ export default function UserDashboardPage() {
                     onClick={() => handleCategoryClick(cat.category_name)}
                     className="bg-white rounded-card shadow-card p-4 flex flex-col items-center hover:shadow-md hover:scale-105 transition group"
                   >
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-2xl group-hover:bg-primary/20 transition">
-                      {categoryIcons[cat.category_name] || '📦'}
+                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition text-primary">
+                      {categoryIconsMap[cat.category_name] || <Box className="w-6 h-6" />}
                     </div>
                     <span className="mt-2 text-xs md:text-sm font-medium text-center line-clamp-2">
                       {cat.category_name}
@@ -259,7 +291,10 @@ export default function UserDashboardPage() {
               <section className="mb-10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold">สินค้าทั้งหมด 🛍️</h2>
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="w-6 h-6 text-primary" />
+                      <h2 className="text-2xl font-bold">สินค้าทั้งหมด</h2>
+                    </div>
                     <p className="text-textmuted text-sm mt-1">เลือกสรรสินค้าคุณภาพ</p>
                   </div>
                 </div>
@@ -279,29 +314,36 @@ export default function UserDashboardPage() {
             {/* Empty State */}
             {products.length === 0 && (
               <div className="bg-white rounded-card shadow-card p-12 text-center">
-                <div className="text-6xl mb-4">🛍️</div>
+                <div className="flex justify-center mb-4">
+                  <ShoppingBag className="w-24 h-24 text-gray-300" />
+                </div>
                 <h3 className="text-xl font-semibold mb-2">ไม่พบสินค้า</h3>
                 <p className="text-textmuted mb-6">กรุณากลับมาใหม่เร็วๆ นี้ เพื่อดูสินค้าราคาพิเศษ!</p>
                 <button
                   onClick={() => router.push('/groupbuying')}
-                  className="rounded-pill px-6 py-3 bg-primary text-white font-medium hover:bg-primary/90 transition"
+                  className="rounded-pill px-6 py-3 bg-primary text-white font-medium hover:bg-primary/90 transition inline-flex items-center gap-2"
                 >
-                  ดูการซื้อแบบกลุ่ม
+                  <Users className="w-5 h-5" />
+                  <span>ดูการซื้อแบบกลุ่ม</span>
                 </button>
               </div>
             )}
 
             {/* Special Banner */}
             <section className="mt-12 bg-gradient-to-r from-accent to-accent/80 rounded-card shadow-card p-8 text-white text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">💰 ประหยัดมากขึ้นด้วยการซื้อแบบกลุ่ม!</h2>
+              <div className="flex justify-center mb-3">
+                <DollarSign className="w-12 h-12" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">ประหยัดมากขึ้นด้วยการซื้อแบบกลุ่ม!</h2>
               <p className="text-lg mb-6 opacity-90">
                 รวมกลุ่มกับเพื่อนๆ และรับส่วนลดพิเศษ
               </p>
               <button
                 onClick={() => router.push('/groupbuying')}
-                className="rounded-pill px-8 py-3 bg-white text-accent font-semibold hover:bg-gray-50 transition shadow-md"
+                className="rounded-pill px-8 py-3 bg-white text-accent font-semibold hover:bg-gray-50 transition shadow-md inline-flex items-center gap-2"
               >
-                เรียนรู้เพิ่มเติม
+                <Zap className="w-5 h-5" />
+                <span>เรียนรู้เพิ่มเติม</span>
               </button>
             </section>
           </>

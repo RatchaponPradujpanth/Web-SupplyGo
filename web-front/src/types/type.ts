@@ -616,6 +616,7 @@ export interface GroupOrderResponse {
   price: number;
   expire_at: string;
   items_per_member: number;
+  tracking_number : number;
   product: {
     product_id: number;
     product_name: string;

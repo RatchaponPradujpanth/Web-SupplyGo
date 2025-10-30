@@ -12,7 +12,6 @@ manageGroupsRoute.get(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const shopId = req.user?.shop_id;
-      //console.log("👤 Shop ID:", shopId);
 
       if (!shopId) {
         console.log("❌ shop_id ไม่ถูกต้อง");
@@ -25,7 +24,7 @@ manageGroupsRoute.get(
         where: { shop_id: shopId },
       });
 
-      const storeBalance = storeWallet?.points || 0; // ถ้าไม่มี record ให้ default 0
+      const storeBalance = storeWallet?.points || 0;
 
       // ดึง group_buying ของร้านค้าที่ login อยู่
       const groups = await prisma.group_buying.findMany({
@@ -68,6 +67,23 @@ manageGroupsRoute.get(
                   email: true,
                 },
               },
+              // ดึง tracking_number จาก group_member_orders
+              member_orders: {
+                select: {
+                  group_member_order_id: true,
+                  tracking_number: true,
+                  status: true,
+                  group_order_id: true,
+                },
+              },
+            },
+          },
+          // ดึง group_orders เพื่อหา group_order_id
+          group_orders: {
+            select: {
+              group_order_id: true,
+              status: true,
+              created_at: true,
             },
           },
         },
@@ -81,7 +97,7 @@ manageGroupsRoute.get(
 
       const result = groups.map((g) => {
         const primaryImageRelative =
-          g.product.product_images.find((img) => img.is_primary)?.image_url
+          g.product.product_images.find((img) => img.is_primary)?.image_url;
         const primaryImage = primaryImageRelative
           ? `${protocol}://${host}${primaryImageRelative}`
           : null;
@@ -110,17 +126,26 @@ manageGroupsRoute.get(
           points_per_group: g.points_per_group,
           points_per_member: g.points_per_member,
           member_count: g.members.length,
-          members: g.members.map((m) => ({
-            id: m.group_members_id,
-            user_id: m.user.user_id,
-            username: m.user.username,
-            email: m.user.email,
-            joined_at: m.joined_at,
-          })),
+          members: g.members.map((m) => {
+            // หา tracking_number จาก member_orders
+            const memberOrder = m.member_orders[0]; // เอาตัวแรก (ถ้ามีหลายตัว)
+            
+            return {
+              id: m.group_members_id,
+              user_id: m.user.user_id,
+              username: m.user.username,
+              email: m.user.email,
+              joined_at: m.joined_at,
+              tracking_number: memberOrder?.tracking_number || null,
+              order_status: memberOrder?.status || null,
+              group_member_order_id: memberOrder?.group_member_order_id || null,
+            };
+          }),
         };
       });
 
-      console.log(groups)
+      console.log(result);
+      
       // ส่งผลลัพธ์พร้อม point ของร้าน
       res.status(200).json({
         store_balance: storeBalance,
@@ -133,6 +158,5 @@ manageGroupsRoute.get(
     }
   }
 );
-
 
 export default manageGroupsRoute;

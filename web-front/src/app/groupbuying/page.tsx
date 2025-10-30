@@ -11,7 +11,7 @@ import type { GroupBuyingResult, Address } from '@/types/type';
 import TopupFormModal from '@/components/customer/topupFrom';
 import AddressModal from '@/components/groupbuying/AddressModal';
 import TopUpAmountModal from '@/components/groupbuying/TopUpAmountModal';
-import GroupBuyingCard from '@/components/groupbuying/ GroupBuyingCard';
+import GroupBuyingCard from '@/components/groupbuying/groupbuyingCard';
 
 type FilterTab = 'all' | 'open' | 'closed' | 'my-groups';
 
