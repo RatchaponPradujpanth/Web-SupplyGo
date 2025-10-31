@@ -8,6 +8,15 @@ import {
   ShopOrderResponse,
 } from "@/service/api/shop/ordershophistory";
 
+import {
+  MapPin,
+  Package,
+  ClipboardCopy,
+  AlertCircle,
+  CheckCircle,
+  CreditCard,
+} from "lucide-react";
+
 interface NormalOrderUI {
   order_shop_id: number;
   order_id: number;
@@ -48,7 +57,7 @@ interface NormalOrderUI {
   }[];
 }
 
-/* TrackingInput component: shows saved tracking or an input to add one */
+/* TrackingInput component */
 function TrackingInput({
   orderShopId,
   initialTracking,
@@ -63,7 +72,6 @@ function TrackingInput({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Sync when parent updates initialTracking
   useEffect(() => {
     setTracking(initialTracking ?? "");
     setSaved(!!initialTracking);
@@ -108,8 +116,9 @@ function TrackingInput({
         </span>
         <button
           onClick={handleCopy}
-          className="bg-gray-200 text-gray-800 px-2 py-1 rounded hover:bg-gray-300 text-xs"
+          className="bg-gray-200 text-gray-800 px-2 py-1 rounded hover:bg-gray-300 text-xs flex items-center gap-1"
         >
+          <ClipboardCopy className="w-3.5 h-3.5" />
           Copy
         </button>
         {message && <span className="text-xs text-gray-500">{message}</span>}
@@ -129,9 +138,17 @@ function TrackingInput({
       <button
         onClick={handleSave}
         disabled={saving}
-        className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50"
+        className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
       >
-        {saving ? "กำลังบันทึก..." : "บันทึก"}
+        {saving ? (
+          <>
+            <AlertCircle className="w-4 h-4" /> กำลังบันทึก...
+          </>
+        ) : (
+          <>
+            <CheckCircle className="w-4 h-4" /> บันทึก
+          </>
+        )}
       </button>
       {message && <p className="text-sm text-gray-600">{message}</p>}
     </div>
@@ -145,7 +162,6 @@ export default function ShopOrderHistory() {
   const [trackingFilter, setTrackingFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // แปลงข้อมูลจาก API ให้ตรงกับ UI
   const transformNormalOrders = (res: ShopOrderResponse): NormalOrderUI[] => {
     return (res.normalOrders || []).map((order) => ({
       order_shop_id: order.order_shop_id,
@@ -212,18 +228,6 @@ export default function ShopOrderHistory() {
         initialStatus[os.order_shop_id] = os.status;
       });
       setStatusInputs(initialStatus);
-
-      // 🧾 log ดูข้อมูลทั้งหมด
-      console.log("📦 Orders received:", normalOrders);
-      normalOrders.forEach((o) =>
-        console.log("➡️", {
-          order_shop_id: o.order_shop_id,
-          tracking_number: o.tracking_number,
-          status: o.status,
-          subtotal: o.subtotal,
-          user: o.user_info?.username,
-        })
-      );
     } catch (err) {
       console.error("❌ โหลดข้อมูลล้มเหลว:", err);
       setOrders([]);
@@ -253,8 +257,7 @@ export default function ShopOrderHistory() {
       await fetchData();
     } catch (error) {
       console.error("❌ อัปเดตสถานะล้มเหลว:", error);
-      const errorMessage = "เกิดข้อผิดพลาดในการอัปเดตสถานะ";
-      alert(`❌ ${errorMessage}`);
+      alert("❌ เกิดข้อผิดพลาดในการอัปเดตสถานะ");
     } finally {
       setSavingIds((prev) => prev.filter((id) => id !== String(orderShopId)));
     }
@@ -266,7 +269,6 @@ export default function ShopOrderHistory() {
     <div className="w-full space-y-6 px-4">
       <h1 className="text-3xl font-bold mb-6">ประวัติคำสั่งซื้อร้านค้า</h1>
 
-      {/* Normal Orders */}
       {orders.length === 0 ? (
         <div className="text-center py-8 text-gray-500">ไม่มีคำสั่งซื้อทั่วไป</div>
       ) : (
@@ -275,7 +277,6 @@ export default function ShopOrderHistory() {
             key={order.order_shop_id}
             className="bg-white border border-gray-200 rounded-xl p-6 mb-4 shadow-sm hover:shadow-md transition"
           >
-            {/* Header */}
             <div className="flex justify-between items-start mb-4 pb-4 border-b">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">
@@ -293,8 +294,8 @@ export default function ShopOrderHistory() {
                   </p>
                 )}
                 {order.transaction_id && (
-                  <p className="text-xs text-gray-400 font-mono">
-                    Transaction: {order.transaction_id}
+                  <p className="text-xs text-gray-400 font-mono flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5" /> Transaction: {order.transaction_id}
                   </p>
                 )}
               </div>
@@ -318,12 +319,14 @@ export default function ShopOrderHistory() {
               </div>
             </div>
 
-            {/* Address */}
             {order.address && (
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold text-sm text-gray-700 mb-1">📍 ที่อยู่จัดส่ง:</h4>
+                <h4 className="font-semibold text-sm text-gray-700 mb-1 flex items-center gap-1">
+                  <MapPin className="w-4 h-4 text-gray-600" /> ที่อยู่จัดส่ง:
+                </h4>
                 <p className="text-sm text-gray-600">
-                  {order.address.firstname} {order.address.lastname} | {order.address.phone_number}
+                  {order.address.firstname} {order.address.lastname} |{" "}
+                  {order.address.phone_number}
                 </p>
                 <p className="text-sm text-gray-600">
                   {order.address.house_number} {order.address.street},{" "}
@@ -338,9 +341,10 @@ export default function ShopOrderHistory() {
               </div>
             )}
 
-            {/* Items */}
             <div className="mb-4">
-              <h4 className="font-semibold text-sm text-gray-700 mb-2">📦 รายการสินค้า:</h4>
+              <h4 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-1">
+                <Package className="w-4 h-4 text-gray-600" /> รายการสินค้า:
+              </h4>
               <div className="space-y-2">
                 {order.items.map((item) => (
                   <div
@@ -376,25 +380,22 @@ export default function ShopOrderHistory() {
               </div>
             </div>
 
-            {/* Tracking Number (editable when not present) */}
             <div className="mt-2">
               <TrackingInput
                 orderShopId={order.order_shop_id}
                 initialTracking={order.tracking_number || null}
-                onSaved={(newTracking) => {
-                  // อัปเดต state ของ parent ให้แสดงเลขพัสดุที่บันทึกแล้ว
+                onSaved={(newTracking) =>
                   setOrders((prev) =>
                     prev.map((o) =>
                       o.order_shop_id === order.order_shop_id
                         ? { ...o, tracking_number: newTracking }
                         : o
                     )
-                  );
-                }}
+                  )
+                }
               />
             </div>
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t mt-4">
               <select
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"

@@ -4,6 +4,7 @@ import { managegroup } from "@/service/api/groupsharing/managegroup";
 import { confirmGroupOrder } from "@/service/api/groupsharing/confirmgrouporder";
 import { cancelgroup } from "@/service/api/groupsharing/cancelgroup";
 import type { GroupOrderResponse } from "@/types/type";
+import { Users, Loader2, LogOut } from "lucide-react";
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState<GroupOrderResponse[]>([]);
@@ -40,7 +41,7 @@ export default function ManageGroups() {
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   };
 
@@ -55,16 +56,23 @@ export default function ManageGroups() {
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   };
 
-  if (loading) return <p className="text-center py-8">กำลังโหลด...</p>;
+  if (loading)
+    return (
+      <p className="text-center py-8 flex items-center justify-center gap-2 text-gray-600">
+        <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+        กำลังโหลด...
+      </p>
+    );
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-bold text-blue-700 text-center">
-        จัดการ Group Orders 👥
+      <h2 className="text-2xl font-bold text-blue-700 text-center flex items-center justify-center gap-2">
+        <Users className="w-6 h-6 text-blue-600" />
+        จัดการ Group Orders
       </h2>
 
       {groups.length === 0 ? (
@@ -81,16 +89,20 @@ export default function ManageGroups() {
               className="border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition-shadow"
             >
               <div className="flex items-center space-x-4">
-
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg text-gray-800">
                     {g.group_name || "ไม่มีชื่อกลุ่ม"}
                   </h3>
-                  <p className="text-sm text-gray-600">{g.product_name || "ไม่มีข้อมูลสินค้า"}</p>
+                  <p className="text-sm text-gray-600">
+                    {g.product_name || "ไม่มีข้อมูลสินค้า"}
+                  </p>
                   <p className="text-sm font-medium text-blue-600">฿{g.price}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    <span className="font-medium">สมาชิก:</span> {activeMembers.length}/{g.required_members}
-                    {isFull && <span className="ml-2 text-green-600">✓ ครบแล้ว</span>}
+                    <span className="font-medium">สมาชิก:</span>{" "}
+                    {activeMembers.length}/{g.required_members}
+                    {isFull && (
+                      <span className="ml-2 text-green-600">✓ ครบแล้ว</span>
+                    )}
                   </p>
                   <p className="text-xs mt-1">
                     <span className="text-gray-500">สถานะ Order:</span>{" "}
@@ -110,16 +122,22 @@ export default function ManageGroups() {
                         : g.status}
                     </span>
                   </p>
-                  {g.description && <p className="text-xs text-gray-400 mt-1 italic">{g.description}</p>}
+                  {g.description && (
+                    <p className="text-xs text-gray-400 mt-1 italic">
+                      {g.description}
+                    </p>
+                  )}
                 </div>
 
                 <div className="text-right">
                   <p className="text-xs text-gray-500">ยอดรวม</p>
-                  <p className="text-lg font-bold text-blue-700">฿{parseFloat(g.total_items.toString()).toFixed(2)}</p>
+                  <p className="text-lg font-bold text-blue-700">
+                    ฿{parseFloat(g.total_items.toString()).toFixed(2)}
+                  </p>
                 </div>
               </div>
 
-              {/* สมาชิกที่อยู่ในกลุ่ม */}
+              {/* สมาชิกในกลุ่ม */}
               {activeMembers.length > 0 ? (
                 <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
                   <p className="font-medium text-sm text-gray-700 mb-2 flex items-center gap-2">
@@ -137,7 +155,9 @@ export default function ManageGroups() {
                         </span>
                         <div className="flex-1">
                           <span className="font-medium block">{m.username}</span>
-                          <span className="text-gray-400 text-xs">{m.email}</span>
+                          <span className="text-gray-400 text-xs">
+                            {m.email}
+                          </span>
                         </div>
                         <span className="text-gray-400 text-xs">
                           {new Date(m.joined_at).toLocaleDateString("th-TH", {
@@ -159,18 +179,26 @@ export default function ManageGroups() {
               {/* สมาชิกที่ออกไปแล้ว */}
               {members.some((m: any) => m.left_at) && (
                 <details className="mt-3">
-                  <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
-                    📤 สมาชิกที่ออกไปแล้ว ({members.filter((m: any) => m.left_at).length})
+                  <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors flex items-center gap-1">
+                    <LogOut className="w-4 h-4 text-gray-400" />
+                    สมาชิกที่ออกไปแล้ว (
+                    {members.filter((m: any) => m.left_at).length})
                   </summary>
                   <ul className="mt-2 space-y-1 pl-4 bg-gray-50 p-2 rounded">
                     {members
                       .filter((m: any) => m.left_at)
                       .map((m: any) => (
-                        <li key={m.id} className="text-xs text-gray-400 flex items-center gap-2">
+                        <li
+                          key={m.id}
+                          className="text-xs text-gray-400 flex items-center gap-2"
+                        >
                           <span className="w-1.5 h-1.5 bg-gray-300 rounded-full"></span>
                           <span>{m.username}</span>
                           <span className="text-gray-300">•</span>
-                          <span>ออกเมื่อ {new Date(m.left_at!).toLocaleDateString("th-TH")}</span>
+                          <span>
+                            ออกเมื่อ{" "}
+                            {new Date(m.left_at!).toLocaleDateString("th-TH")}
+                          </span>
                         </li>
                       ))}
                   </ul>
@@ -187,9 +215,13 @@ export default function ManageGroups() {
                         ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white"
                     }`}
-                    disabled={g.status === "confirmed" || g.status === "cancelled"}
+                    disabled={
+                      g.status === "confirmed" || g.status === "cancelled"
+                    }
                   >
-                    {g.status === "confirmed" ? "สร้างออเดอร์แล้ว" : "สร้างออเดอร์"}
+                    {g.status === "confirmed"
+                      ? "สร้างออเดอร์แล้ว"
+                      : "สร้างออเดอร์"}
                   </button>
                 ) : (
                   <span className="flex-1 text-sm text-gray-500 flex items-center justify-center">
@@ -204,7 +236,9 @@ export default function ManageGroups() {
                       ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                       : "bg-red-600 hover:bg-red-700 text-white"
                   }`}
-                  disabled={g.status === "confirmed" || g.status === "cancelled"}
+                  disabled={
+                    g.status === "confirmed" || g.status === "cancelled"
+                  }
                 >
                   ยกเลิก
                 </button>
@@ -212,7 +246,10 @@ export default function ManageGroups() {
 
               {/* ข้อมูลเพิ่มเติม */}
               <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                <span>สร้างเมื่อ: {new Date(g.created_at).toLocaleDateString("th-TH")}</span>
+                <span>
+                  สร้างเมื่อ:{" "}
+                  {new Date(g.created_at).toLocaleDateString("th-TH")}
+                </span>
                 <span>Group ID: #{g.group_buying_id}</span>
               </div>
             </div>

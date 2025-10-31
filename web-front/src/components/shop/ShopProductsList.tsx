@@ -5,6 +5,13 @@ import Image from "next/image";
 import { loadShopProducts } from "@/service/api/loadproduct";
 import { Product } from "@/types/type";
 import { updateStatus } from "@/service/api/shop/updatestatus";
+import {
+  Clock,
+  ShoppingCart,
+  Store,
+  Receipt,
+  Package,
+} from "lucide-react";
 
 export default function ShopProductsList() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -34,9 +41,20 @@ export default function ShopProductsList() {
   }, []);
 
   if (loading)
-    return <div className="p-6 text-center">⏳ กำลังโหลดสินค้า...</div>;
+    return (
+      <div className="p-6 text-center flex justify-center items-center gap-2">
+        <Clock className="w-5 h-5 inline-block text-gray-500" />
+        กำลังโหลดสินค้า...
+      </div>
+    );
+
   if (products.length === 0)
-    return <div className="p-6 text-center">🛒 ยังไม่มีสินค้าในร้านของคุณ</div>;
+    return (
+      <div className="p-6 text-center flex justify-center items-center gap-2">
+        <ShoppingCart className="w-5 h-5 inline-block text-gray-500" />
+        ยังไม่มีสินค้าในร้านของคุณ
+      </div>
+    );
 
   return (
     <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -81,7 +99,10 @@ export default function ShopProductsList() {
               const maxPrice = Math.max(...prices);
               return (
                 <p className="text-green-600 font-bold text-lg mb-2">
-                  ฿{minPrice === maxPrice ? minPrice : `${minPrice} - ${maxPrice}`}
+                  ฿
+                  {minPrice === maxPrice
+                    ? minPrice
+                    : `${minPrice} - ${maxPrice}`}
                 </p>
               );
             })()
@@ -139,10 +160,17 @@ export default function ShopProductsList() {
               <p className="font-semibold text-gray-800 mb-1">ข้อมูล Batch:</p>
               {product.product_batches.map((batch, index) => (
                 <div key={index}>
-                  <p>🧾 Batch: {batch.batch_number ?? "-"}</p>
-                  <p>📦 จำนวน: {batch.quantity ?? 0}</p>
-                  <p>
-                    ⏰ หมดอายุ:{" "}
+                  <p className="flex items-center gap-1">
+                    <Receipt className="w-4 h-4 inline-block text-gray-500" />
+                    Batch: {batch.batch_number ?? "-"}
+                  </p>
+                  <p className="flex items-center gap-1">
+                    <Package className="w-4 h-4 inline-block text-gray-500" />
+                    จำนวน: {batch.quantity ?? 0}
+                  </p>
+                  <p className="flex items-center gap-1">
+                    <Clock className="w-4 h-4 inline-block text-gray-500" />
+                    หมดอายุ:{" "}
                     {batch.expiry_date
                       ? new Date(batch.expiry_date).toLocaleDateString("th-TH")
                       : "-"}
@@ -154,8 +182,9 @@ export default function ShopProductsList() {
 
           {/* ร้าน */}
           {product.shop && product.shop.length > 0 && (
-            <p className="mt-3 text-sm text-gray-500">
-              🏪 ร้าน: {product.shop[0].shop_name}
+            <p className="mt-3 text-sm text-gray-500 flex items-center gap-1">
+              <Store className="w-4 h-4 inline-block text-gray-500" />
+              ร้าน: {product.shop[0].shop_name}
             </p>
           )}
 
@@ -174,7 +203,8 @@ export default function ShopProductsList() {
             <button
               className="ml-2 text-sm px-2 py-1 border rounded hover:bg-gray-100"
               onClick={async () => {
-                const newStatus = product.status === "active" ? "inactive" : "active";
+                const newStatus =
+                  product.status === "active" ? "inactive" : "active";
                 try {
                   await updateStatus(product.product_id, newStatus);
                   setProducts((prev) =>

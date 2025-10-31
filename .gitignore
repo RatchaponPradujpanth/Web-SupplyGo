@@ -25,7 +25,6 @@ out/
 .vercel
 next.config.ts
 
-
 # Prisma / backend
 generated/
 migrations/
@@ -46,3 +45,4 @@ web-back/prisma/check-and-fix-images.ts
 # IDEs
 .vscode/
 .idea/
+

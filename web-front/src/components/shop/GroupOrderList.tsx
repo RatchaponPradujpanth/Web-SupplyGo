@@ -4,6 +4,18 @@ import { managegroup } from "@/service/api/groupsharing/managegroup";
 import { confirmGroupOrder } from "@/service/api/groupsharing/confirmgrouporder";
 import { cancelgroup } from "@/service/api/groupsharing/cancelgroup";
 import type { GroupOrderResponse } from "@/types/type";
+import {
+  Package,
+  Users,
+  User,
+  LogOut,
+  Hourglass,
+  Check,
+  X,
+  ClipboardCopy,
+  Edit3,
+  AlertTriangle,
+} from "lucide-react";
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState<GroupOrderResponse[]>([]);
@@ -40,7 +52,7 @@ export default function ManageGroups() {
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   };
 
@@ -55,7 +67,7 @@ export default function ManageGroups() {
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   };
 
@@ -85,7 +97,7 @@ export default function ManageGroups() {
         {groups.length === 0 ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="text-6xl mb-4">📦</div>
+              <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-xl text-gray-600">ยังไม่มีกลุ่มซื้อ</p>
             </div>
           </div>
@@ -155,7 +167,8 @@ export default function ManageGroups() {
                         </div>
                         {isFull && (
                           <div className="text-xs text-green-600 font-medium mt-1">
-                            ✓ ครบแล้ว
+                            <Check className="inline w-4 h-4 mr-1" />
+                            ครบแล้ว
                           </div>
                         )}
                       </div>
@@ -172,7 +185,7 @@ export default function ManageGroups() {
                     {/* Product Info */}
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                       <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                        <span className="text-xl">📦</span>
+                        <Package className="w-5 h-5 text-blue-600" />
                         สินค้าในกลุ่ม
                       </h3>
                       <div>
@@ -190,7 +203,7 @@ export default function ManageGroups() {
                     {/* Active Members */}
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="text-xl">👥</span>
+                        <Users className="w-5 h-5 text-blue-600" />
                         รายชื่อสมาชิก ({activeMembers.length})
                       </h3>
                       {activeMembers.length > 0 ? (
@@ -226,7 +239,6 @@ export default function ManageGroups() {
                                   </div>
                                 </div>
 
-                                {/* แสดงเลขพัสดุหรือช่องกรอก */}
                                 {g.status === "confirmed" && (
                                   <TrackingInput
                                     groupMemberId={m.id}
@@ -234,14 +246,22 @@ export default function ManageGroups() {
                                     onSave={(newTracking) => {
                                       setGroups((prev) =>
                                         prev.map((group) => {
-                                          if (group.group_buying_id !== g.group_buying_id)
+                                          if (
+                                            group.group_buying_id !==
+                                            g.group_buying_id
+                                          )
                                             return group;
                                           return {
                                             ...group,
-                                            members: group.members?.map((member) =>
-                                              member.group_members_id === m.id
-                                                ? { ...member, tracking_number: newTracking }
-                                                : member
+                                            members: group.members?.map(
+                                              (member) =>
+                                                member.group_members_id === m.id
+                                                  ? {
+                                                      ...member,
+                                                      tracking_number:
+                                                        newTracking,
+                                                    }
+                                                  : member
                                             ),
                                           };
                                         })
@@ -255,7 +275,7 @@ export default function ManageGroups() {
                         </div>
                       ) : (
                         <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                          <div className="text-4xl mb-2">👤</div>
+                          <User className="w-10 h-10 mx-auto mb-2 text-gray-400" />
                           <p>ยังไม่มีสมาชิก</p>
                         </div>
                       )}
@@ -265,7 +285,7 @@ export default function ManageGroups() {
                     {leftMembers.length > 0 && (
                       <details className="border border-gray-200 rounded-lg">
                         <summary className="cursor-pointer px-4 py-3 hover:bg-gray-50 transition-colors font-medium text-gray-700 flex items-center gap-2">
-                          <span className="text-lg">📤</span>
+                          <LogOut className="w-5 h-5 text-gray-500" />
                           สมาชิกที่ออกไปแล้ว ({leftMembers.length})
                         </summary>
                         <div className="px-4 pb-4 space-y-2">
@@ -305,13 +325,19 @@ export default function ManageGroups() {
                               : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-sm hover:shadow"
                           }`}
                         >
-                          {g.status === "confirmed"
-                            ? "✓ สร้างออเดอร์แล้ว"
-                            : "สร้างออเดอร์"}
+                          {g.status === "confirmed" ? (
+                            <>
+                              <Check className="inline w-4 h-4 mr-1" />
+                              สร้างออเดอร์แล้ว
+                            </>
+                          ) : (
+                            "สร้างออเดอร์"
+                          )}
                         </button>
                       ) : (
                         <div className="flex-1 py-3 text-center text-gray-500 bg-gray-50 rounded-lg">
-                          ⏳ รอสมาชิกให้ครบ
+                          <Hourglass className="inline w-4 h-4 mr-1" />
+                          รอสมาชิกให้ครบ
                         </div>
                       )}
 
@@ -326,11 +352,16 @@ export default function ManageGroups() {
                             : "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-sm hover:shadow"
                         }`}
                       >
-                        {g.status === "cancelled" ? "✗ ยกเลิกแล้ว" : "ยกเลิก"}
+                        {g.status === "cancelled" ? (
+                          <>
+                            <X className="inline w-4 h-4 mr-1" /> ยกเลิกแล้ว
+                          </>
+                        ) : (
+                          "ยกเลิก"
+                        )}
                       </button>
                     </div>
 
-                    {/* Footer */}
                     <div className="pt-4 border-t border-gray-200">
                       <p className="text-sm text-gray-500">
                         สร้างเมื่อ:{" "}
@@ -376,9 +407,6 @@ function TrackingInput({
     }
     try {
       setSaving(true);
-      // TODO: เรียก API อัพเดทเลขพัสดุ
-      // await updateTrackingNumber(groupMemberId, tracking);
-      
       setIsEditing(false);
       setMessage("✅ บันทึกสำเร็จ");
       if (onSave) onSave(tracking);
@@ -397,26 +425,26 @@ function TrackingInput({
     setTimeout(() => setMessage(""), 2000);
   };
 
-  // ถ้ามีเลขพัสดุแล้วและไม่ได้แก้ไข - แสดงเลขพัสดุ
   if (!isEditing && tracking) {
     return (
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
           <span className="text-sm text-gray-700">
-            <span className="text-green-600 font-medium">✓</span> เลขพัสดุ:{" "}
+            <Check className="inline w-4 h-4 text-green-600 mr-1" />
+            เลขพัสดุ:{" "}
             <span className="font-mono font-semibold">{tracking}</span>
           </span>
           <button
             onClick={handleCopy}
-            className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-50 text-xs font-medium transition-colors"
+            className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-50 text-xs font-medium transition-colors flex items-center gap-1"
           >
-            Copy
+            <ClipboardCopy className="w-3 h-3" /> Copy
           </button>
           <button
             onClick={() => setIsEditing(true)}
-            className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-xs font-medium transition-colors"
+            className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-xs font-medium transition-colors flex items-center gap-1"
           >
-            แก้ไข
+            <Edit3 className="w-3 h-3" /> แก้ไข
           </button>
         </div>
         {message && (
@@ -426,7 +454,6 @@ function TrackingInput({
     );
   }
 
-  // ถ้ายังไม่มีเลขพัสดุหรือกำลังแก้ไข - แสดงช่องกรอก
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
       <input

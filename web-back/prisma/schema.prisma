@@ -24,6 +24,7 @@ model address {
   users        users?                   @relation(fields: [user_id], references: [user_id])
   orders       order[]                  @relation("OrderToAddress")
   group_member_addresses group_member_addresses[]
+  shops        shops[] 
 }
 
 model cart {
@@ -208,19 +209,22 @@ model shops {
   shop_id           Int                      @id @default(autoincrement())
   shop_name         String?                  @unique
   user_id           Int
-  address           String?
+  address_id        Int?                     // FK ไป address table
   stripe_account_id String?
 
+  // Relations
+  user              users                    @relation(fields: [user_id], references: [user_id])
+  address           address?                 @relation(fields: [address_id], references: [address_id])
+  
   cart_items        cart_items[]
   group_buyings     group_buying[]
   order_shops       order_shops[]
   product_owners    product_owners[]
   wallets           store_wallets?
-
-  user              users                    @relation(fields: [user_id], references: [user_id])
   user_point_txs    user_point_transactions[]
   store_withdrawals store_withdrawals[]
 }
+
 
 model users {
   user_id            Int                      @id @default(autoincrement())

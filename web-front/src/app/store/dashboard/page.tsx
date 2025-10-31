@@ -17,14 +17,28 @@ import ManageGroups from "@/components/shop/ManageGroups";
 import { fetchUserRole } from '@/service/api/fetchrole';
 import { loadUsername } from "@/service/api/loadusername";
 import { loadstorename } from "@/service/api/shop/loadstore";
+import { CalendarDays } from "lucide-react";
 
-
+// ✅ import icons
+import {
+  Package,
+  Store,
+  User,
+  CheckCircle,
+  LogOut,
+  PlusCircle,
+  ArrowRight,
+  BarChart,
+  Wallet,
+  Users,
+  Layers,
+} from "lucide-react";
 
 export default function StoreDashboardPage() {
   const [username, setUsername] = useState("");
   const [storeName, setStoreName] = useState("");
   const [shopId, setShopId] = useState<number | null>(null);
-  const [points, setPoints] = useState(0); 
+  const [points, setPoints] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [stripeConnected, setStripeConnected] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -69,9 +83,9 @@ export default function StoreDashboardPage() {
       setUsername(name);
 
       const store = await loadstorename(token);
-setStoreName(store.shop_name || "");  
-    setShopId(store.shop_id);
-      setPoints(store.points); 
+      setStoreName(store.shop_name || "");
+      setShopId(store.shop_id);
+      setPoints(store.points);
       setStripeConnected(Boolean(store.stripe_account_id));
     };
 
@@ -114,56 +128,54 @@ setStoreName(store.shop_name || "");
               className="w-full text-left block px-3 py-2 rounded-pill shadow transition flex justify-between items-center hover:bg-primary/10 hover:text-primary"
             >
               <span className="font-medium">ทั่วไป</span>
-              <span
-                className={`transform transition-transform duration-200 ${
+              <ArrowRight
+                className={`w-4 h-4 transform transition-transform duration-200 ${
                   generalOpen ? "rotate-90" : ""
                 }`}
-              >
-                ▶
-              </span>
+              />
             </button>
-            
+
             {generalOpen && (
               <div className="pl-4 space-y-2">
                 <button
                   onClick={() => setCurrentView("dashboard")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "dashboard"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  หน้าหลัก
+                  <BarChart className="w-4 h-4" /> หน้าหลัก
                 </button>
                 <button
                   onClick={() => setCurrentView("product")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "product"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  คลังสินค้า
+                  <Package className="w-4 h-4" /> คลังสินค้า
                 </button>
                 <button
                   onClick={() => setCurrentView("orders")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "orders"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  คำสั่งซื้อ
+                  <CheckCircle className="w-4 h-4" /> คำสั่งซื้อ
                 </button>
                 <button
                   onClick={() => setCurrentView("add-product")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "add-product"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  เพิ่มสินค้า
+                  <PlusCircle className="w-4 h-4" /> เพิ่มสินค้า
                 </button>
               </div>
             )}
@@ -176,56 +188,54 @@ setStoreName(store.shop_name || "");
               className="w-full text-left block px-3 py-2 rounded-pill shadow transition flex justify-between items-center hover:bg-primary/10 hover:text-primary"
             >
               <span className="font-medium">Group Buying</span>
-              <span
-                className={`transform transition-transform duration-200 ${
+              <ArrowRight
+                className={`w-4 h-4 transform transition-transform duration-200 ${
                   groupOpen ? "rotate-90" : ""
                 }`}
-              >
-                ▶
-              </span>
+              />
             </button>
-            
+
             {groupOpen && (
               <div className="pl-4 space-y-2">
                 <button
                   onClick={() => setCurrentView("orders-group")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "orders-group"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  ออเดอร์กรุ๊ป
+                  <Layers className="w-4 h-4" /> ออเดอร์กรุ๊ป
                 </button>
                 <button
                   onClick={() => setCurrentView("create-group")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "create-group"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  สร้างกรุ๊ป
+                  <PlusCircle className="w-4 h-4" /> สร้างกรุ๊ป
                 </button>
                 <button
                   onClick={() => setCurrentView("my-group")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "my-group"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  กรุ๊ปของฉัน
+                  <Users className="w-4 h-4" /> กรุ๊ปของฉัน
                 </button>
                 <button
                   onClick={() => setCurrentView("withdraw")}
-                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition flex items-center gap-2 ${
                     currentView === "withdraw"
                       ? "bg-primary text-white"
                       : "hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
-                  ถอน point
+                  <Wallet className="w-4 h-4" /> ถอน point
                 </button>
               </div>
             )}
@@ -234,13 +244,12 @@ setStoreName(store.shop_name || "");
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-red-600 hover:text-white transition mt-6"
+            className="w-full text-left block px-3 py-2 rounded-pill hover:bg-red-600 hover:text-white transition mt-6 flex items-center gap-2"
           >
-            🚪 Logout
+            <LogOut className="w-4 h-4" /> Logout
           </button>
         </nav>
       </aside>
-
 
       {/* Main Content */}
       <section
@@ -250,27 +259,29 @@ setStoreName(store.shop_name || "");
           <div className="w-full space-y-6">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h1 className="text-2xl font-bold mb-1">📦 Store Dashboard</h1>
-                <p className="text-textmuted">
-                  👋 ยินดีต้อนรับคุณ{" "}
+                <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                  <Package className="w-6 h-6" /> แดชบอร์ดหน้าร้าน
+                </h1>
+                <p className="text-textmuted flex items-center gap-1">
+                  <User className="w-4 h-4" /> ยินดีต้อนรับคุณ{" "}
                   <span className="font-semibold">{username}</span>
                 </p>
-                <p className="text-textmuted">
-                  🏪 ร้าน: <span className="font-semibold">{storeName}</span> | 🆔 Shop ID:{" "}
-                  {shopId}
+                <p className="text-textmuted flex items-center gap-1">
+                  <Store className="w-4 h-4" /> ร้าน:{" "}
+                  <span className="font-semibold">{storeName}</span>
                 </p>
               </div>
               <div>
                 {stripeConnected ? (
-                  <p className="text-green-600 font-semibold">
-                    ✅ เชื่อมต่อ Stripe แล้ว
+                  <p className="text-green-600 font-semibold flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> เชื่อมต่อ Stripe แล้ว
                   </p>
                 ) : (
                   <button
                     onClick={() => regisstripe(localStorage.getItem("token")!)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition"
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition flex items-center gap-2"
                   >
-                    ➕ เชื่อมบัญชี Stripe
+                    <PlusCircle className="w-4 h-4" /> เชื่อมบัญชี Stripe
                   </button>
                 )}
               </div>
@@ -283,26 +294,42 @@ setStoreName(store.shop_name || "");
               </div>
             </div>
 
-            <div className="flex items-center gap-4 mt-4">
-              <label>
-                Start Date:
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="ml-2 border px-2 py-1 rounded"
-                />
-              </label>
-              <label>
-                End Date:
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="ml-2 border px-2 py-1 rounded"
-                />
-              </label>
-            </div>
+            <div className="flex flex-wrap items-end gap-6 mt-6 bg-white shadow-sm border border-gray-100 rounded-2xl p-4">
+  {/* Start Date */}
+  <div className="flex flex-col">
+    <label className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-2">
+      <CalendarDays className="w-4 h-4 text-indigo-500" />
+      วันที่เริ่มต้น
+    </label>
+    <div className="relative">
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        className="w-48 border border-gray-300 text-gray-800 rounded-lg px-3 py-2 pl-9 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all"
+      />
+      <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+    </div>
+  </div>
+
+  {/* End Date */}
+  <div className="flex flex-col">
+    <label className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-2">
+      <CalendarDays className="w-4 h-4 text-indigo-500" />
+      วันที่สิ้นสุด
+    </label>
+    <div className="relative">
+      <input
+        type="date"
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
+        className="w-48 border border-gray-300 text-gray-800 rounded-lg px-3 py-2 pl-9 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all"
+      />
+      <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+    
+    </div>
+  </div>
+</div>
 
             {shopId && (
               <ShopGraphDashboard
