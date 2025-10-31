@@ -25,31 +25,23 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         type: 'error',
         message: '❌ กรุณากรอกอีเมลและรหัสผ่าน'
       });
-      setTimeout(() => setShowMessage(null), 3000);
       return;
     }
 
     setIsLoading(true);
+    setShowMessage(null); // ล้างข้อความเตือนเก่า
     
     try {
       const token = await loginUser(username, password);
       localStorage.setItem("token", token);
-
-      setShowMessage({
-        type: 'success',
-        message: '✅ เข้าสู่ระบบสำเร็จ! กำลังนำทาง...'
-      });
       
-      setTimeout(() => {
-        setShowMessage(null);
-        setIsLoading(false);
-        
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push('/'); // กลับไปหน้าแรก
-        }
-      }, 2000);
+      setIsLoading(false);
+      
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/'); // กลับไปหน้าแรก
+      }
       
     } catch (error) {
       setIsLoading(false);
@@ -57,7 +49,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         type: 'error',
         message: '❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง'
       });
-      setTimeout(() => setShowMessage(null), 3000);
     }
   };
 
@@ -69,29 +60,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div className="relative w-full max-w-md">
-      {/* Toast Message
-      <AnimatePresence>
-        {showMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.9 }}
-            transition={{ 
-              type: "spring",
-              stiffness: 300,
-              damping: 30 
-            }}
-            className={`fixed top-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-pill shadow-card z-50 font-medium ${
-              showMessage.type === 'success' 
-                ? 'bg-accent text-white' 
-                : 'bg-red-500 text-white'
-            }`}
-          >
-            {showMessage.message}
-          </motion.div>
-        )}
-      </AnimatePresence> */}
-
       {/* Login Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -105,6 +73,24 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
 
         <div className="space-y-4">
+          {/* Alert Message */}
+          <AnimatePresence>
+            {showMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className={`px-4 py-3 rounded-lg text-sm font-medium ${
+                  showMessage.type === 'success' 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {showMessage.message}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div>
             <input
               type="email"
