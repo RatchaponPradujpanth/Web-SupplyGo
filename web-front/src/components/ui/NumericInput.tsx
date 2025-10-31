@@ -44,10 +44,12 @@ export default function NumericInput({
     }
   };
 
-  const handleFocus = () => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     // ล้างค่า 0 เมื่อ focus
     if (!disabled && Number(value) === 0) {
       onChange('');
+    } else if (!disabled) {
+      e.target.select();
     }
   };
 
