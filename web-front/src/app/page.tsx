@@ -43,17 +43,30 @@ export default function UserDashboardPage() {
   const router = useRouter();
   const categoryScrollRef = React.useRef<HTMLDivElement>(null);
 
-  // Mapping icon สำหรับ category
-  const categoryIconsMap: Record<string, React.ReactNode> = {
-    Electronics: <Smartphone className="w-6 h-6" />,
-    Fashion: <Shirt className="w-6 h-6" />,
-    'Home & Kitchen': <Home className="w-6 h-6" />,
-    Beauty: <Sparkles className="w-6 h-6" />,
-    Sports: <Dumbbell className="w-6 h-6" />,
-    Furniture: <Armchair className="w-6 h-6" />,
-    Baby: <Baby className="w-6 h-6" />,
-    Tools: <Wrench className="w-6 h-6" />,
-  };
+  // Mapping icon + mapping label ภาษาไทย
+const categoryIconsMap: Record<string, React.ReactNode> = {
+  Electronics: <Smartphone className="w-6 h-6" />,
+  Fashion: <Shirt className="w-6 h-6" />,
+  'Home & Kitchen': <Home className="w-6 h-6" />,
+  Beauty: <Sparkles className="w-6 h-6" />,
+  Sports: <Dumbbell className="w-6 h-6" />,
+  Furniture: <Armchair className="w-6 h-6" />,
+  Baby: <Baby className="w-6 h-6" />,
+  Tools: <Wrench className="w-6 h-6" />,
+};
+
+// Mapping สำหรับชื่อภาษาไทย
+const categoryLabelsMap: Record<string, string> = {
+  Electronics: 'อิเล็กทรอนิกส์',
+  Fashion: 'แฟชั่น',
+  'Home & Kitchen': 'บ้านและครัว',
+  Beauty: 'ความงาม',
+  Sports: 'กีฬา',
+  Furniture: 'เฟอร์นิเจอร์',
+  Baby: 'เด็ก',
+  Tools: 'เครื่องมือ',
+};
+
 
   // ฟังก์ชัน format ราคา
   const formatPrice = (price: number | null | undefined) => {
@@ -279,8 +292,9 @@ export default function UserDashboardPage() {
                       {categoryIconsMap[cat.category_name] || <Box className="w-6 h-6" />}
                     </div>
                     <span className="mt-2 text-xs md:text-sm font-medium text-center line-clamp-2">
-                      {cat.category_name}
-                    </span>
+  {categoryLabelsMap[cat.category_name] || cat.category_name}
+</span>
+
                   </button>
                 ))}
               </div>
