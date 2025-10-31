@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function updateTrackingNumber(groupMemberId: number, trackingNumber: string) {
+export async function updateGroupTrackingNumber(groupMemberId: number, trackingNumber: string) {
   try {
     const token = localStorage.getItem("token");
     if (!token) {

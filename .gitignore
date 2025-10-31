@@ -46,3 +46,4 @@ web-back/prisma/check-and-fix-images.ts
 .vscode/
 .idea/
 
+web-front/next.config.ts
