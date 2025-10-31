@@ -15,7 +15,8 @@ import {
   Rocket,
   CheckCircle,
   XCircle,
-  ChevronDown
+  ChevronDown,
+  ArrowRight
 } from 'lucide-react';
 
 export default function CreateGroupForm() {
@@ -23,11 +24,9 @@ export default function CreateGroupForm() {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [required_members, setRequiredMembers] = useState<number>(1);
-  const [total_items, setTotalItems] = useState<number>(1);
   const [items_per_member, setItemsPerMember] = useState<number>(1);
   const [status, setStatus] = useState<string>("open");
   const [points_per_group, setPointsPerGroup] = useState<number>(0);
-  const [points_per_member, setPointsPerMember] = useState<number>(0);
   const [group_name, setGroupName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expire_at, setExpireAt] = useState<string>("");
@@ -37,9 +36,9 @@ export default function CreateGroupForm() {
   const selectedProduct = products.find(p => p.product_id === selectedProductId);
   const hasVariants = selectedProduct?.product_variants && selectedProduct.product_variants.length > 0;
 
-  const computed_total_items = total_items;
-  const computed_items_per_member = items_per_member;
-  const computed_required_members = required_members;
+  // 🎯 Auto calculate
+  const total_items = required_members * items_per_member;
+  const points_per_member = required_members > 0 ? Math.floor(points_per_group / required_members) : 0;
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -171,13 +170,17 @@ export default function CreateGroupForm() {
         <InputGroup title="3. การตั้งค่ากลุ่ม">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input label="สมาชิก (คน)" type="number" min={1} value={required_members} onChange={setRequiredMembers} icon={<Users className="w-4 h-4" />} />
-            <Input label="สินค้าต่อกลุ่ม (ชิ้น)" type="number" min={1} value={total_items} onChange={setTotalItems} icon={<Package className="w-4 h-4" />} />
             <Input label="สินค้าต่อสมาชิก (ชิ้น)" type="number" min={1} value={items_per_member} onChange={setItemsPerMember} icon={<Package className="w-4 h-4" />} />
+            <Input label="สินค้าต่อกลุ่ม (ชิ้น)" type="number" min={1} value={total_items} onChange={() => {}} icon={<Package className="w-4 h-4" />} disabled={true} />
           </div>
-          <p className="text-xs text-gray-500 mt-1">ตัวอย่าง: ถ้า สมาชิก=5 และ สินค้าต่อสมาชิก=2 ≥ จำเป็นต้องมีสินค้าทั้งหมด 10 ชิ้น</p>
+          <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+            <span>ตัวอย่าง: ถ้า สมาชิก=5 และ สินค้าต่อสมาชิก=2</span>
+            <ArrowRight className="w-3 h-3" />
+            <span>จำเป็นต้องมีสินค้าทั้งหมด 10 ชิ้น</span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label="แต้มต่อกลุ่ม (Points)" type="number" min={0} value={points_per_group} onChange={setPointsPerGroup} icon={<Gift className="w-4 h-4" />} />
-            <Input label="แต้มต่อสมาชิก (Points)" type="number" min={0} value={points_per_member} onChange={setPointsPerMember} icon={<Gift className="w-4 h-4" />} />
+            <Input label="แต้มต่อสมาชิก (Points)" type="number" min={0} value={points_per_member} onChange={() => {}} icon={<Gift className="w-4 h-4" />} disabled={true} />
           </div>
         </InputGroup>
 
@@ -192,15 +195,15 @@ export default function CreateGroupForm() {
               </div>
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-gray-400" />
-                <span>สมาชิกที่ต้องการ: <span className="font-medium">{computed_required_members}</span></span>
+                <span>สมาชิกที่ต้องการ: <span className="font-medium">{required_members}</span></span>
               </div>
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-gray-400" />
-                <span>สินค้าต่อสมาชิก: <span className="font-medium">{computed_items_per_member}</span></span>
+                <span>สินค้าต่อสมาชิก: <span className="font-medium">{items_per_member}</span></span>
               </div>
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-gray-400" />
-                <span>สินค้าทั้งหมดที่ต้องมี: <span className="font-medium">{computed_total_items}</span></span>
+                <span>สินค้าทั้งหมดที่ต้องมี: <span className="font-medium">{total_items}</span></span>
               </div>
             </div>
           </div>
@@ -254,9 +257,10 @@ interface InputProps {
   placeholder?: string;
   onChange: (val: any) => void;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
-function Input({ label, type = "text", value, min, placeholder, onChange, icon }: InputProps) {
+function Input({ label, type = "text", value, min, placeholder, onChange, icon, disabled = false }: InputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (type === 'number') {
       onChange(Number(e.target.value));
@@ -277,8 +281,10 @@ function Input({ label, type = "text", value, min, placeholder, onChange, icon }
         value={value}
         onChange={handleChange}
         placeholder={placeholder}
+        disabled={disabled}
         className={`border border-gray-300 p-3 w-full rounded-lg transition duration-150 ease-in-out 
-          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400`}
+          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400
+          disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500`}
       />
     </div>
   );
