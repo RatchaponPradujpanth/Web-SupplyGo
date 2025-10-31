@@ -13,75 +13,64 @@ mygroupRoute.get('/mygroups', authenticateToken, async (req: Request, res: Respo
             return;
         }
 
-        // ดึงข้อมูลกลุ่มที่ผู้ใช้เป็นสมาชิกและยังไม่ได้ออกจากกลุ่ม (left_at is null)
-        const userGroups = await prisma.group_members.findMany({
+        // ดึงข้อมูลจาก group_member_orders เป็นหลัก
+        const memberOrders = await prisma.group_member_orders.findMany({
             where: {
-                user_id: userId,
-                left_at: null, // ยังไม่ได้ออกจากกลุ่ม
+                group_member: {
+                    user_id: userId,
+                    left_at: null, // ยังอยู่ในกลุ่ม
+                },
             },
             include: {
-                group: {
+                group_order: {
                     include: {
-                        shop: {
-                            select: {
-                                shop_name: true,
-                            },
-                        },
-                        product: {
+                        group: {
                             include: {
-                                product_images: {
-                                    where: {
-                                        is_primary: true,
-                                    },
+                                shop: {
                                     select: {
-                                        image_url: true,
+                                        shop_name: true,
                                     },
                                 },
-                                product_variants: {
+                                product: {
                                     include: {
-                                        variant_options: {
+                                        product_images: {
+                                            where: { is_primary: true },
+                                            select: { image_url: true },
+                                        },
+                                        product_variants: {
                                             include: {
-                                                option: true,
+                                                variant_options: {
+                                                    include: { option: true },
+                                                },
                                             },
+                                        },
+                                    },
+                                },
+                                members: {
+                                    where: { left_at: null },
+                                    select: {
+                                        user: {
+                                            select: { username: true },
                                         },
                                     },
                                 },
                             },
                         },
-                        members: {
-                            where: {
-                                left_at: null,
-                            },
-                            select: {
-                                user: {
-                                    select: {
-                                        username: true,
-                                    },
-                                },
-                            },
-                        },
                     },
                 },
-                member_addresses: {
+                group_member: {
                     include: {
-                        address: true,
-                    },
-                },
-                member_orders: {
-                    include: {
-                        group_order: {
-                            include: {
-                                items: true,
-                            },
+                        member_addresses: {
+                            include: { address: true },
                         },
                     },
                 },
             },
         });
 
-        // แปลงข้อมูลให้อยู่ในรูปแบบที่เหมาะสมสำหรับการส่งกลับ
-        const formattedGroups = userGroups.map(membership => {
-            const group = membership.group;
+        // แปลงข้อมูลให้อยู่ในรูปแบบที่ frontend ต้องการ
+        const formattedGroups = memberOrders.map(orderRecord => {
+            const group = orderRecord.group_order.group;
             return {
                 group_id: group.group_buying_id,
                 group_name: group.group_name,
@@ -109,17 +98,13 @@ mygroupRoute.get('/mygroups', authenticateToken, async (req: Request, res: Respo
                 points_per_member: group.points_per_member,
                 created_at: group.created_at,
                 expire_at: group.expire_at,
-                shipping_address: membership.member_addresses[0]?.address,
-                order_status: membership.member_orders[0]?.status || 'pending',
-                tracking_number: membership.member_orders[0]?.tracking_number,
+                shipping_address: orderRecord.group_member.member_addresses[0]?.address,
+                order_status: orderRecord.status,
+                tracking_number: orderRecord.tracking_number,
             };
         });
 
-        res.json({
-            success: true,
-            data: formattedGroups,
-        });
-
+        res.json({ success: true, data: formattedGroups });
     } catch (error) {
         console.error('Error fetching user groups:', error);
         res.status(500).json({

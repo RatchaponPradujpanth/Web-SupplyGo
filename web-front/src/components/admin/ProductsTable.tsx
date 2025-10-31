@@ -1,29 +1,47 @@
+'use client';
+
+import React, { useEffect, useState } from "react";
+import { loadPublicProducts } from "@/service/api/loadproduct";
+
 interface Product {
   product_id: number;
   product_name: string | null;
   price: number | null;
   status: string | null;
-  product_images?: Array<{
-    image_url: string;
-  }>;
+  product_images?: Array<{ image_url: string }>;
 }
 
-interface ProductsTableProps {
-  products: Product[];
-}
+export default function ProductsTable() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default function ProductsTable({ products }: ProductsTableProps) {
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("❌ Token not found");
+      setLoading(false);
+      return;
+    }
+
+    loadPublicProducts().then((data) => {
+      setProducts(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <div>กำลังโหลดสินค้า...</div>;
+
   return (
     <div className="bg-white rounded-card shadow-card p-5">
-      <h2 className="font-semibold mb-3">All Products</h2>
+      <h2 className="font-semibold mb-3">สินค้าทั้งหมด</h2>
       <table className="w-full text-sm">
         <thead className="text-left text-textmuted">
           <tr>
-            <th className="p-3">Product ID</th>
-            <th className="p-3">Name</th>
-            <th className="p-3">Price</th>
-            <th className="p-3">Status</th>
-            <th className="p-3">Image</th>
+            <th className="p-3">รหัสสินค้า</th>
+            <th className="p-3">ชื่อ</th>
+            <th className="p-3">ราคา</th>
+            <th className="p-3">สถานะ</th>
+            <th className="p-3">รูปภาพ</th>
           </tr>
         </thead>
         <tbody>

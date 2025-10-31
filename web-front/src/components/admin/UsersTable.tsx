@@ -13,15 +13,15 @@ interface UsersTableProps {
 export default function UsersTable({ users }: UsersTableProps) {
   return (
     <div className="bg-white rounded-card shadow-card p-5">
-      <h2 className="font-semibold mb-3">All Users</h2>
+      <h2 className="font-semibold mb-3">สมาชิกทั้งหมด</h2>
       <table className="w-full text-sm">
         <thead className="text-left text-textmuted">
           <tr>
-            <th className="p-3">User ID</th>
-            <th className="p-3">Username</th>
-            <th className="p-3">Email</th>
-            <th className="p-3">Role</th>
-            <th className="p-3">Registered</th>
+            <th className="p-3">รหัสผู้ใช้</th>
+            <th className="p-3">ชื่อ</th>
+            <th className="p-3">อีเมล์</th>
+            <th className="p-3">บทบาท</th>
+            <th className="p-3">วันที่สมัคร</th>
           </tr>
         </thead>
         <tbody>

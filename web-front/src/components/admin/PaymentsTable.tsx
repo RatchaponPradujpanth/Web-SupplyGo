@@ -7,15 +7,15 @@ interface PaymentsTableProps {
 export default function PaymentsTable({ paymentData }: PaymentsTableProps) {
   return (
     <div className="bg-white rounded-card shadow-card p-5">
-      <h2 className="font-semibold mb-3">Payment History</h2>
+      <h2 className="font-semibold mb-3">ประวัติการชำระเงิน</h2>
       <table className="w-full text-sm">
         <thead className="text-left text-textmuted">
           <tr>
-            <th className="p-3">Order ID</th>
-            <th className="p-3">Shop</th>
-            <th className="p-3">Amount</th>
-            <th className="p-3">Status</th>
-            <th className="p-3">Date</th>
+            <th className="p-3">รหัสออเดอร์</th>
+            <th className="p-3">ร้านค้า</th>
+            <th className="p-3">ยอดรวม</th>
+            <th className="p-3">สถานะ</th>
+            <th className="p-3">วันที่ชำระ</th>
           </tr>
         </thead>
         <tbody>

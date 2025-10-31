@@ -32,7 +32,7 @@ export default function WithdrawalList({ withdrawals, onApprove }: WithdrawalLis
                 <div>
                   <div className="font-semibold">{w.store.shop_name}</div>
                   <div className="text-sm text-textmuted">
-                    Withdrawal ID: {w.store_withdrawals_id}
+                    รหัสการถอนเงิน: {w.store_withdrawals_id}
                   </div>
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
