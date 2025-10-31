@@ -7,19 +7,19 @@ interface OrdersListProps {
 export default function OrdersList({ orders }: OrdersListProps) {
   return (
     <div className="bg-white rounded-card shadow-card p-5">
-      <h2 className="font-semibold mb-3">All Orders</h2>
+      <h2 className="font-semibold mb-3">ออเดอร์ทั้งหมด</h2>
       <div className="space-y-4">
         {orders.map((order) => (
           <div key={order.order_id} className="border rounded-lg p-4 space-y-3">
             {/* Order Header */}
             <div className="flex justify-between items-start border-b pb-3">
               <div>
-                <div className="font-semibold text-base">Order #{order.order_id}</div>
+                <div className="font-semibold text-base">ออเดอร์:{order.order_id}</div>
                 <div className="text-sm text-textmuted">
                   {order.order_date ? new Date(order.order_date).toLocaleString() : "-"}
                 </div>
                 <div className="text-sm mt-1">
-                  <span className="font-medium">Total:</span> ฿{order.total_amount ?? "-"}
+                  <span className="font-medium">ทั้งหมด:</span> ฿{order.total_amount ?? "-"}
                 </div>
               </div>
               <div>
@@ -42,7 +42,7 @@ export default function OrdersList({ orders }: OrdersListProps) {
             {/* Shipping Address */}
             {order.address && (
               <div className="bg-gray-50 rounded p-3 text-sm">
-                <div className="font-medium mb-1">Shipping Address:</div>
+                <div className="font-medium mb-1">ที่อยู่จัดส่ง:</div>
                 <div className="text-textmuted">
                   {order.address.firstname} {order.address.lastname} |{" "}
                   {order.address.phone_number}
@@ -64,13 +64,13 @@ export default function OrdersList({ orders }: OrdersListProps) {
                 <div className="flex justify-between items-center">
                   <div className="font-medium text-sm">{shop.shops.shop_name ?? "-"}</div>
                   <div className="text-sm">
-                    <span className="text-textmuted">Subtotal:</span> ฿{shop.subtotal ?? "-"}
+                    <span className="text-textmuted">ยอดรวม:</span> ฿{shop.subtotal ?? "-"}
                   </div>
                 </div>
 
                 {shop.tracking_number && (
                   <div className="text-xs text-textmuted">
-                    Tracking: {shop.tracking_number}
+                    เลขติดต่อ: {shop.tracking_number}
                   </div>
                 )}
 

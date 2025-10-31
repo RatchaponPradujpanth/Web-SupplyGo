@@ -56,7 +56,7 @@ export const authstore = (
   }
 
   // ตรวจสอบ role
-  if (req.user.role !== "store") {
+  if (req.user.role !== "store" ) {
     console.log("❌ Role ไม่ถูกต้อง:", req.user.role);
     res.status(403).json({ message: "เฉพาะร้านค้าเท่านั้น" });
     return;

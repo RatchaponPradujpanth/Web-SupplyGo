@@ -5,19 +5,18 @@ import { mygroup, GroupBuying } from '@/service/api/groupsharing/customerGroup';
 import {
   Users,
   Clock,
-  CheckCircle,
   XCircle,
   Package,
   Store,
   Calendar,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 
 interface StatusCount {
-  active: number;
   pending: number;
-  completed: number;
+  shipped: number;
   cancelled: number;
 }
 
@@ -25,9 +24,8 @@ export default function MyGroupsDashboard() {
   const [groups, setGroups] = useState<GroupBuying[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusCount, setStatusCount] = useState<StatusCount>({
-    active: 0,
     pending: 0,
-    completed: 0,
+    shipped: 0,
     cancelled: 0,
   });
 
@@ -40,23 +38,25 @@ export default function MyGroupsDashboard() {
         const data = await mygroup(token);
         setGroups(data);
 
-        const counts: StatusCount = { active: 0, pending: 0, completed: 0, cancelled: 0 };
+        const counts: StatusCount = { pending: 0, shipped: 0, cancelled: 0 };
         data.forEach((g) => {
-          switch (g.group_status) {
-            case 'active':
-              counts.active++;
-              break;
+          const status = g.order_status || g.group_status || 'pending';
+          switch (status) {
             case 'pending':
               counts.pending++;
               break;
-            case 'completed':
-              counts.completed++;
+            case 'shipped':
+              counts.shipped++;
               break;
             case 'cancelled':
               counts.cancelled++;
               break;
+            default:
+              counts.pending++;
+              break;
           }
         });
+
         setStatusCount(counts);
       } catch (err) {
         console.error('Failed to fetch groups', err);
@@ -79,16 +79,7 @@ export default function MyGroupsDashboard() {
     );
   }
 
-  const maxCount = Math.max(...Object.values(statusCount), 1);
-
   const statusConfig = {
-    active: {
-      icon: Users,
-      color: 'bg-green-500',
-      textColor: 'text-green-700',
-      bgColor: 'bg-green-100',
-      label: 'กำลังดำเนินการ'
-    },
     pending: {
       icon: Clock,
       color: 'bg-yellow-400',
@@ -96,12 +87,12 @@ export default function MyGroupsDashboard() {
       bgColor: 'bg-yellow-100',
       label: 'รอเริ่ม'
     },
-    completed: {
+    shipped: {
       icon: CheckCircle,
       color: 'bg-blue-500',
       textColor: 'text-blue-700',
       bgColor: 'bg-blue-100',
-      label: 'เสร็จสิ้น'
+      label: 'จัดส่งแล้ว'
     },
     cancelled: {
       icon: XCircle,
@@ -122,8 +113,8 @@ export default function MyGroupsDashboard() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {(['active', 'pending', 'completed', 'cancelled'] as const).map((status) => {
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          {(['pending', 'shipped', 'cancelled'] as const).map((status) => {
             const config = statusConfig[status];
             const count = statusCount[status];
             const Icon = config.icon;
@@ -158,13 +149,18 @@ export default function MyGroupsDashboard() {
                 <p className="text-gray-500">คุณยังไม่ได้เข้าร่วมกลุ่มซื้อใดๆ</p>
               </div>
             ) : (
-              groups.map((g) => {
-                const config = statusConfig[g.group_status as keyof typeof statusConfig] || statusConfig.active;
+              groups.map((g, idx) => {
+                const statusKey = g.order_status || g.group_status || 'pending';
+                const config = statusConfig[statusKey as keyof typeof statusConfig] || statusConfig.pending;
                 const StatusIcon = config.icon;
+                const currentMembers = g.current_members || 0;
+                const requiredMembers = g.required_members || 1;
+
+                const key = `${g.group_id}-${statusKey}-${idx}`;
 
                 return (
                   <div
-                    key={g.group_id}
+                    key={key}
                     className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
                   >
                     {/* Status Badge */}
@@ -200,8 +196,8 @@ export default function MyGroupsDashboard() {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span>
-                          สมาชิก: <span className="font-semibold text-gray-800">{g.current_members}</span>
-                          <span className="text-gray-400"> / {g.required_members}</span> คน
+                          สมาชิก: <span className="font-semibold text-gray-800">{currentMembers}</span>
+                          <span className="text-gray-400"> / {requiredMembers}</span> คน
                         </span>
                       </div>
 
@@ -216,20 +212,6 @@ export default function MyGroupsDashboard() {
                           })}</span>
                         </div>
                       )}
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex justify-between text-xs text-gray-500 mb-2">
-                        <span>ความคืบหน้า</span>
-                        <span>{Math.round((g.current_members / g.required_members) * 100)}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${config.color} transition-all duration-500`}
-                          style={{ width: `${Math.min((g.current_members / g.required_members) * 100, 100)}%` }}
-                        ></div>
-                      </div>
                     </div>
                   </div>
                 );

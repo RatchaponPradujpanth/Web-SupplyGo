@@ -12,10 +12,10 @@ export default function DashboardStats({
   totalOrders,
 }: DashboardStatsProps) {
   const stats = [
-    { label: "Users", value: totalUsers },
-    { label: "Shops", value: totalStores },
-    { label: "Products", value: totalProducts },
-    { label: "Orders", value: totalOrders },
+    { label: "ผู้ใช้", value: totalUsers },
+    { label: "ร้านค้า", value: totalStores },
+    { label: "สินค้า", value: totalProducts },
+    { label: "ออเดอร์", value: totalOrders },
   ];
 
   return (
