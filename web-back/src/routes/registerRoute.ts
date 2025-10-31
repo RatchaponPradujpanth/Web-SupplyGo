@@ -66,8 +66,8 @@ registerRoute.post("/register", async (req: Request, res: Response): Promise<voi
 
     otpStore[email] = { otp, expires, userData };
 
-    // ✅ ส่งอีเมล OTP
-    await transporter.sendMail({
+    // ✅ ส่งอีเมล OTP แบบ async (ไม่รอ - เร็วกว่า)
+    transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "รหัส OTP สำหรับการสมัครสมาชิก SupplyGo",
@@ -76,8 +76,11 @@ registerRoute.post("/register", async (req: Request, res: Response): Promise<voi
         <p>รหัส OTP ของคุณคือ: <strong>${otp}</strong></p>
         <p>รหัสนี้จะหมดอายุใน 5 นาที</p>
       `,
+    }).catch(err => {
+      console.error("❌ Email sending failed:", err);
     });
 
+    // ตอบกลับทันทีโดยไม่รอส่งเมล
     res.status(200).json({
       message: "ส่งรหัส OTP ไปยังอีเมลแล้ว กรุณาตรวจสอบอีเมลและกรอกรหัส OTP",
       email,
