@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ArrowRight
 } from 'lucide-react';
+  import NumericInput from '@/components/ui/NumericInput';
 
 export default function CreateGroupForm() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -169,9 +170,9 @@ export default function CreateGroupForm() {
         {/* Group 3: Group Parameters & Points */}
         <InputGroup title="3. การตั้งค่ากลุ่ม">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input label="สมาชิก (คน)" type="number" min={1} value={required_members} onChange={setRequiredMembers} icon={<Users className="w-4 h-4" />} />
-            <Input label="สินค้าต่อสมาชิก (ชิ้น)" type="number" min={1} value={items_per_member} onChange={setItemsPerMember} icon={<Package className="w-4 h-4" />} />
-            <Input label="สินค้าต่อกลุ่ม (ชิ้น)" type="number" min={1} value={total_items} onChange={() => {}} icon={<Package className="w-4 h-4" />} disabled={true} />
+            <NumericInput label="สมาชิก (คน)" min={1} value={required_members} onChange={setRequiredMembers} icon={<Users className="w-4 h-4" />} />
+            <NumericInput label="สินค้าต่อสมาชิก (ชิ้น)" min={1} value={items_per_member} onChange={setItemsPerMember} icon={<Package className="w-4 h-4" />} />
+            <NumericInput label="สินค้าต่อกลุ่ม (ชิ้น)" min={1} value={total_items} onChange={() => {}} icon={<Package className="w-4 h-4" />} disabled={true} />
           </div>
           <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
             <span>ตัวอย่าง: ถ้า สมาชิก=5 และ สินค้าต่อสมาชิก=2</span>
@@ -179,8 +180,8 @@ export default function CreateGroupForm() {
             <span>จำเป็นต้องมีสินค้าทั้งหมด 10 ชิ้น</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="แต้มต่อกลุ่ม (Points)" type="number" min={0} value={points_per_group} onChange={setPointsPerGroup} icon={<Gift className="w-4 h-4" />} />
-            <Input label="แต้มต่อสมาชิก (Points)" type="number" min={0} value={points_per_member} onChange={() => {}} icon={<Gift className="w-4 h-4" />} disabled={true} />
+            <NumericInput label="แต้มต่อกลุ่ม (Points)" min={0} value={points_per_group} onChange={setPointsPerGroup} icon={<Gift className="w-4 h-4" />} />
+            <NumericInput label="แต้มต่อสมาชิก (Points)" min={0} value={points_per_member} onChange={() => {}} icon={<Gift className="w-4 h-4" />} disabled={true} />
           </div>
         </InputGroup>
 
@@ -252,39 +253,22 @@ function InputGroup({ title, children }: InputGroupProps) {
 interface InputProps {
   label: string;
   type?: string;
-  value: any;
-  min?: number;
+  value: string;
   placeholder?: string;
-  onChange: (val: any) => void;
-  icon?: React.ReactNode;
-  disabled?: boolean;
+  onChange: (val: string) => void;
 }
 
-function Input({ label, type = "text", value, min, placeholder, onChange, icon, disabled = false }: InputProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (type === 'number') {
-      onChange(Number(e.target.value));
-    } else {
-      onChange(e.target.value);
-    }
-  }
-
+function Input({ label, type = "text", value, placeholder, onChange }: InputProps) {
   return (
     <div>
-      <label className="block mb-2 text-sm font-medium text-gray-700 flex items-center gap-2">
-        {icon && <span className="text-gray-400">{icon}</span>}
-        {label}
-      </label>
+      <label className="block mb-2 text-sm font-medium text-gray-700">{label}</label>
       <input
         type={type}
-        min={min}
         value={value}
-        onChange={handleChange}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        disabled={disabled}
         className={`border border-gray-300 p-3 w-full rounded-lg transition duration-150 ease-in-out 
-          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400
-          disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500`}
+          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400`}
       />
     </div>
   );
@@ -315,10 +299,10 @@ function Textarea({ label, value, placeholder, onChange }: TextareaProps) {
 
 interface SelectProps {
   label: string;
-  value: any;
+  value: string | number;
   placeholder?: string;
-  onChange: (val: any) => void;
-  options: { value: any; label: string }[];
+  onChange: (val: string) => void;
+  options: { value: string | number; label: string }[];
   disabled?: boolean;
 }
 

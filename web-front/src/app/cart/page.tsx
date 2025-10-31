@@ -7,6 +7,7 @@ import type { CartItemWithExtra, Address } from '@/types/type';
 import { removefromcart } from '@/service/api/removefromcart';
 import { loadaddress } from '@/service/api/loadaddress';
 import { updateCartQuantity } from '@/service/api/updateCartQuantity';
+import NumericInput from '@/components/ui/NumericInput';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItemWithExtra[]>([]);
@@ -205,41 +206,12 @@ export default function CartPage() {
                       </td>
                       <td className="p-4">฿{Number(item.price_per_unit).toLocaleString()}</td>
                       <td className="p-4">
-                        <div className="inline-flex items-center border rounded-full overflow-hidden">
-                          {/* ปุ่มลด */}
-                          <button
-                            className="px-3 py-1 hover:bg-gray-50"
-                            onClick={() =>
-                              handleQuantityChange(item.cart_item_id, item.quantity - 1)
-                            }
-                          >
-                            -
-                          </button>
-
-                          {/* input จำนวน */}
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value, 10);
-                              if (!isNaN(value) && value > 0) {
-                                handleQuantityChange(item.cart_item_id, value);
-                              }
-                            }}
-                            className="w-12 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-
-                          {/* ปุ่มเพิ่ม */}
-                          <button
-                            className="px-3 py-1 hover:bg-gray-50"
-                            onClick={() =>
-                              handleQuantityChange(item.cart_item_id, item.quantity + 1)
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
+                        <NumericInput
+                          min={1}
+                          value={item.quantity}
+                          onChange={(val) => handleQuantityChange(item.cart_item_id, Number(val))}
+                          inputClassName="border rounded px-3 py-2 w-full text-center"
+                        />
                       </td>
                       <td className="p-4 font-semibold">฿{Number(item.total_price).toLocaleString()}</td>
                       <td className="p-4">

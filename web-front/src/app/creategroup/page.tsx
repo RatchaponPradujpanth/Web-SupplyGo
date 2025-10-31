@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { creategroup, CreateGroupRequest, CreateGroupResponse } from "@/service/api/groupsharing/creategroup";
 import { loadproduct } from "@/service/api/shopproduct";
 import type { Product } from "@/types/type";
+import NumericInput from '@/components/ui/NumericInput';
 
 export default function CreateGroupPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -112,18 +113,36 @@ export default function CreateGroupPage() {
 
         {/* จำนวนสมาชิก / สินค้า / items_per_member */}
         <div>
-          <label className="block mb-1 font-medium">จำนวนสมาชิกที่ต้องการ</label>
-          <input type="number" min={1} value={required_members} onChange={e => setRequiredMembers(Number(e.target.value))} className="border p-2 w-full rounded" />
+          <NumericInput
+            label="จำนวนสมาชิกที่ต้องการ"
+            min={1}
+            value={required_members}
+            onChange={(val) => setRequiredMembers(Number(val))}
+            labelClassName="block mb-1 font-medium"
+            inputClassName="border p-2 w-full rounded"
+          />
         </div>
 
         <div>
-          <label className="block mb-1 font-medium">จำนวนสินค้าต่อกลุ่ม</label>
-          <input type="number" min={1} value={total_items} onChange={e => setTotalItems(Number(e.target.value))} className="border p-2 w-full rounded" />
+          <NumericInput
+            label="จำนวนสินค้าต่อกลุ่ม"
+            min={1}
+            value={total_items}
+            onChange={(val) => setTotalItems(Number(val))}
+            labelClassName="block mb-1 font-medium"
+            inputClassName="border p-2 w-full rounded"
+          />
         </div>
 
         <div>
-          <label className="block mb-1 font-medium">จำนวนสินค้าต่อสมาชิก</label>
-          <input type="number" min={1} value={items_per_member} onChange={e => setItemsPerMember(Number(e.target.value))} className="border p-2 w-full rounded" />
+          <NumericInput
+            label="จำนวนสินค้าต่อสมาชิก"
+            min={1}
+            value={items_per_member}
+            onChange={(val) => setItemsPerMember(Number(val))}
+            labelClassName="block mb-1 font-medium"
+            inputClassName="border p-2 w-full rounded"
+          />
         </div>
 
         {/* Status */}
@@ -137,12 +156,24 @@ export default function CreateGroupPage() {
 
         {/* Points */}
         <div>
-          <label className="block mb-1 font-medium">Points ต่อ Group</label>
-          <input type="number" min={0} value={points_per_group} onChange={e => setPointsPerGroup(Number(e.target.value))} className="border p-2 w-full rounded" />
+          <NumericInput
+            label="Points ต่อ Group"
+            min={0}
+            value={points_per_group}
+            onChange={(val) => setPointsPerGroup(Number(val))}
+            labelClassName="block mb-1 font-medium"
+            inputClassName="border p-2 w-full rounded"
+          />
         </div>
         <div>
-          <label className="block mb-1 font-medium">Points ต่อสมาชิก</label>
-          <input type="number" min={0} value={points_per_member} onChange={e => setPointsPerMember(Number(e.target.value))} className="border p-2 w-full rounded" />
+          <NumericInput
+            label="Points ต่อสมาชิก"
+            min={0}
+            value={points_per_member}
+            onChange={(val) => setPointsPerMember(Number(val))}
+            labelClassName="block mb-1 font-medium"
+            inputClassName="border p-2 w-full rounded"
+          />
         </div>
 
         <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">

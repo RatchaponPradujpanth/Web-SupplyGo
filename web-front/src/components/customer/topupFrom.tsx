@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useStripe, useElements, CardElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { createTopupPointPayment } from '@/service/api/groupsharing/topuppoint';
+import NumericInput from '@/components/ui/NumericInput';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -126,16 +127,14 @@ const TopupFormContent: React.FC<{
       )}
 
       <div>
-        <label className="block text-sm font-semibold mb-2">จำนวน Point ที่ต้องการเติม</label>
-        <div className="relative">
-          <input
-            type="number"
-            value={amount}
-            readOnly
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none text-lg"
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">Point</span>
-        </div>
+        <NumericInput
+          label="จำนวน Point ที่ต้องการเติม"
+          value={amount}
+          onChange={() => {}}
+          disabled={true}
+          labelClassName="block text-sm font-semibold mb-2"
+          inputClassName="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none text-lg"
+        />
       </div>
 
       <div>

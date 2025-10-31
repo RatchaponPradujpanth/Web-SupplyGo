@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getProductsByCategory } from '@/service/api/category';
 import ProductCard from '@/components/customer/ProductCard';
 import type { Product } from '@/types/type';
+import NumericInput from '@/components/ui/NumericInput';
 
 export default function ProductDisplayPage() {
   const params = useParams();
@@ -146,20 +147,20 @@ export default function ProductDisplayPage() {
               <div className="mb-5">
                 <div className="font-medium mb-2">ช่วงราคา</div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
+                  <NumericInput
                     placeholder="ต่ำสุด"
                     value={filters.minPrice}
-                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                    className="w-full bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
+                    onChange={(val) => setFilters({ ...filters, minPrice: String(val) })}
+                    min={0}
+                    inputClassName="w-full bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
                   />
                   <span>-</span>
-                  <input
-                    type="number"
+                  <NumericInput
                     placeholder="สูงสุด"
                     value={filters.maxPrice}
-                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                    className="w-full bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
+                    onChange={(val) => setFilters({ ...filters, maxPrice: String(val) })}
+                    min={0}
+                    inputClassName="w-full bg-bgpage rounded-input px-3 py-2 outline-none text-sm"
                   />
                 </div>
               </div>

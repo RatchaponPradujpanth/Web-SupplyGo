@@ -5,6 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { addproduct } from '@/service/apis';
 import { getCategories } from '@/service/api/category';
 import { useRouter } from 'next/navigation';
+import NumericInput from '@/components/ui/NumericInput';
 
 interface Category {
   category_id: number;
@@ -194,15 +195,13 @@ export default function AddProductPage() {
             </div>
 
             {!useVariants && (
-              <input
-                type="number"
+              <NumericInput
                 placeholder="ราคาสินค้า"
                 min={0}
-                step={0.01}
                 value={price}
-                onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                className="border rounded px-3 py-2 w-full mt-3"
-                required
+                onChange={(val) => setPrice(val === '' ? '' : Number(val))}
+                className="mt-3"
+                inputClassName="border rounded px-3 py-2 w-full"
               />
             )}
 
@@ -324,34 +323,26 @@ export default function AddProductPage() {
                     />
                     <div className="grid grid-cols-2 gap-2">
   <div className="col-span-1">
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      ราคา
-    </label>
-    <input
-      type="number"
+    <NumericInput
+      label="ราคา"
       placeholder="ราคา"
       min={0}
-      step={0.01}
       value={variant.price}
-      onChange={(e) => handleVariantChange(vi, 'price', e.target.value)}
-      className="w-full border rounded px-2 py-1"
-      required
+      onChange={(val) => handleVariantChange(vi, 'price', String(val))}
+      labelClassName="block text-sm font-medium text-gray-700 mb-1"
+      inputClassName="w-full border rounded px-2 py-1"
     />
   </div>
 
   <div className="col-span-1">
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      จำนวนคงเหลือ
-    </label>
-    <input
-      type="number"
+    <NumericInput
+      label="จำนวนคงเหลือ"
       placeholder="จำนวนคงเหลือ"
       min={0}
-      step={1}
       value={variant.stock_quantity}
-      onChange={(e) => handleVariantChange(vi, 'stock_quantity', e.target.value)}
-      className="w-full border rounded px-2 py-1"
-      required
+      onChange={(val) => handleVariantChange(vi, 'stock_quantity', String(val))}
+      labelClassName="block text-sm font-medium text-gray-700 mb-1"
+      inputClassName="w-full border rounded px-2 py-1"
     />
   </div>
 </div>
@@ -401,12 +392,12 @@ export default function AddProductPage() {
                         className="border rounded px-2 py-1"
                       />
                     </div>
-                    <input
-                      type="number"
+                    <NumericInput
                       placeholder="จำนวน"
                       value={batch.quantity}
-                      onChange={(e) => handleSimpleBatchChange(i, 'quantity', e.target.value)}
-                      className="border rounded px-2 py-1 w-full mb-1"
+                      onChange={(val) => handleSimpleBatchChange(i, 'quantity', String(val))}
+                      className="mb-1"
+                      inputClassName="border rounded px-2 py-1 w-full"
                     />
                     {simpleBatches.length > 1 && (
                       <button

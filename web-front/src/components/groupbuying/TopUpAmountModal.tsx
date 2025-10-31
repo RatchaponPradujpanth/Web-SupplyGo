@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import NumericInput from '@/components/ui/NumericInput';
 
 type Props = {
   amount: number;
@@ -22,18 +23,15 @@ export default function TopUpAmountModal({ amount, setAmount, onCancel, onProcee
         </div>
 
         <div className="p-6">
-          <label className="block text-sm font-semibold mb-2">จำนวน Point</label>
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:outline-none text-lg"
-              placeholder="เช่น 100"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">Point</span>
-          </div>
+          <NumericInput
+            label="จำนวน Point"
+            min={0}
+            value={amount}
+            onChange={(val) => setAmount(Number(val))}
+            placeholder="เช่น 100"
+            labelClassName="block text-sm font-semibold mb-2"
+            inputClassName="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:outline-none text-lg"
+          />
 
           <div className="flex gap-3 mt-6">
             <button

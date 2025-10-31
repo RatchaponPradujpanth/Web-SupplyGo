@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { Product } from '@/types/type';
+import NumericInput from '@/components/ui/NumericInput';
 
 interface ProductDetailProps {
   product: Product;
@@ -178,28 +179,12 @@ export default function ProductDetail({ product, onClose, onAddToCart, getDispla
 
             {/* Quantity */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-3">จำนวน:</label>
-              <div className="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 transition"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                  className="w-16 text-center py-2 outline-none"
-                />
-                <button
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 transition"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  +
-                </button>
-              </div>
+              <NumericInput
+                label="จำนวน:"
+                min={1}
+                value={quantity}
+                onChange={(val) => setQuantity(Math.max(1, Number(val)))}
+              />
             </div>
 
             {/* Action Buttons */}

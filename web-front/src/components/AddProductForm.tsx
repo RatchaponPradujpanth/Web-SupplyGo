@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { addproduct } from '@/service/apis';
 import { getCategories } from '@/service/api/category';
+import NumericInput from '@/components/ui/NumericInput';
 
 interface Category {
   category_id: number;
@@ -199,15 +200,13 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
           </div>
 
           {!useVariants && (
-            <input
-              type="number"
+            <NumericInput
               placeholder="ราคาสินค้า"
               min={0}
-              step={0.01}
               value={price}
-              onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-              className="border rounded px-3 py-2 w-full mt-3"
-              required
+              onChange={(val) => setPrice(val === '' ? '' : Number(val))}
+              className="mt-3"
+              inputClassName="border rounded px-3 py-2 w-full"
             />
           )}
 
@@ -385,15 +384,12 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         💰 ราคา (บาท)
                       </label>
-                      <input
-                        type="number"
+                      <NumericInput
                         placeholder="0.00"
                         min={0}
-                        step={0.01}
                         value={variant.price}
-                        onChange={(e) => handleVariantChange(vi, 'price', e.target.value)}
-                        className="w-full border rounded px-3 py-2"
-                        required
+                        onChange={(val) => handleVariantChange(vi, 'price', String(val))}
+                        inputClassName="w-full border rounded px-3 py-2"
                       />
                     </div>
 
@@ -401,15 +397,12 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         📦 จำนวนคงเหลือ
                       </label>
-                      <input
-                        type="number"
+                      <NumericInput
                         placeholder="0"
                         min={0}
-                        step={1}
                         value={variant.stock_quantity}
-                        onChange={(e) => handleVariantChange(vi, 'stock_quantity', e.target.value)}
-                        className="w-full border rounded px-3 py-2"
-                        required
+                        onChange={(val) => handleVariantChange(vi, 'stock_quantity', String(val))}
+                        inputClassName="w-full border rounded px-3 py-2"
                       />
                     </div>
                   </div>
@@ -467,12 +460,12 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
   </div>
 </div>
 
-            <input
-              type="number"
+            <NumericInput
               placeholder="จำนวน"
               value={batch.quantity}
-              onChange={(e) => handleSimpleBatchChange(i, 'quantity', e.target.value)}
-              className="border rounded px-2 py-1 w-full mb-1"
+              onChange={(val) => handleSimpleBatchChange(i, 'quantity', String(val))}
+              className="mb-1"
+              inputClassName="border rounded px-2 py-1 w-full"
             />
             {simpleBatches.length > 1 && (
               <button
@@ -538,16 +531,16 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
                         className="border rounded px-2 py-1 w-full"
                       />
                     </div>
-                    <input
-                      type="number"
+                    <NumericInput
                       placeholder="จำนวน"
                       value={batch.quantity}
-                      onChange={(e) => {
+                      onChange={(val) => {
                         const newBatches = [...batches];
-                        newBatches[vi][bi].quantity = e.target.value;
+                        newBatches[vi][bi].quantity = String(val);
                         setBatches(newBatches);
                       }}
-                      className="border rounded px-2 py-1 w-full mb-1"
+                      className="mb-1"
+                      inputClassName="border rounded px-2 py-1 w-full"
                     />
                     {batches[vi].length > 1 && (
                       <button
