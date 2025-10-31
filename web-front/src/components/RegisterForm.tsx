@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RegisterUser } from '@/service/api/register';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 type RoleType = 'customer' | 'store' | 'admin';
 
@@ -20,9 +21,13 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
   const [role, setRole] = useState<RoleType>(defaultRole);
   const [shopName, setShopName] = useState(''); // เพิ่มช่องชื่อร้าน
   const [showMessage, setShowMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleRegister = async () => {
+    // ป้องกันการกดซ้ำ
+    if (isLoading) return;
+
     if (password !== confirmPassword) {
       setShowMessage('❌ รหัสผ่านไม่ตรงกัน');
       setTimeout(() => setShowMessage(null), 3000);
@@ -36,6 +41,7 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
     }
 
     try {
+      setIsLoading(true);
       const result = await RegisterUser(username, password, email, role, shopName);
 
       if (result.email) {
@@ -60,6 +66,8 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
       const errorMsg = error instanceof Error ? error.message : 'การสมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
       setShowMessage(`❌ ${errorMsg}`);
       setTimeout(() => setShowMessage(null), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,9 +139,17 @@ export default function RegisterForm({ onSuccess, defaultRole = 'customer' }: Re
 
           <button
             onClick={handleRegister}
-            className="md:col-span-2 rounded-pill bg-primary text-white py-3 hover:bg-blue-700 transition-all duration-300"
+            disabled={isLoading}
+            className="md:col-span-2 rounded-pill bg-primary text-white py-3 hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            สมัครสมาชิก
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                กำลังสมัคร...
+              </>
+            ) : (
+              'สมัครสมาชิก'
+            )}
           </button>
         </div>
       </div>

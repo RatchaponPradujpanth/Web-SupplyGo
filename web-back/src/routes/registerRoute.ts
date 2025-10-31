@@ -19,6 +19,12 @@ interface userData {
 const otpStore: Record<string, { otp: string; expires: number; userData: userData }> = {};
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// ✅ สร้าง transporter ครั้งเดียวตอน init (เร็วกว่า)
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+});
+
 // ✅ สมัครสมาชิก - ส่ง OTP ไปอีเมล
 registerRoute.post("/register", async (req: Request, res: Response): Promise<void> => {
   const { username, password, email, role, shop_name } = req.body;
@@ -61,11 +67,6 @@ registerRoute.post("/register", async (req: Request, res: Response): Promise<voi
     otpStore[email] = { otp, expires, userData };
 
     // ✅ ส่งอีเมล OTP
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
-
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
