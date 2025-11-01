@@ -7,7 +7,6 @@ import { allOrderHistory } from "@/service/api/groupsharing/admin/allorderhistor
 import { getPendingWithdrawals } from "@/service/api/groupsharing/admin/getPendingWithdrawals";
 import type {
   AdminDashboardApiResponse,
-  Product,
   PaymentHistoryOrder,
   AdminOrderHistoryOrder,
 } from "@/types/type";
@@ -17,13 +16,14 @@ import DashboardStats from "@/components/admin/DashboardStats";
 import RecentOrders from "@/components/admin/RecentOrders";
 import UsersTable from "@/components/admin/UsersTable";
 import ProductsTable from "@/components/admin/ProductsTable";
+import CategoriesManager from "@/components/admin/CategoriesManager";
 import OrdersList from "@/components/admin/OrdersList";
 import PaymentsTable from "@/components/admin/PaymentsTable";
 import WithdrawalList from "@/components/admin/WithdrawalList";
 import PaymentModal from "@/components/admin/PaymentModalProps ";
 // Import Lucide Icons
 import { 
-  Settings, BarChart2, Users, Box, ShoppingCart, CreditCard, Banknote 
+  Settings, BarChart2, Users, Box, ShoppingCart, CreditCard, Banknote, Tag 
 } from "lucide-react";
 
 interface Withdrawal {
@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSidebar, setActiveSidebar] = useState<
-    "dashboard" | "users" | "products" | "orders" | "payments" | "withdraw"
+    "dashboard" | "users" | "products" | "categories" | "orders" | "payments" | "withdraw"
   >("dashboard");
   const [modalOpen, setModalOpen] = useState(false);
   const [currentWithdrawal, setCurrentWithdrawal] = useState<Withdrawal | null>(null);
@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
         }
         const res = await admindashboard(token);
         setData(res);
-      } catch (error) {
+      } catch {
         setError("ไม่สามารถโหลดข้อมูลหน้าหลักได้");
       } finally {
         setLoading(false);
@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
           if (!token) throw new Error("ไม่พบโทเค็น");
           const res = await paymentHistory(token);
           setPaymentData(res);
-        } catch (error) {
+        } catch {
           setError("ไม่สามารถโหลดประวัติการชำระเงินได้");
         } finally {
           setLoading(false);
@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
           if (!token) throw new Error("ไม่พบโทเค็น");
           const res = await allOrderHistory(token);
           setOrdersData(res);
-        } catch (error) {
+        } catch {
           setError("ไม่สามารถโหลดคำสั่งซื้อได้");
         } finally {
           setLoading(false);
@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
           if (!token) throw new Error("ไม่พบโทเค็น");
           const res = await getPendingWithdrawals(token);
           setWithdrawals(res.withdrawals || []);
-        } catch (error) {
+        } catch {
           setError("ไม่สามารถโหลดคำขอถอนเงินได้");
         } finally {
           setLoading(false);
@@ -156,6 +156,7 @@ export default function AdminDashboardPage() {
     alert("จ่ายเงินและอนุมัติเรียบร้อยแล้ว ✅");
   };
 
+  if (loading) return <div className="p-6 text-center text-gray-600">กำลังโหลดข้อมูล...</div>;
   if (error) return <div className="p-6 text-red-500">เกิดข้อผิดพลาด: {error}</div>;
   if (!data) return <div className="p-6 text-gray-600">ไม่มีข้อมูล</div>;
 
@@ -222,6 +223,14 @@ export default function AdminDashboardPage() {
                   }`}
                 >
                   <span className="flex items-center gap-2"><Box className="w-4 h-4"/> สินค้า</span>
+                </button>
+                <button
+                  onClick={() => setActiveSidebar("categories")}
+                  className={`w-full text-left block px-3 py-2 rounded-pill shadow transition ${
+                    activeSidebar === "categories" ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  <span className="flex items-center gap-2"><Tag className="w-4 h-4"/> ประเภทสินค้า</span>
                 </button>
                 <button
                   onClick={() => setActiveSidebar("orders")}
@@ -318,6 +327,18 @@ export default function AdminDashboardPage() {
             </div>
             <p className="text-sm text-gray-500 mt-1">สินค้าทั้งหมดในระบบ</p>
             <ProductsTable />
+          </div>
+        )}
+
+        {/* Categories */}
+        {activeSidebar === "categories" && (
+          <div className="space-y-4">
+            <div className="mb-4 flex items-center gap-2">
+              <Tag className="w-5 h-5"/>
+              <h1 className="text-2xl font-bold text-gray-800">จัดการประเภทสินค้า</h1>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">ประเภทสินค้าทั้งหมดในระบบ</p>
+            <CategoriesManager />
           </div>
         )}
 

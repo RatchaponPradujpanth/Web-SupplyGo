@@ -58,6 +58,8 @@ import searchRoute from "./routes/searchRoute";
 import checkStockRoute from "./routes/checkStockRoute";
 import createstoreRoute from "./routes/shop/createstoreRoute";
 import mygroupRoute from "./routes/group_buying/customer/mygroupRoute";
+import createcategoriesRoute from "./routes/createcategoriesRoute";
+import updatecategoryRoute from "./routes/updatecategoryRoute";
 
 
 
@@ -125,6 +127,8 @@ app.use("/api",searchRoute);
 app.use("/api",checkStockRoute)
 app.use("/api",createstoreRoute)
 app.use("/api",mygroupRoute);
+app.use("/api",createcategoriesRoute);
+app.use("/api",updatecategoryRoute);
 
 
 app.listen(PORT, () => {
