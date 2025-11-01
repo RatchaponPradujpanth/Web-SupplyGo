@@ -175,20 +175,26 @@ export default function ProductDetailPage() {
         .filter(Boolean);
     }
 
+    if (!product?.product_id) {
+      showToast('ไม่พบข้อมูลสินค้า', 'error');
+      return;
+    }
+
     console.log('💡 Calling addtocart with:', {
-      product_id: product?.product_id,
+      product_id: product.product_id,
       quantity,
       variant_id: variantId,
       option_value_id: optionValueIds,
     });
 
-    await addtocart(product?.product_id!, quantity, variantId, optionValueIds);
+    await addtocart(product.product_id, quantity, variantId, optionValueIds);
 
     showToast('เพิ่มสินค้าลงตะกร้าแล้ว', 'success');
-    router.push('/cart');
-  } catch (error: any) {
-    console.error('❌ Error adding to cart:', error.message || error);
-    showToast(error.message || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้', 'error');
+    // ไม่ redirect ไปหน้าตะกร้า ให้อยู่หน้าเดิม
+  } catch (error) {
+    console.error('❌ Error adding to cart:', error);
+    const errorMessage = error instanceof Error ? error.message : 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้';
+    showToast(errorMessage, 'error');
   }
 };
 
