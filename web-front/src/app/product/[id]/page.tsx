@@ -182,7 +182,7 @@ export default function ProductDetailPage() {
     await addtocart(product?.product_id!, quantity, variantId, optionValueIds);
 
     alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
-    router.push('/cart');
+    // ไม่ redirect ไปหน้าตะกร้า ให้อยู่หน้าเดิม
   } catch (error: any) {
     console.error('❌ Error adding to cart:', error.message || error);
     alert(`❌ ${error.message || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้'}`);
