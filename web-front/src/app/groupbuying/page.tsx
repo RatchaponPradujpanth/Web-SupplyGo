@@ -12,6 +12,10 @@ import TopupFormModal from '@/components/customer/topupFrom';
 import AddressModal from '@/components/groupbuying/AddressModal';
 import TopUpAmountModal from '@/components/groupbuying/TopUpAmountModal';
 import GroupBuyingCard from '@/components/groupbuying/groupbuyingCard';
+import { 
+  Target, Sparkles, CircleDot, Lock, User, 
+  Search, Package, UserX, Inbox, XCircle 
+} from 'lucide-react';
 
 type FilterTab = 'all' | 'open' | 'closed' | 'my-groups';
 
@@ -216,7 +220,7 @@ export default function GroupBuyingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-6">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
-          <div className="text-6xl mb-4">❌</div>
+          <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
           <h2 className="text-xl font-bold text-red-600 mb-2">เกิดข้อผิดพลาด</h2>
           <p className="text-gray-600">{error}</p>
         </div>
@@ -230,8 +234,9 @@ export default function GroupBuyingPage() {
         {/* Header Section */}
         <div className="flex justify-between items-start mb-8">
           <div className="flex-1">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-              🎯 Group Buying
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+              <Target className="w-10 h-10 text-blue-600" />
+              Group Buying
             </h1>
             <p className="text-gray-600 text-lg">ซื้อร่วมกันเพื่อรับส่วนลดพิเศษและสะสมแต้ม!</p>
           </div>
@@ -257,50 +262,50 @@ export default function GroupBuyingPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('all')}
-              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                 activeTab === 'all'
                   ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              🌟 ทั้งหมด
+              <Sparkles className="w-5 h-5" /> ทั้งหมด
               <span className="ml-2 text-sm opacity-80">({groups.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('open')}
-              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                 activeTab === 'open'
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              🟢 เปิดรับ
+              <CircleDot className="w-5 h-5" /> เปิดรับ
               <span className="ml-2 text-sm opacity-80">
                 ({groups.filter(g => g.status === 'open').length})
               </span>
             </button>
             <button
               onClick={() => setActiveTab('closed')}
-              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                 activeTab === 'closed'
                   ? 'bg-gradient-to-r from-gray-500 to-slate-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              🔒 ปิดแล้ว
+              <Lock className="w-5 h-5" /> ปิดแล้ว
               <span className="ml-2 text-sm opacity-80">
                 ({groups.filter(g => g.status === 'confirmed' || g.status === 'cancelled').length})
               </span>
             </button>
             <button
               onClick={() => setActiveTab('my-groups')}
-              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
                 activeTab === 'my-groups'
                   ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              👤 กรุ๊ปของฉัน
+              <User className="w-5 h-5" /> กรุ๊ปของฉัน
               <span className="ml-2 text-sm opacity-80">
                 ({groups.filter(g => g.user_in_group).length})
               </span>
@@ -331,11 +336,11 @@ export default function GroupBuyingPage() {
         {/* Empty State */}
         {filteredGroups.length === 0 && (
           <div className="text-center py-16">
-            <div className="text-6xl mb-4">
-              {activeTab === 'open' && '🔍'}
-              {activeTab === 'closed' && '📦'}
-              {activeTab === 'my-groups' && '🤷‍♂️'}
-              {activeTab === 'all' && '📭'}
+            <div className="mb-4 flex justify-center">
+              {activeTab === 'open' && <Search className="w-16 h-16 text-gray-400" />}
+              {activeTab === 'closed' && <Package className="w-16 h-16 text-gray-400" />}
+              {activeTab === 'my-groups' && <UserX className="w-16 h-16 text-gray-400" />}
+              {activeTab === 'all' && <Inbox className="w-16 h-16 text-gray-400" />}
             </div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">
               {activeTab === 'open' && 'ยังไม่มีกรุ๊ปที่เปิดรับสมาชิก'}
