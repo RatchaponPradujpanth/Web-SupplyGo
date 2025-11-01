@@ -1,11 +1,11 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadUsername } from '@/service/api/loadusername';
 import { loadPublicProducts, loadShopProducts } from '@/service/api/loadproduct';
 import { addtocart } from '@/service/api/addtocart';
 import { getCategories } from '@/service/api/category';
+import { useToast } from '@/components/Toast';
 import type { Product, Category } from '@/types/type';
 import ProductCard from '@/components/customer/ProductCard';
 import ProductDetail from '@/components/customer/ProductDetail';
@@ -39,11 +39,11 @@ export default function UserDashboardPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [categoryScrollPosition, setCategoryScrollPosition] = useState(0);
-
   const router = useRouter();
+  const { showToast } = useToast();
   const categoryScrollRef = React.useRef<HTMLDivElement>(null);
 
-  // Mapping icon สำหรับ category
+  // Mapping icon + mapping label ภาษาไทย
   const categoryIconsMap: Record<string, React.ReactNode> = {
     Electronics: <Smartphone className="w-6 h-6" />,
     Fashion: <Shirt className="w-6 h-6" />,
@@ -53,6 +53,18 @@ export default function UserDashboardPage() {
     Furniture: <Armchair className="w-6 h-6" />,
     Baby: <Baby className="w-6 h-6" />,
     Tools: <Wrench className="w-6 h-6" />,
+  };
+
+  // Mapping สำหรับชื่อภาษาไทย
+  const categoryLabelsMap: Record<string, string> = {
+    Electronics: 'อิเล็กทรอนิกส์',
+    Fashion: 'แฟชั่น',
+    'Home & Kitchen': 'บ้านและครัว',
+    Beauty: 'ความงาม',
+    Sports: 'กีฬา',
+    Furniture: 'เฟอร์นิเจอร์',
+    Baby: 'เด็ก',
+    Tools: 'เครื่องมือ',
   };
 
   // ฟังก์ชัน format ราคา
@@ -117,25 +129,24 @@ export default function UserDashboardPage() {
           const publicProducts = await loadPublicProducts();
           setProducts(publicProducts);
         }
-
         const cats = await getCategories();
         setCategories(cats);
       } catch (err) {
         console.error('🚫 Error loading dashboard:', err);
+        showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [router]);
-
+  }, [router, showToast]);
 
   // ฟังก์ชัน login check
   const requireLogin = (action: () => void) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('⚠️ กรุณาเข้าสู่ระบบก่อนทำรายการ');
+      showToast('กรุณาเข้าสู่ระบบก่อนทำรายการ', 'warning');
       router.push('/login');
       return;
     }
@@ -147,11 +158,11 @@ export default function UserDashboardPage() {
     requireLogin(async () => {
       try {
         await addtocart(productId, quantity, variantId, optionValueIds);
-        alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
+        showToast('เพิ่มสินค้าลงตะกร้าแล้ว', 'success');
       } catch (error) {
         console.error("❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้:", error);
         const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดขณะเพิ่มสินค้า';
-        alert(errorMessage);
+        showToast(errorMessage, 'error');
         
         // ถ้า error เกี่ยวกับ token ให้ redirect ไป login
         if (errorMessage.includes('Session') || errorMessage.includes('เข้าสู่ระบบ')) {
@@ -166,7 +177,6 @@ export default function UserDashboardPage() {
   };
 
   const handleCategoryClick = async (categoryName: string) => {
-    // ไปหน้า /category/[slug] หรือดึง products ตาม category
     router.push(`/category/${categoryName.toLowerCase().replace(/\s+/g, '-')}`);
   };
 
@@ -233,7 +243,6 @@ export default function UserDashboardPage() {
             <h3 className="font-semibold text-sm md:text-base">ประวัติการสั่งซื้อ</h3>
             <p className="text-xs text-textmuted mt-1">ติดตามคำสั่งซื้อ</p>
           </button>
-
           <button
             onClick={() => requireLogin(() => router.push('/profile'))}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group"
@@ -244,7 +253,6 @@ export default function UserDashboardPage() {
             <h3 className="font-semibold text-sm md:text-base">โปรไฟล์</h3>
             <p className="text-xs text-textmuted mt-1">จัดการบัญชี</p>
           </button>
-
           <button
             onClick={() => router.push('/groupbuying')}
             className="bg-white rounded-card shadow-card p-5 hover:shadow-md transition group col-span-2 md:col-span-1"
@@ -279,7 +287,7 @@ export default function UserDashboardPage() {
                       {categoryIconsMap[cat.category_name] || <Box className="w-6 h-6" />}
                     </div>
                     <span className="mt-2 text-xs md:text-sm font-medium text-center line-clamp-2">
-                      {cat.category_name}
+                      {categoryLabelsMap[cat.category_name] || cat.category_name}
                     </span>
                   </button>
                 ))}
