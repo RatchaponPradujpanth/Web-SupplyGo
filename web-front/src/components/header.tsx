@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import axios from 'axios';
 import { fetchUserRole } from '@/service/api/fetchrole';
 import { loadUsername } from '@/service/api/loadusername';
@@ -117,17 +116,33 @@ export default function Header() {
     router.push('/');
   };
 
+  // ฟังก์ชันกำหนด home path ตาม role
+  const getHomePath = () => {
+    switch (role) {
+      case 'admin':
+        return '/admin';
+      case 'store':
+        return '/store/dashboard';
+      case 'customer':
+      default:
+        return '/';
+    }
+  };
+
   return (
     <header className="bg-white shadow-card sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="font-semibold text-lg">SupplyGo</span>
+        <div 
+          onClick={() => router.push(getHomePath())}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <span className="font-semibold text-lg text-primary">SupplyGo</span>
           {role && (
             <span className="ml-3 rounded-pill bg-primary/10 text-primary px-3 py-1 text-xs font-medium">
               Role: {role}
             </span>
           )}
-        </Link>
+        </div>
 
         {/* Container ขวา */}
         <div className="flex-1 flex justify-end items-center gap-3">
