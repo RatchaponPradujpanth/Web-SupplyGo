@@ -33,17 +33,22 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     
     try {
       const token = await loginUser(username, password);
+      console.log('✅ Token received:', token ? 'Yes' : 'No');
       localStorage.setItem("token", token);
+      console.log('✅ Token saved to localStorage');
       
       setIsLoading(false);
       
       if (onSuccess) {
+        console.log('🚀 Calling onSuccess callback');
         onSuccess();
       } else {
+        console.log('🚀 Redirecting to home page');
         router.push('/'); // กลับไปหน้าแรก
       }
       
     } catch (error) {
+      console.error('❌ Login error:', error);
       setIsLoading(false);
       setShowMessage({
         type: 'error',
