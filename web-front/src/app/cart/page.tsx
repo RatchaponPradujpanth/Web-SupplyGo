@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cartUser } from '@/service/api/loadcart';
@@ -8,6 +7,7 @@ import { removefromcart } from '@/service/api/removefromcart';
 import { loadaddress } from '@/service/api/loadaddress';
 import { updateCartQuantity } from '@/service/api/updateCartQuantity';
 import { useToast } from '@/components/Toast';
+import { MapPin, Package, AlertCircle } from 'lucide-react';
 import NumericInput from '@/components/ui/NumericInput';
 
 export default function CartPage() {
@@ -26,17 +26,14 @@ export default function CartPage() {
         router.push('/');
         return;
       }
-
       try {
         const data = await cartUser(token);
         setCartItems(data.items);
-
         const totalPrice = data.items.reduce(
           (acc, item) => acc + Number(item.total_price),
           0
         );
         setTotal(totalPrice);
-
         // โหลดที่อยู่
         const addressData = await loadaddress(token);
         setAddresses(addressData);
@@ -51,7 +48,6 @@ export default function CartPage() {
         setLoading(false);
       }
     };
-
     fetchCart();
   }, [router, showToast]);
 
@@ -112,7 +108,6 @@ export default function CartPage() {
 
         return updated;
       });
-
     } catch (error) {
       console.error('❌ อัปเดตจำนวนสินค้าไม่สำเร็จ:', error);
       
@@ -191,15 +186,12 @@ export default function CartPage() {
                                 alt={item.product_name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  // Fallback to placeholder if image fails to load
                                   (e.target as HTMLImageElement).src = '/placeholder.png';
                                 }}
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
+                                <Package className="w-8 h-8 text-gray-400" />
                               </div>
                             )}
                           </div>
@@ -210,12 +202,12 @@ export default function CartPage() {
                         </div>
                       </td>
                       <td className="p-4">฿{Number(item.price_per_unit).toLocaleString()}</td>
-                      <td className="p-4">
+                      <td className="p-4 w-24">
                         <NumericInput
                           min={1}
                           value={item.quantity}
                           onChange={(val) => handleQuantityChange(item.cart_item_id, Number(val))}
-                          inputClassName="border rounded px-3 py-2 w-full text-center"
+                          inputClassName="border rounded px-2 py-1 w-16 text-center"
                         />
                       </td>
                       <td className="p-4 font-semibold">฿{Number(item.total_price).toLocaleString()}</td>
@@ -254,8 +246,8 @@ export default function CartPage() {
               {/* เลือกที่อยู่จัดส่ง */}
               {addresses.length > 0 ? (
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    📍 ที่อยู่จัดส่ง
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" /> ที่อยู่จัดส่ง
                   </label>
                   <select
                     value={selectedAddressId ?? ''}
@@ -270,14 +262,17 @@ export default function CartPage() {
                   </select>
                 </div>
               ) : (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">ยังไม่มีที่อยู่จัดส่ง</p>
-                  <button
-                    onClick={() => router.push('/profile?tab=addresses')}
-                    className="text-sm text-blue-600 hover:underline mt-1"
-                  >
-                    เพิ่มที่อยู่ใหม่
-                  </button>
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex gap-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-yellow-800 font-medium">ยังไม่มีที่อยู่จัดส่ง</p>
+                    <button
+                      onClick={() => router.push('/profile?tab=addresses')}
+                      className="text-sm text-blue-600 hover:underline mt-1"
+                    >
+                      เพิ่มที่อยู่ใหม่
+                    </button>
+                  </div>
                 </div>
               )}
 
