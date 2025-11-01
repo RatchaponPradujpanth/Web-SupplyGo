@@ -6,9 +6,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { Package, AlertCircle } from 'lucide-react';
 import Footer from '@/components/layout/Footer';
 import { fetchUserRole } from '@/service/api/fetchrole';
 import { addtocart } from '@/service/api/addtocart';
+import { useToast } from '@/components/Toast';
 
 
 interface ProductImage {
@@ -48,6 +50,7 @@ interface Product {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { showToast } = useToast();
   const productId = params?.id as string;
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -69,7 +72,7 @@ export default function ProductDetailPage() {
       try {
         const userRole = await fetchUserRole(token);
         if (userRole === 'admin' || userRole === 'store') {
-          alert('⚠️ คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+          showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'warning');
           router.push('/'); // redirect ไปหน้าหลัก
         }
       } catch (error) {
@@ -78,7 +81,7 @@ export default function ProductDetailPage() {
     };
 
     checkRole();
-  }, [router]);
+  }, [router, showToast]);
 
   useEffect(() => {
     if (!productId) return;
@@ -126,19 +129,19 @@ export default function ProductDetailPage() {
         }
       } catch (error) {
         console.error('Error loading product:', error);
-        alert('ไม่สามารถโหลดข้อมูลสินค้าได้');
+        showToast('ไม่สามารถโหลดข้อมูลสินค้าได้', 'error');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
-  }, [productId, API_URL]);
+  }, [productId, API_URL, showToast]);
 
   const handleAddToCart = async () => {
   const token = localStorage.getItem('token');
   if (!token) {
-    alert('⚠️ กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า');
+    showToast('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า', 'warning');
     router.push('/login');
     return;
   }
@@ -148,7 +151,7 @@ export default function ProductDetailPage() {
     if (product?.product_options && product.product_options.length > 0) {
       const allSelected = product.product_options.every(opt => selectedOptions[opt.name]);
       if (!allSelected) {
-        alert('⚠️ กรุณาเลือกตัวเลือกสินค้าให้ครบ');
+        showToast('กรุณาเลือกตัวเลือกสินค้าให้ครบ', 'warning');
         return;
       }
     }
@@ -181,40 +184,44 @@ export default function ProductDetailPage() {
 
     await addtocart(product?.product_id!, quantity, variantId, optionValueIds);
 
-    alert('✅ เพิ่มสินค้าลงตะกร้าแล้ว');
+    showToast('เพิ่มสินค้าลงตะกร้าแล้ว', 'success');
     router.push('/cart');
   } catch (error: any) {
     console.error('❌ Error adding to cart:', error.message || error);
-    alert(`❌ ${error.message || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้'}`);
+    showToast(error.message || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้', 'error');
   }
 };
 
-
-
   const handleBuyNow = async () => {
     await handleAddToCart();
-    // จะไปหน้า cart อยู่แล้วจาก handleAddToCart
   };
 
   const getCurrentPrice = () => {
     if (!product) return 0;
 
-    // ถ้ามี variants และเลือกครบแล้ว ให้แสดงราคาของ variant ที่เลือก
-    if (product.product_variants && product.product_variants.length > 0 && Object.keys(selectedOptions).length > 0) {
-      const matchedVariant = product.product_variants.find(variant => {
-        return variant.variant_options.every(opt => 
-          selectedOptions[opt.option_name] === opt.value
-        );
-      });
-      if (matchedVariant) return matchedVariant.price;
-    }
-
-    // ถ้ามี variants แต่ยังไม่ได้เลือก ให้คืนค่า null เพื่อแสดงช่วงราคา
+    // กรณีมี variants
     if (product.product_variants && product.product_variants.length > 0) {
+      // ถ้าเลือกครบแล้ว ให้แสดงราคาของ variant ที่เลือก
+      if (Object.keys(selectedOptions).length > 0) {
+        const matchedVariant = product.product_variants.find(variant => {
+          return variant.variant_options.every(opt => 
+            selectedOptions[opt.option_name] === opt.value
+          );
+        });
+        if (matchedVariant && matchedVariant.price) {
+          return parseFloat(matchedVariant.price.toString());
+        }
+      }
+      // ถ้ายังไม่ได้เลือก ให้คืนค่า null เพื่อแสดงช่วงราคา
       return null;
     }
 
-    return product.price;
+    // กรณีไม่มี variants ให้ดึงราคาจาก product.price
+    if (product.price) {
+      return parseFloat(product.price.toString());
+    }
+
+    return 0;
   };
 
   const getPriceRange = () => {
@@ -223,7 +230,7 @@ export default function ProductDetailPage() {
     }
 
     const prices = product.product_variants
-      .map(v => v.price)
+      .map(v => v.price ? parseFloat(v.price.toString()) : null)
       .filter((p): p is number => p !== null && p !== undefined);
 
     if (prices.length === 0) return null;
@@ -239,7 +246,7 @@ export default function ProductDetailPage() {
   };
 
   const formatPrice = (price: number | null | undefined) => {
-    if (price == null) return 'ติดต่อร้านค้า';
+    if (price == null || price === 0) return 'ติดต่อร้านค้า';
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: 'THB',
@@ -324,8 +331,8 @@ export default function ProductDetailPage() {
                     priority
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-6xl">
-                    📦
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package size={96} className="text-gray-300" />
                   </div>
                 )}
               </div>
@@ -369,12 +376,17 @@ export default function ProductDetailPage() {
             <div className="text-4xl font-bold text-primary mb-6">
               {(() => {
                 const currentPrice = getCurrentPrice();
-                // ถ้ามี variants แต่ยังไม่ได้เลือก แสดงช่วงราคา
-                if (currentPrice === null) {
-                  return getPriceRange();
+                // ถ้าเลือกแล้ว ให้แสดงราคาของ variant
+                if (currentPrice !== null && currentPrice > 0) {
+                  return formatPrice(currentPrice);
                 }
-                // ถ้าเลือกแล้ว หรือไม่มี variants แสดงราคาปกติ
-                return formatPrice(currentPrice);
+                // ถ้ามี variants แต่ยังไม่ได้เลือก แสดงช่วงราคา
+                const priceRange = getPriceRange();
+                if (priceRange) {
+                  return priceRange;
+                }
+                // ถ้าหาราคาไม่ได้ ให้แสดง null
+                return 'ติดต่อร้านค้า';
               })()}
             </div>
 
@@ -493,6 +505,27 @@ export default function ProductDetailPage() {
                 const productImage = (relatedProduct as Product & { image?: string }).image || relatedProduct.product_images?.[0]?.image_url;
                 const imageUrl = productImage ? getImageUrl(productImage) : null;
                 
+                // ดึงราคาจาก product.price หรือ variant ถ้า product.price เป็น null
+                const getRelatedProductPrice = () => {
+                  // ถ้ามี product.price และไม่เป็น null ให้ใช้
+                  if (relatedProduct.price) {
+                    return parseFloat(relatedProduct.price.toString());
+                  }
+                  
+                  // ถ้าไม่มี ให้หาราคาจาก variants
+                  if (relatedProduct.product_variants && relatedProduct.product_variants.length > 0) {
+                    const prices = relatedProduct.product_variants
+                      .map(v => v.price ? parseFloat(v.price.toString()) : null)
+                      .filter((p): p is number => p !== null && p !== undefined);
+                    
+                    if (prices.length > 0) {
+                      return Math.min(...prices); // ดึงราคาต่ำสุด
+                    }
+                  }
+                  
+                  return null;
+                };
+                
                 return (
                   <button
                     key={relatedProduct.product_id}
@@ -508,8 +541,8 @@ export default function ProductDetailPage() {
                           className="object-contain p-4 group-hover:scale-105 transition"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl">
-                          📦
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package size={64} className="text-gray-300" />
                         </div>
                       )}
                     </div>
@@ -518,7 +551,7 @@ export default function ProductDetailPage() {
                         {relatedProduct.product_name}
                       </p>
                       <p className="text-primary font-bold">
-                        {formatPrice(relatedProduct.price)}
+                        {formatPrice(getRelatedProductPrice())}
                       </p>
                     </div>
                   </button>
@@ -529,7 +562,9 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-white rounded-card shadow-card p-4 text-center text-textmuted">
-                  <div className="aspect-square bg-gray-100 rounded-lg mb-4"></div>
+                  <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                    <AlertCircle size={40} className="text-gray-300" />
+                  </div>
                   <p>ไม่มีสินค้าแนะนำ</p>
                 </div>
               ))}
