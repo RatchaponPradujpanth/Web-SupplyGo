@@ -11,13 +11,17 @@ interface Product {
   product_id: number;
   product_name: string;
   product_description: string;
-  price: number;
+  price: number | null;
   image: string | null;
   category_name?: string;
   product_images?: {
     id: number;
     image_url: string;
     is_primary: boolean;
+  }[];
+  product_variants?: {
+    variant_id: number;
+    price: number | null;
   }[];
 }
 
@@ -78,13 +82,35 @@ function SearchResults() {
     return 0; // relevant - เรียงตามลำดับเดิม
   });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // ไม่ต้องทำอะไร เพราะใช้ search bar ที่ header
+  // ฟังก์ชันดึงราคาหรือช่วงราคา
+  const getProductPrice = (product: Product): string => {
+    // ถ้ามี product.price และไม่เป็น 0 ให้ใช้
+    if (product.price && product.price > 0) {
+      return formatPrice(product.price);
+    }
+    
+    // ถ้ามี variants ให้แสดงช่วงราคา
+    if (product.product_variants && product.product_variants.length > 0) {
+      const prices = product.product_variants
+        .map(v => v.price)
+        .filter((p): p is number => p !== null && p !== undefined && p > 0);
+      
+      if (prices.length > 0) {
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        
+        if (minPrice === maxPrice) {
+          return formatPrice(minPrice);
+        }
+        return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
+      }
+    }
+    
+    return 'ติดต่อร้านค้า';
   };
 
   const formatPrice = (price: number | null | undefined) => {
-    if (price == null) return 'ติดต่อร้านค้า';
+    if (price == null || price === 0) return 'ติดต่อร้านค้า';
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: 'THB',
@@ -174,7 +200,7 @@ function SearchResults() {
                       </p>
                     )}
                     <p className="text-primary font-bold">
-                      {formatPrice(product.price)}
+                      {getProductPrice(product)}
                     </p>
                   </div>
                 </button>
