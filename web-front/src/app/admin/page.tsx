@@ -164,10 +164,14 @@ export default function AdminDashboardPage() {
 
   const getSectionBg = () => {
     switch (activeSidebar) {
-      case "dashboard": return "bg-gray-50";
-      case "payments": return "bg-indigo-50";
-      case "withdraw": return "bg-green-50";
-      default: return "bg-white";
+      case "dashboard": return "bg-slate-50";
+      case "users": return "bg-slate-50";
+      case "products": return "bg-slate-50";
+      case "categories": return "bg-slate-50";
+      case "orders": return "bg-slate-50";
+      case "payments": return "bg-slate-50";
+      case "withdraw": return "bg-slate-50";
+      default: return "bg-slate-50";
     }
   };
 
