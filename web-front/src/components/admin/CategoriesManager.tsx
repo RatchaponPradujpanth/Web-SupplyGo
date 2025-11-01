@@ -131,6 +131,7 @@ export default function CategoriesManager() {
 
   // แก้ไขประเภทสินค้า
   const handleEdit = (category: Category) => {
+    console.log('🔍 Editing category:', category); // Debug
     setEditingCategory(category);
     setCategoryForm({
       category_name: category.category_name,
@@ -231,7 +232,7 @@ export default function CategoriesManager() {
             key={category.category_id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-4 border-2 rounded-xl hover:border-primary hover:shadow-lg transition-all duration-200 bg-white"
+            className="p-4 border-2 rounded-xl hover:border-primary hover:shadow-lg transition-all duration-200 bg-white flex flex-col h-full min-h-[120px]"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -257,12 +258,19 @@ export default function CategoriesManager() {
                 </button>
               </div>
             </div>
-            {category.description && (
-              <p className="text-sm text-gray-600 flex items-start gap-2">
-                <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                {category.description}
-              </p>
-            )}
+            <div className="flex-1">
+              {category.description ? (
+                <p className="text-sm text-gray-600 flex items-start gap-2">
+                  <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span className="line-clamp-2 break-words">{category.description}</span>
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 flex items-start gap-2">
+                  <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span className="italic">ไม่มีคำอธิบาย</span>
+                </p>
+              )}
+            </div>
           </motion.div>
         ))}
         {categories.length === 0 && (

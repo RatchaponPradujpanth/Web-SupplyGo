@@ -12,6 +12,7 @@ categoryRoute.get('/categories', async (req: Request, res: Response) => {
       select : {
         category_id : true,
         category_name : true,
+        description : true,
       },
       orderBy : {
         category_name : 'asc',
