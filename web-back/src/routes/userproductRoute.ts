@@ -128,7 +128,6 @@ userproductRoute.get("/products/:id", async (req: Request, res: Response): Promi
 });
 
 userproductRoute.get("/loaduserproduct", async (req: Request, res: Response): Promise<void> => {
-  console.log("✅ Loadproduct route called");
 
   try {
     const foundproduct = await prisma.products.findMany({
