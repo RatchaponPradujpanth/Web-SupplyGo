@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { loadShopProducts } from "@/service/api/loadproduct";
+import { useToast } from "@/components/Toast";
 import { Product } from "@/types/type";
 import { updateStatus } from "@/service/api/shop/updatestatus";
 import {
@@ -16,6 +17,7 @@ import {
 export default function ShopProductsList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function fetchProducts() {
@@ -23,6 +25,7 @@ export default function ShopProductsList() {
         const token = localStorage.getItem("token");
         if (!token) {
           console.error("❌ Token not found");
+          showToast('ไม่พบ token กรุณาเข้าสู่ระบบใหม่', 'error');
           setLoading(false);
           return;
         }
@@ -32,13 +35,14 @@ export default function ShopProductsList() {
         setProducts(res);
       } catch (error) {
         console.error("❌ Error loading products:", error);
+        showToast('โหลดสินค้าไม่สำเร็จ', 'error');
       } finally {
         setLoading(false);
       }
     }
 
     fetchProducts();
-  }, []);
+  }, [showToast]);
 
   if (loading)
     return (
@@ -214,8 +218,9 @@ export default function ShopProductsList() {
                         : p
                     )
                   );
+                  showToast('เปลี่ยนสถานะสำเร็จ', 'success');
                 } catch (error) {
-                  alert("❌ เปลี่ยนสถานะไม่สำเร็จ");
+                  showToast('เปลี่ยนสถานะไม่สำเร็จ', 'error');
                   console.error(error);
                 }
               }}

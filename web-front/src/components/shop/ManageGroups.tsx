@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { managegroup } from "@/service/api/groupsharing/managegroup";
 import { confirmGroupOrder } from "@/service/api/groupsharing/confirmgrouporder";
 import { cancelgroup } from "@/service/api/groupsharing/cancelgroup";
+import { useToast } from "@/components/Toast";
 import type { GroupOrderResponse } from "@/types/type";
 import { Users, Loader2, LogOut } from "lucide-react";
 
@@ -10,6 +11,7 @@ export default function ManageGroups() {
   const [groups, setGroups] = useState<GroupOrderResponse[]>([]);
   const [storeBalance, setStoreBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -23,40 +25,45 @@ export default function ManageGroups() {
         setStoreBalance(data.store_balance);
       } catch (error: any) {
         console.error("Error fetching groups:", error.message || error);
+        showToast('โหลดกลุ่มไม่สำเร็จ', 'error');
       } finally {
         setLoading(false);
       }
     };
     fetchGroups();
-  }, []);
+  }, [showToast]);
 
   const handleConfirmOrder = async (group_buying_id: number) => {
     try {
       await confirmGroupOrder(group_buying_id);
-      alert("สร้างออเดอร์เรียบร้อย 🎉");
+      showToast('สร้างออเดอร์เรียบร้อย', 'success');
 
       const token = localStorage.getItem("token");
       if (!token) return;
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
+      const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างออเดอร์';
+      showToast(msg, 'error');
     }
   };
 
   const handleCancelOrder = async (group_buying_id: number) => {
     try {
       await cancelgroup(group_buying_id);
-      alert("ยกเลิกออเดอร์เรียบร้อย ❌");
+      showToast('ยกเลิกออเดอร์เรียบร้อย', 'success');
 
       const token = localStorage.getItem("token");
       if (!token) return;
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
+      const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการยกเลิกออเดอร์';
+      showToast(msg, 'error');
     }
   };
 

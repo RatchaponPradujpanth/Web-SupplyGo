@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import axios from 'axios';
+import { useToast } from '@/components/Toast';
 import Footer from '@/components/layout/Footer';
 
 interface Product {
@@ -23,6 +24,7 @@ interface Product {
 function SearchResults() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { showToast } = useToast();
   const query = searchParams.get('q') || '';
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,7 +55,7 @@ function SearchResults() {
       setProducts(filtered);
     } catch (error) {
       console.error('Error searching products:', error);
-      alert('ไม่สามารถค้นหาสินค้าได้');
+      showToast('ไม่สามารถค้นหาสินค้าได้', 'error');
     } finally {
       setLoading(false);
     }

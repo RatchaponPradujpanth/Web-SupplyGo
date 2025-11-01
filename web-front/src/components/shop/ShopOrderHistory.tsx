@@ -7,6 +7,7 @@ import {
   updateTrackingNumber,
   ShopOrderResponse,
 } from "@/service/api/shop/ordershophistory";
+import { useToast } from "@/components/Toast";
 
 import {
   MapPin,
@@ -62,30 +63,30 @@ function TrackingInput({
   orderShopId,
   initialTracking,
   onSaved,
+  showToast,
 }: {
   orderShopId: number;
   initialTracking: string | null;
   onSaved?: (newTracking: string) => void;
+  showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
 }) {
   const [tracking, setTracking] = useState(initialTracking ?? "");
   const [saved, setSaved] = useState(!!initialTracking);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     setTracking(initialTracking ?? "");
     setSaved(!!initialTracking);
-    setMessage("");
   }, [initialTracking]);
 
   const handleSave = async () => {
     if (!tracking.trim()) {
-      setMessage("⚠️ กรุณากรอกเลขพัสดุ");
+      showToast("กรุณากรอกเลขพัสดุ", "warning");
       return;
     }
     const token = localStorage.getItem("token");
     if (!token) {
-      setMessage("❌ ไม่พบ token");
+      showToast("ไม่พบ token", "error");
       return;
     }
 
@@ -93,10 +94,11 @@ function TrackingInput({
       setSaving(true);
       await updateTrackingNumber(token, orderShopId, tracking.trim());
       setSaved(true);
-      setMessage("✅ บันทึกเรียบร้อยแล้ว");
+      showToast("บันทึกเลขพัสดุสำเร็จ", "success");
       if (onSaved) onSaved(tracking.trim());
     } catch (error) {
       console.error(error);
+      showToast("บันทึกเลขพัสดุไม่สำเร็จ", "error");
     } finally {
       setSaving(false);
     }
@@ -105,7 +107,7 @@ function TrackingInput({
   const handleCopy = () => {
     if (!tracking) return;
     navigator.clipboard.writeText(tracking);
-    setMessage("📋 คัดลอกเลขพัสดุแล้ว");
+    showToast("คัดลอกเลขพัสดุแล้ว", "success");
   };
 
   if (saved && tracking) {
@@ -121,7 +123,6 @@ function TrackingInput({
           <ClipboardCopy className="w-3.5 h-3.5" />
           Copy
         </button>
-        {message && <span className="text-xs text-gray-500">{message}</span>}
       </div>
     );
   }
@@ -150,7 +151,6 @@ function TrackingInput({
           </>
         )}
       </button>
-      {message && <p className="text-sm text-gray-600">{message}</p>}
     </div>
   );
 }
@@ -161,6 +161,7 @@ export default function ShopOrderHistory() {
   const [savingIds, setSavingIds] = useState<string[]>([]);
   const [trackingFilter, setTrackingFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   const transformNormalOrders = (res: ShopOrderResponse): NormalOrderUI[] => {
     return (res.normalOrders || []).map((order) => ({
@@ -230,6 +231,7 @@ export default function ShopOrderHistory() {
       setStatusInputs(initialStatus);
     } catch (err) {
       console.error("❌ โหลดข้อมูลล้มเหลว:", err);
+      showToast("โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ", "error");
       setOrders([]);
     } finally {
       setLoading(false);
@@ -253,11 +255,11 @@ export default function ShopOrderHistory() {
     try {
       setSavingIds((prev) => [...prev, String(orderShopId)]);
       await updateStatus(token, orderShopId, newStatus);
-      alert("✅ อัปเดตสถานะสำเร็จ");
+      showToast("อัปเดตสถานะสำเร็จ", "success");
       await fetchData();
     } catch (error) {
       console.error("❌ อัปเดตสถานะล้มเหลว:", error);
-      alert("❌ เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+      showToast("เกิดข้อผิดพลาดในการอัปเดตสถานะ", "error");
     } finally {
       setSavingIds((prev) => prev.filter((id) => id !== String(orderShopId)));
     }
@@ -393,6 +395,7 @@ export default function ShopOrderHistory() {
                     )
                   )
                 }
+                showToast={showToast}
               />
             </div>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getShopOrderHistory, updateTrackingNumber, updatestatus } from '@/service/apis';
+import { useToast } from '@/components/Toast';
 
 interface Order {
   order_id: number;
@@ -54,6 +55,7 @@ export default function ShopOrderHistoryPage() {
   const [savingIds, setSavingIds] = useState<number[]>([]);
   const [trackingFilter, setTrackingFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,6 +79,7 @@ export default function ShopOrderHistoryPage() {
         setStatusInputs(initialStatus);
       } catch (err) {
         console.error('❌ Error loading data', err);
+        showToast('โหลดข้อมูลคำสั่งซื้อไม่สำเร็จ', 'error');
         setData(null);
       } finally {
         setLoading(false);
@@ -84,18 +87,21 @@ export default function ShopOrderHistoryPage() {
     };
 
     fetchData();
-  }, [trackingFilter]);
+  }, [trackingFilter, showToast]);
 
   const handleSaveTracking = async (orderShopId: number) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     const trackingNumber = trackingInputs[orderShopId];
-    if (!trackingNumber || trackingNumber.trim() === '') return;
+    if (!trackingNumber || trackingNumber.trim() === '') {
+      showToast('กรุณากรอกเลขพัสดุ', 'warning');
+      return;
+    }
 
     try {
       setSavingIds(prev => [...prev, orderShopId]);
       await updateTrackingNumber(token, orderShopId, trackingNumber);
-      alert('อัปเดตเลขพัสดุเรียบร้อย');
+      showToast('อัปเดตเลขพัสดุสำเร็จ', 'success');
 
       // รีโหลดข้อมูล
       const res = await getShopOrderHistory(token, trackingFilter.trim() || undefined);
@@ -111,7 +117,7 @@ export default function ShopOrderHistoryPage() {
       setStatusInputs(newStatus);
     } catch (err) {
       console.error('❌ update tracking failed', err);
-      alert('เกิดข้อผิดพลาดในการอัปเดตเลขพัสดุ');
+      showToast('เกิดข้อผิดพลาดในการอัปเดตเลขพัสดุ', 'error');
     } finally {
       setSavingIds(prev => prev.filter(id => id !== orderShopId));
     }
@@ -130,7 +136,7 @@ export default function ShopOrderHistoryPage() {
     try {
       setSavingIds(prev => [...prev, orderShopId]);
       await updatestatus(token, orderShopId, newStatus);
-      alert('อัปเดตสถานะสำเร็จ');
+      showToast('อัปเดตสถานะสำเร็จ', 'success');
 
       const res = await getShopOrderHistory(token, trackingFilter.trim() || undefined);
       setData(res);
@@ -145,13 +151,13 @@ export default function ShopOrderHistoryPage() {
       setTrackingInputs(newTracking);
     } catch (err) {
       console.error('❌ update status failed', err);
-      alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+      showToast('เกิดข้อผิดพลาดในการอัปเดตสถานะ', 'error');
     } finally {
       setSavingIds(prev => prev.filter(id => id !== orderShopId));
     }
   };
 
-  if (loading) return <div>กำลังโหลดข้อมูล...</div>;
+  if (loading) return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
 
   return (
     <div className="p-4 max-w-6xl mx-auto">

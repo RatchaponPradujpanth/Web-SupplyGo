@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { creategroup, CreateGroupRequest, CreateGroupResponse } from "@/service/api/groupsharing/creategroup";
 import { loadproduct } from "@/service/api/shopproduct";
+import { useToast } from "@/components/Toast";
 import type { Product } from "@/types/type";
 import {
   Sparkles,
@@ -18,7 +19,7 @@ import {
   ChevronDown,
   ArrowRight
 } from 'lucide-react';
-  import NumericInput from '@/components/ui/NumericInput';
+import NumericInput from '@/components/ui/NumericInput';
 
 export default function CreateGroupForm() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -32,7 +33,7 @@ export default function CreateGroupForm() {
   const [description, setDescription] = useState<string>("");
   const [expire_at, setExpireAt] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const { showToast } = useToast();
 
   const selectedProduct = products.find(p => p.product_id === selectedProductId);
   const hasVariants = selectedProduct?.product_variants && selectedProduct.product_variants.length > 0;
@@ -50,24 +51,28 @@ export default function CreateGroupForm() {
         const productsData = await loadproduct(token);
         if (productsData && Array.isArray(productsData)) setProducts(productsData);
       } catch (e) {
-         console.error("Failed to load products:", e);
+        console.error("Failed to load products:", e);
+        showToast('โหลดสินค้าไม่สำเร็จ', 'error');
       }
     };
     fetchProducts();
-  }, []);
+  }, [showToast]);
 
-  const productImage = selectedProduct?.image ?? selectedProduct?.product_images?.find(pi => pi.is_primary === true)?.image_url ?? selectedProduct?.product_images?.[0]?.image_url ?? null;
+  const productImage = selectedProduct?.image
+    ?? selectedProduct?.product_images?.find(pi => pi.is_primary === true)?.image_url
+    ?? selectedProduct?.product_images?.[0]?.image_url
+    ?? null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token || !selectedProductId) {
-        setMessage({ text: "กรุณาเข้าสู่ระบบและเลือกสินค้า", type: 'error' });
-        return;
+      showToast('กรุณาเข้าสู่ระบบและเลือกสินค้า', 'warning');
+      return;
     }
 
     if (!group_name.trim()) {
-      setMessage({ text: 'กรุณากรอกชื่อกลุ่ม', type: 'error' });
+      showToast('กรุณากรอกชื่อกลุ่ม', 'warning');
       return;
     }
 
@@ -88,13 +93,23 @@ export default function CreateGroupForm() {
     try {
       setLoading(true);
       const response: CreateGroupResponse = await creategroup(token, payload);
-      setMessage({ text: response.message || "สร้างกลุ่มสำเร็จ!", type: 'success' });
+      showToast(response.message || 'สร้างกลุ่มสำเร็จ!', 'success');
+      // รีเซ็ตฟอร์ม
+      setSelectedProductId(null);
+      setSelectedVariantId(null);
+      setGroupName('');
+      setDescription('');
+      setExpireAt('');
+      setRequiredMembers(1);
+      setItemsPerMember(1);
+      setPointsPerGroup(0);
     } catch (error) {
-      setMessage({ text: "เกิดข้อผิดพลาดในการสร้างกลุ่ม", type: 'error' });
+      const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างกลุ่ม';
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="p-6 sm:p-8 lg:p-12 w-full max-w-[90%] lg:max-w-6xl mx-auto my-10 bg-white rounded-2xl shadow-xl border border-gray-100 transform transition-all duration-300 hover:shadow-2xl">
@@ -104,8 +119,6 @@ export default function CreateGroupForm() {
           สร้าง Group Buying ใหม่
         </h1>
       </div>
-
-      {message && <Alert message={message} />}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Group 1: Group Details */}
@@ -129,8 +142,8 @@ export default function CreateGroupForm() {
                 label="สินค้า"
                 value={selectedProductId ?? ""}
                 onChange={(val) => {
-                    setSelectedProductId(Number(val));
-                    setSelectedVariantId(null);
+                  setSelectedProductId(Number(val));
+                  setSelectedVariantId(null);
                 }}
                 options={products.map(p => ({ value: p.product_id, label: p.product_name ?? "" }))}
                 placeholder="เลือกสินค้าที่ต้องการ"
@@ -170,17 +183,19 @@ export default function CreateGroupForm() {
         {/* Group 3: Group Parameters & Points */}
         <InputGroup title="3. การตั้งค่ากลุ่ม">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <NumericInput label="สมาชิก (คน)" min={1} value={required_members} onChange={setRequiredMembers} icon={<Users className="w-4 h-4" />} />
-            <NumericInput label="สินค้าต่อสมาชิก (ชิ้น)" min={1} value={items_per_member} onChange={setItemsPerMember} icon={<Package className="w-4 h-4" />} />
+            <NumericInput label="สมาชิก (คน)" min={1} value={required_members} onChange={(val) => setRequiredMembers(Number(val))} icon={<Users className="w-4 h-4" />} />
+            <NumericInput label="สินค้าต่อสมาชิก (ชิ้น)" min={1} value={items_per_member} onChange={(val) => setItemsPerMember(Number(val))} icon={<Package className="w-4 h-4" />} />
             <NumericInput label="สินค้าต่อกลุ่ม (ชิ้น)" min={1} value={total_items} onChange={() => {}} icon={<Package className="w-4 h-4" />} disabled={true} />
           </div>
+
           <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
             <span>ตัวอย่าง: ถ้า สมาชิก=5 และ สินค้าต่อสมาชิก=2</span>
             <ArrowRight className="w-3 h-3" />
             <span>จำเป็นต้องมีสินค้าทั้งหมด 10 ชิ้น</span>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <NumericInput label="แต้มต่อกลุ่ม (Points)" min={0} value={points_per_group} onChange={setPointsPerGroup} icon={<Gift className="w-4 h-4" />} />
+            <NumericInput label="แต้มต่อกลุ่ม (Points)" min={0} value={points_per_group} onChange={(val) => setPointsPerGroup(Number(val))} icon={<Gift className="w-4 h-4" />} />
             <NumericInput label="แต้มต่อสมาชิก (Points)" min={0} value={points_per_member} onChange={() => {}} icon={<Gift className="w-4 h-4" />} disabled={true} />
           </div>
         </InputGroup>
@@ -285,13 +300,13 @@ function Textarea({ label, value, placeholder, onChange }: TextareaProps) {
   return (
     <div>
       <label className="block mb-2 text-sm font-medium text-gray-700">{label}</label>
-      <textarea 
-        value={value} 
-        onChange={e => onChange(e.target.value)} 
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         rows={3}
         className={`border border-gray-300 p-3 w-full rounded-lg transition duration-150 ease-in-out 
-          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 resize-none`} 
+          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 resize-none`}
       />
     </div>
   );
@@ -311,9 +326,9 @@ function Select({ label, value, onChange, placeholder, options, disabled = false
     <div>
       <label className="block mb-2 text-sm font-medium text-gray-700">{label}</label>
       <div className="relative">
-        <select 
-          value={value} 
-          onChange={e => onChange(e.target.value)} 
+        <select
+          value={value}
+          onChange={e => onChange(e.target.value)}
           disabled={disabled}
           className={`border border-gray-300 appearance-none p-3 w-full rounded-lg bg-white pr-10 cursor-pointer 
             transition duration-150 ease-in-out focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed`}
@@ -328,25 +343,6 @@ function Select({ label, value, onChange, placeholder, options, disabled = false
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
           <ChevronDown className="w-4 h-4" />
         </div>
-      </div>
-    </div>
-  );
-}
-
-interface AlertProps {
-  message: { text: string, type: 'success' | 'error' };
-}
-
-function Alert({ message }: AlertProps) {
-  const isSuccess = message.type === 'success';
-  const bgColor = isSuccess ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
-  const Icon = isSuccess ? CheckCircle : XCircle;
-
-  return (
-    <div className={`mb-4 p-4 rounded-lg border-l-4 ${bgColor} transition-opacity duration-300`}>
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5 flex-shrink-0" />
-        <p className="font-medium text-sm">{message.text}</p>
       </div>
     </div>
   );

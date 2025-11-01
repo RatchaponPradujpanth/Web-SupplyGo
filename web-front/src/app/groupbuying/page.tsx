@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadbalance } from '@/service/api/loadbalance';
@@ -7,6 +6,7 @@ import { loadgroupbuy } from '@/service/api/groupsharing/loadgroupbuy';
 import { joingroup } from '@/service/api/groupsharing/joingroup';
 import { leavegroup } from '@/service/api/groupsharing/leavegroup';
 import { loadaddress } from '@/service/api/loadaddress';
+import { useToast } from '@/components/Toast';
 import type { GroupBuyingResult, Address } from '@/types/type';
 import TopupFormModal from '@/components/customer/topupFrom';
 import AddressModal from '@/components/groupbuying/AddressModal';
@@ -33,9 +33,9 @@ export default function GroupBuyingPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
-
   const [nowTime, setNowTime] = useState(Date.now());
   const router = useRouter();
+  const { showToast } = useToast();
 
   // Countdown update
   useEffect(() => {
@@ -47,21 +47,17 @@ export default function GroupBuyingPage() {
     try {
       setLoading(true);
       setError(null);
-
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/');
         return;
       }
-
       const balanceData = await loadbalance(token);
       setPoints(balanceData);
-
       const groupData = await loadgroupbuy(token);
       if (Array.isArray(groupData)) {
         setGroups(groupData);
       }
-
       const addressData = await loadaddress(token);
       setAddresses(Array.isArray(addressData) ? addressData : []);
       if (addressData.length > 0) setSelectedAddressId(addressData[0].address_id);
@@ -81,7 +77,7 @@ export default function GroupBuyingPage() {
 
   const handleConfirmJoin = async () => {
     if (!modalGroupId || !selectedAddressId) {
-      alert('กรุณาเลือกที่อยู่ก่อนเข้ากลุ่ม');
+      showToast('กรุณาเลือกที่อยู่ก่อนเข้ากลุ่ม', 'warning');
       return;
     }
 
@@ -91,7 +87,7 @@ export default function GroupBuyingPage() {
     if (!group) return;
 
     if (points < group.points_per_member) {
-      alert('คุณมี point ไม่เพียงพอ');
+      showToast('คุณมี point ไม่เพียงพอ', 'warning');
       return;
     }
 
@@ -107,19 +103,17 @@ export default function GroupBuyingPage() {
 
     try {
       await joingroup(modalGroupId, points, selectedAddressId);
-      
       // โหลด Point ใหม่จาก backend หลังเข้ากลุ่มสำเร็จ
       const token = localStorage.getItem('token');
       if (token) {
         const updatedBalance = await loadbalance(token);
         setPoints(updatedBalance);
       }
-      
-      alert('เข้ากลุ่มสำเร็จ 🎉');
+      showToast('เข้ากลุ่มสำเร็จ', 'success');
       setModalGroupId(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'เข้ากลุ่มไม่สำเร็จ ❌';
-      alert(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : 'เข้ากลุ่มไม่สำเร็จ';
+      showToast(errorMessage, 'error');
       // Revert optimistic update
       setGroups(prev =>
         prev.map(g =>
@@ -152,18 +146,16 @@ export default function GroupBuyingPage() {
 
     try {
       await leavegroup(group_buying_id);
-      
       // โหลด Point ใหม่จาก backend หลังออกจากกลุ่มสำเร็จ
       const token = localStorage.getItem('token');
       if (token) {
         const updatedBalance = await loadbalance(token);
         setPoints(updatedBalance);
       }
-      
-      alert('ออกจากกลุ่มสำเร็จ ✅');
+      showToast('ออกจากกลุ่มสำเร็จ', 'success');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'ออกจากกลุ่มไม่สำเร็จ ❌';
-      alert(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : 'ออกจากกลุ่มไม่สำเร็จ';
+      showToast(errorMessage, 'error');
       // Revert optimistic update
       setGroups(prev =>
         prev.map(g =>
@@ -180,7 +172,7 @@ export default function GroupBuyingPage() {
   const handlePaymentSuccess = () => {
     // เมื่อชำระเงินสำเร็จ ให้เพิ่ม Point
     setPoints(prev => (prev ?? 0) + topUpAmount);
-    alert(`เติม Point สำเร็จ! +${topUpAmount.toLocaleString()} Point 🎉`);
+    showToast(`เติม Point สำเร็จ! +${topUpAmount.toLocaleString()} Point`, 'success');
     setShowPaymentModal(false);
     setTopUpAmount(0);
     fetchData(); // Reload data
@@ -215,7 +207,7 @@ export default function GroupBuyingPage() {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 p-6">
@@ -240,7 +232,6 @@ export default function GroupBuyingPage() {
             </h1>
             <p className="text-gray-600 text-lg">ซื้อร่วมกันเพื่อรับส่วนลดพิเศษและสะสมแต้ม!</p>
           </div>
-
           {/* Balance Display - มุมขวาบน */}
           <button 
             onClick={() => setShowTopUpModal(true)}
@@ -318,7 +309,6 @@ export default function GroupBuyingPage() {
           {filteredGroups.map(group => {
             const isJoining = joiningIds.includes(group.group_buying_id);
             const isLeaving = leavingIds.includes(group.group_buying_id);
-
             return (
               <GroupBuyingCard
                 key={group.group_buying_id}

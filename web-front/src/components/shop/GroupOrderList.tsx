@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { managegroup } from "@/service/api/groupsharing/managegroup";
 import { cancelgroup } from "@/service/api/groupsharing/cancelgroup";
+import { useToast } from "@/components/Toast";
 import type { GroupOrderResponse } from "@/types/type";
 import {
   Package,
@@ -19,6 +20,7 @@ export default function ManageGroups() {
   const [groups, setGroups] = useState<GroupOrderResponse[]>([]);
   const [storeBalance, setStoreBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -30,24 +32,27 @@ export default function ManageGroups() {
         setStoreBalance(data.store_balance);
       } catch (error: any) {
         console.error("Error fetching groups:", error.message || error);
+        showToast('โหลดกลุ่มไม่สำเร็จ', 'error');
       } finally {
         setLoading(false);
       }
     };
     fetchGroups();
-  }, []);
+  }, [showToast]);
 
   const handleCancelOrder = async (group_buying_id: number) => {
     try {
       await cancelgroup(group_buying_id);
-      alert("ยกเลิกออเดอร์เรียบร้อย ❌");
+      showToast('ยกเลิกออเดอร์เรียบร้อย', 'success');
       const token = localStorage.getItem("token");
       if (!token) return;
       const data = await managegroup(token);
       setGroups(data.groups);
       setStoreBalance(data.store_balance);
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
+      const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการยกเลิกออเดอร์';
+      showToast(msg, 'error');
     }
   };
 
@@ -245,32 +250,34 @@ function TrackingInput({
   groupMemberId,
   trackingNumber,
   onSave,
+  showToast: showToastProp,
 }: {
   groupMemberId: number;
   trackingNumber: string | null;
   onSave?: (newTracking: string) => void;
+  showToast?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
 }) {
+  const { showToast: showToastHook } = useToast();
+  const showToast = showToastProp || showToastHook;
+
   const [tracking, setTracking] = useState(trackingNumber || "");
   const [isEditing, setIsEditing] = useState(!trackingNumber);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
 
   const handleSave = async () => {
     if (!tracking.trim()) {
-      setMessage("⚠️ กรุณากรอกเลขพัสดุ");
-      setTimeout(() => setMessage(""), 3000);
+      showToast('กรุณากรอกเลขพัสดุ', 'warning');
       return;
     }
     try {
       setSaving(true);
       await updateGroupTrackingNumber(groupMemberId, tracking);
       setIsEditing(false);
-      setMessage("✅ บันทึกสำเร็จ");
+      showToast('บันทึกเลขพัสดุสำเร็จ', 'success');
       if (onSave) onSave(tracking);
-      setTimeout(() => setMessage(""), 3000);
     } catch (error: any) {
-      setMessage(`❌ ${error?.message || "เกิดข้อผิดพลาด"}`);
-      setTimeout(() => setMessage(""), 3000);
+      const msg = error?.message || 'เกิดข้อผิดพลาด';
+      showToast(msg, 'error');
     } finally {
       setSaving(false);
     }
@@ -278,8 +285,7 @@ function TrackingInput({
 
   const handleCopy = () => {
     navigator.clipboard.writeText(tracking);
-    setMessage("📋 คัดลอกแล้ว");
-    setTimeout(() => setMessage(""), 2000);
+    showToast('คัดลอกเลขพัสดุแล้ว', 'success');
   };
 
   if (!isEditing && tracking) {
@@ -303,7 +309,6 @@ function TrackingInput({
             <Edit3 className="w-3 h-3" /> แก้ไข
           </button>
         </div>
-        {message && <span className="text-green-600 font-medium">{message}</span>}
       </div>
     );
   }
@@ -326,7 +331,6 @@ function TrackingInput({
           {saving ? "กำลังบันทึก..." : "บันทึก"}
         </button>
       </div>
-      {message && <p className="text-gray-600 font-medium text-xs">{message}</p>}
     </div>
   );
 }

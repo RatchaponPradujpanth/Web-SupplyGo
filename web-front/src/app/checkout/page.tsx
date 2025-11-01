@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCartSummary } from '@/service/api/getCartSummary';
@@ -8,6 +7,7 @@ import { loadaddress } from '@/service/api/loadaddress';
 import type { Address } from '@/types/type';
 import { createOrder } from '@/service/api/createorder';
 import { checkStock, type InsufficientStockItem } from '@/service/checkStock';
+import { useToast } from '@/components/Toast';
 import { 
   CreditCard, 
   MapPin, 
@@ -29,6 +29,7 @@ export default function CheckoutPage() {
   const [checkingStock, setCheckingStock] = useState(false);
   const [insufficientStockItems, setInsufficientStockItems] = useState<InsufficientStockItem[]>([]);
   const router = useRouter();
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const addressId = searchParams.get('addressId');
 
@@ -36,13 +37,13 @@ export default function CheckoutPage() {
     const fetchData = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-        alert("กรุณาเข้าสู่ระบบ");
+        showToast('กรุณาเข้าสู่ระบบ', 'warning');
         router.push('/');
         return;
       }
 
       if (!addressId) {
-        alert("กรุณาเลือกที่อยู่จัดส่ง");
+        showToast('กรุณาเลือกที่อยู่จัดส่ง', 'warning');
         router.push('/cart');
         return;
       }
@@ -50,7 +51,6 @@ export default function CheckoutPage() {
       try {
         const data = await getCartSummary(token);
         console.log("Cart summary data:", data);
-
         if (data?.items?.length) {
           data.items.forEach((item: CheckoutItem, index: number) => {
             console.log(`Item ${index + 1}:`, {
@@ -60,46 +60,39 @@ export default function CheckoutPage() {
             });
           });
         }
-
         setSummary(data);
-
         // เช็คสต็อกจาก Backend
         await checkStockAvailability(token, data);
-
         const addrData = await loadaddress(token);
         const selectedAddr = addrData.find(addr => addr.address_id === Number(addressId));
         if (selectedAddr) {
           setSelectedAddressData(selectedAddr);
         } else {
-          alert("ไม่พบที่อยู่ที่เลือก");
+          showToast('ไม่พบที่อยู่ที่เลือก', 'error');
           router.push('/cart');
           return;
         }
       } catch (err) {
         console.error(err);
-        alert("โหลดข้อมูลไม่สำเร็จ");
+        showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, [router, addressId]);
+  }, [router, addressId, showToast]);
 
   // ฟังก์ชันเช็คสต็อกจาก Backend
   const checkStockAvailability = async (token: string, data: { items: CheckoutItem[] }) => {
     try {
       setCheckingStock(true);
-      
       // เตรียมข้อมูลสำหรับเช็คสต็อก
       const stockCheckItems = data.items.map(item => ({
         productId: item.product_id,
         quantity: item.quantity,
         variantId: item.variant_id || null,
       }));
-
       const stockResult = await checkStock(token, stockCheckItems);
-
       if (!stockResult.available && stockResult.insufficientItems) {
         setInsufficientStockItems(stockResult.insufficientItems);
         console.log("⚠️ Insufficient stock items:", stockResult.insufficientItems);
@@ -140,22 +133,16 @@ export default function CheckoutPage() {
     );
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
   const totalAmount = summary.items.reduce(
     (sum, item) => sum + Number(item.total_price),
     0
   );
-
   const subtotalsByShop = summary.items.reduce((acc, item) => {
     const shop = item.shop_name;
     if (!acc[shop]) acc[shop] = 0;
     acc[shop] += Number(item.total_price);
     return acc;
   }, {} as Record<string, number>);
-
-  console.log("Selected address:", selectedAddressData);
-  console.log("Total amount:", totalAmount);
-  console.log("Subtotals by shop:", subtotalsByShop);
 
   const createOrderPayload: CreateOrderPayload = {
     addressId: Number(addressId),
@@ -170,7 +157,6 @@ export default function CheckoutPage() {
         variant_options: item.variant_options,
         total_price: item.total_price,
       });
-
       return {
         productId: item.product_id,
         quantity: item.quantity,
@@ -185,32 +171,31 @@ export default function CheckoutPage() {
 
   const handleCreateOrder = async () => {
     if (!token) {
-      alert('กรุณาเข้าสู่ระบบ');
+      showToast('กรุณาเข้าสู่ระบบ', 'warning');
       router.push('/');
       return;
     }
 
     // เช็คสต็อกอีกครั้งก่อนสร้าง order (Real-time check)
     if (insufficientStockItems.length > 0) {
-      alert('มีสินค้าบางรายการมีจำนวนไม่เพียงพอ กรุณาตรวจสอบและแก้ไขจำนวนสินค้าในตะกร้า');
+      showToast('มีสินค้าบางรายการมีจำนวนไม่เพียงพอ กรุณาตรวจสอบและแก้ไขจำนวนสินค้าในตะกร้า', 'warning');
       return;
     }
 
     console.log("Sending createOrderPayload:", createOrderPayload);
-
     try {
       setCreatingOrder(true);
       const response = await createOrder(token, createOrderPayload);
-      alert('สร้างคำสั่งซื้อสำเร็จ');
+      showToast('สร้างคำสั่งซื้อสำเร็จ', 'success');
       router.push(`/payment?addressId=${addressId}&orderId=${response.order_id}`);
     } catch (error: any) {
       // ถ้า Backend ตอบกลับว่าสต็อกไม่พอ
       if (error.response?.data?.message?.includes('Stock not enough')) {
-        alert('สินค้าหมดสต็อกขณะทำการสั่งซื้อ กรุณาลองใหม่อีกครั้ง');
+        showToast('สินค้าหมดสต็อกขณะทำการสั่งซื้อ กรุณาลองใหม่อีกครั้ง', 'error');
         // รีเฟรชข้อมูล
         window.location.reload();
       } else {
-        alert('สร้างคำสั่งซื้อไม่สำเร็จ');
+        showToast('สร้างคำสั่งซื้อไม่สำเร็จ', 'error');
       }
       console.error(error);
     } finally {
@@ -313,7 +298,6 @@ export default function CheckoutPage() {
         {summary.items.map((item) => {
           const insufficientInfo = getInsufficientStockInfo(item.product_id, item.variant_id);
           const isStockInsufficient = !!insufficientInfo;
-          
           return (
             <li 
               key={item.cart_item_id} 
@@ -331,7 +315,6 @@ export default function CheckoutPage() {
                   </div>
                   <p className="text-sm">จำนวน: {item.quantity} × ฿{Number(item.price_per_unit).toFixed(2)}</p>
                   <p className="text-sm font-semibold">รวมรายการ: ฿{Number(item.total_price).toFixed(2)}</p>
-                  
                   {/* แสดง variant options ถ้ามี */}
                   {item.variant_options && item.variant_options.length > 0 && (
                     <div className="mt-2 p-2 bg-gray-50 rounded">
@@ -348,7 +331,6 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   )}
-
                   {/* แสดง variant information ถ้ามี */}
                   {item.variant && (
                     <div className="mt-2 text-sm text-gray-600">
@@ -356,7 +338,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
                 </div>
-
                 {/* แสดงไอคอนเตือนถ้าสต็อกไม่พอ */}
                 {isStockInsufficient && (
                   <div className="ml-3">
@@ -364,7 +345,6 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
-
               {/* แสดงข้อความเตือนสำหรับสินค้าแต่ละรายการ */}
               {isStockInsufficient && insufficientInfo && (
                 <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded flex items-start gap-2">

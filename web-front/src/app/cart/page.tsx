@@ -7,6 +7,7 @@ import type { CartItemWithExtra, Address } from '@/types/type';
 import { removefromcart } from '@/service/api/removefromcart';
 import { loadaddress } from '@/service/api/loadaddress';
 import { updateCartQuantity } from '@/service/api/updateCartQuantity';
+import { useToast } from '@/components/Toast';
 import NumericInput from '@/components/ui/NumericInput';
 
 export default function CartPage() {
@@ -16,6 +17,7 @@ export default function CartPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const router = useRouter();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -43,6 +45,7 @@ export default function CartPage() {
         }
       } catch (error) {
         console.error('❌ เกิดข้อผิดพลาดในการโหลดตะกร้า:', error);
+        showToast('โหลดตะกร้าไม่สำเร็จ', 'error');
         setCartItems([]);
       } finally {
         setLoading(false);
@@ -50,7 +53,7 @@ export default function CartPage() {
     };
 
     fetchCart();
-  }, [router]);
+  }, [router, showToast]);
 
   const handleRemoveItem = async (item: CartItemWithExtra) => {
     try {
@@ -67,9 +70,10 @@ export default function CartPage() {
       );
 
       setTotal(prev => prev - Number(item.total_price));
+      showToast('ลบสินค้าสำเร็จ', 'success');
     } catch (error) {
       console.error('❌ ลบสินค้าไม่สำเร็จ:', error);
-      alert('ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      showToast('ไม่สามารถลบสินค้าได้ กรุณาลองใหม่อีกครั้ง', 'error');
     }
   };
 
@@ -78,7 +82,7 @@ export default function CartPage() {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('กรุณาเข้าสู่ระบบใหม่');
+      showToast('กรุณาเข้าสู่ระบบใหม่', 'warning');
       router.push('/login');
       return;
     }
@@ -114,9 +118,9 @@ export default function CartPage() {
       
       // แสดงข้อความแจ้งเตือนให้ผู้ใช้
       if (error instanceof Error && error.message.includes('เกินจำนวนในสต็อก')) {
-        alert(error.message);
+        showToast(error.message, 'warning');
       } else {
-        alert('ไม่สามารถอัปเดตจำนวนสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+        showToast('ไม่สามารถอัปเดตจำนวนสินค้าได้ กรุณาลองใหม่อีกครั้ง', 'error');
       }
       
       // โหลดข้อมูลตะกร้าใหม่เพื่อให้แน่ใจว่าข้อมูลถูกต้อง
@@ -130,6 +134,7 @@ export default function CartPage() {
         setTotal(totalPrice);
       } catch (reloadError) {
         console.error('❌ โหลดตะกร้าใหม่ไม่สำเร็จ:', reloadError);
+        showToast('โหลดตะกร้าใหม่ไม่สำเร็จ', 'error');
       }
     }
   };
@@ -279,7 +284,7 @@ export default function CartPage() {
               <button
                 onClick={() => {
                   if (!selectedAddressId) {
-                    alert('กรุณาเลือกที่อยู่จัดส่ง');
+                    showToast('กรุณาเลือกที่อยู่จัดส่ง', 'warning');
                     return;
                   }
                   router.push(`/checkout?addressId=${selectedAddressId}`);
