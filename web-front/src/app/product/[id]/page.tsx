@@ -1,278 +1,585 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import axios from 'axios';
-import { useToast } from '@/components/Toast';
-import { Package, Search } from 'lucide-react';
+import { Package, AlertCircle } from 'lucide-react';
 import Footer from '@/components/layout/Footer';
+import { fetchUserRole } from '@/service/api/fetchrole';
+import { addtocart } from '@/service/api/addtocart';
+import { useToast } from '@/components/Toast';
+
+
+interface ProductImage {
+  id: number;
+  image_url: string;
+  is_primary: boolean;
+}
+
+interface VariantOption {
+  variant_option_id: number;
+  option_id: number;
+  value: string;
+  option_name: string;
+}
+
+interface ProductVariant {
+  variant_id: number;
+  sku: string;
+  price: number;
+  variant_options: VariantOption[];
+}
 
 interface Product {
   product_id: number;
   product_name: string;
   product_description: string;
   price: number;
-  image: string | null;
   category_name?: string;
-  product_images?: {
-    id: number;
-    image_url: string;
-    is_primary: boolean;
-  }[];
-  product_variants?: {
-    variant_id: number;
-    sku: string;
-    price: number;
+  product_images: ProductImage[];
+  product_variants?: ProductVariant[];
+  product_options?: {
+    option_id: number;
+    name: string;
   }[];
 }
 
-function SearchResults() {
-  const searchParams = useSearchParams();
+export default function ProductDetailPage() {
+  const params = useParams();
   const router = useRouter();
   const { showToast } = useToast();
-  const query = searchParams.get('q') || '';
+  const productId = params?.id as string;
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string>('');
+  const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'relevant' | 'price-asc' | 'price-desc'>('relevant');
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<'description' | 'specs'>('description');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-  const searchProducts = async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setProducts([]);
-      setLoading(false);
+  // ✅ ตรวจสอบ role - ห้าม admin และ store เข้าหน้านี้
+  useEffect(() => {
+    const checkRole = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return; // ถ้าไม่มี token ให้ผ่านไปก่อน (guest)
+
+      try {
+        const userRole = await fetchUserRole(token);
+        if (userRole === 'admin' || userRole === 'store') {
+          showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'warning');
+          router.push('/'); // redirect ไปหน้าหลัก
+        }
+      } catch (error) {
+        console.error('Error checking role:', error);
+      }
+    };
+
+    checkRole();
+  }, [router, showToast]);
+
+  useEffect(() => {
+    if (!productId) return;
+
+    const fetchProduct = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const response = await axios.get(`${API_URL}/api/products/${productId}`, { headers });
+        const productData = response.data;
+
+        setProduct(productData);
+        
+        // ตั้งรูปแรกเป็นรูปหลัก
+        const primaryImage = productData.product_images?.find((img: ProductImage) => img.is_primary);
+        const firstImage = primaryImage || productData.product_images?.[0];
+        if (firstImage) {
+          // แปลง URL ให้ถูกต้อง
+          let imageUrl = firstImage.image_url;
+          if (!imageUrl.startsWith('http')) {
+            imageUrl = `${API_URL}${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+          }
+          setSelectedImage(imageUrl);
+        }
+
+        // โหลดสินค้าที่เกี่ยวข้อง (same category)
+        if (productData.category_name) {
+          try {
+            const relatedResponse = await axios.get(`${API_URL}/api/loaduserproduct`);
+            const allProducts = relatedResponse.data;
+            
+            // กรองเฉพาะสินค้าที่ category เดียวกัน และไม่ใช่สินค้าตัวเอง
+            const related = allProducts
+              .filter((p: Product) => 
+                p.category_name === productData.category_name && 
+                p.product_id !== productData.product_id
+              )
+              .slice(0, 4); // เอาแค่ 4 รายการ
+            
+            setRelatedProducts(related);
+          } catch (error) {
+            console.error('Error loading related products:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading product:', error);
+        showToast('ไม่สามารถโหลดข้อมูลสินค้าได้', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId, API_URL, showToast]);
+
+  const handleAddToCart = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    showToast('กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า', 'warning');
+    router.push('/login');
+    return;
+  }
+
+  try {
+    // ตรวจสอบตัวเลือกสินค้า
+    if (product?.product_options && product.product_options.length > 0) {
+      const allSelected = product.product_options.every(opt => selectedOptions[opt.name]);
+      if (!allSelected) {
+        showToast('กรุณาเลือกตัวเลือกสินค้าให้ครบ', 'warning');
+        return;
+      }
+    }
+
+    // หา variant_id
+    let variantId: number | undefined;
+    if (product?.product_variants && Object.keys(selectedOptions).length > 0) {
+      const matchedVariant = product.product_variants.find(variant => {
+        return variant.variant_options.every(opt =>
+          selectedOptions[opt.option_name] === opt.value
+        );
+      });
+      variantId = matchedVariant?.variant_id;
+    }
+
+    // แปลง selectedOptions เป็น option_value_id (ถ้ามี)
+    let optionValueIds: number[] | undefined;
+    if (product?.product_variants && Object.keys(selectedOptions).length > 0) {
+      optionValueIds = Object.values(selectedOptions)
+        .map(val => Number(val))
+        .filter(Boolean);
+    }
+
+    if (!product?.product_id) {
+      showToast('ไม่พบข้อมูลสินค้า', 'error');
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await axios.get(`${API_URL}/api/loaduserproduct`);
-      const allProducts = response.data;
+    console.log('💡 Calling addtocart with:', {
+      product_id: product.product_id,
+      quantity,
+      variant_id: variantId,
+      option_value_id: optionValueIds,
+    });
 
-      // กรองสินค้าที่ชื่อหรือคำอธิบายมีคำค้นหา
-      const filtered = allProducts.filter((product: Product) => {
-        const nameMatch = product.product_name?.toLowerCase().includes(searchQuery.toLowerCase());
-        const descMatch = product.product_description?.toLowerCase().includes(searchQuery.toLowerCase());
-        return nameMatch || descMatch;
-      });
+    await addtocart(product.product_id, quantity, variantId, optionValueIds);
 
-      setProducts(filtered);
-    } catch (error) {
-      console.error('Error searching products:', error);
-      showToast('ไม่สามารถค้นหาสินค้าได้', 'error');
-    } finally {
-      setLoading(false);
-    }
+    showToast('เพิ่มสินค้าลงตะกร้าแล้ว', 'success');
+    // ไม่ redirect ไปหน้าตะกร้า ให้อยู่หน้าเดิม
+  } catch (error) {
+    console.error('❌ Error adding to cart:', error);
+    const errorMessage = error instanceof Error ? error.message : 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้';
+    showToast(errorMessage, 'error');
+  }
+};
+
+  const handleBuyNow = async () => {
+    await handleAddToCart();
   };
 
-  useEffect(() => {
-    if (query) {
-      searchProducts(query);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  const getCurrentPrice = () => {
+    if (!product) return 0;
 
-  // เรียงลำดับสินค้า
-  const sortedProducts = [...products].sort((a, b) => {
-    if (sortBy === 'price-asc' || sortBy === 'price-desc') {
-      // ดึงราคาจริงของสินค้าแต่ละรายการ
-      const getPriceForSort = (product: Product) => {
-        if (product.price) {
-          return parseFloat(product.price.toString());
+    // กรณีมี variants
+    if (product.product_variants && product.product_variants.length > 0) {
+      // ถ้าเลือกครบแล้ว ให้แสดงราคาของ variant ที่เลือก
+      if (Object.keys(selectedOptions).length > 0) {
+        const matchedVariant = product.product_variants.find(variant => {
+          return variant.variant_options.every(opt => 
+            selectedOptions[opt.option_name] === opt.value
+          );
+        });
+        if (matchedVariant && matchedVariant.price) {
+          return parseFloat(matchedVariant.price.toString());
         }
-        if (product.product_variants && product.product_variants.length > 0) {
-          const prices = product.product_variants
-            .map(v => v.price ? parseFloat(v.price.toString()) : null)
-            .filter((p): p is number => p !== null && p !== undefined);
-          if (prices.length > 0) {
-            return Math.min(...prices);
-          }
-        }
-        return 0;
-      };
-
-      const priceA = getPriceForSort(a);
-      const priceB = getPriceForSort(b);
-
-      return sortBy === 'price-asc' ? priceA - priceB : priceB - priceA;
+      }
+      // ถ้ายังไม่ได้เลือก ให้คืนค่า null เพื่อแสดงช่วงราคา
+      return null;
     }
-    return 0; // relevant - เรียงตามลำดับเดิม
-  });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // ไม่ต้องทำอะไร เพราะใช้ search bar ที่ header
+    // กรณีไม่มี variants ให้ดึงราคาจาก product.price
+    if (product.price) {
+      return parseFloat(product.price.toString());
+    }
+
+    return 0;
+  };
+
+  const getPriceRange = () => {
+    if (!product || !product.product_variants || product.product_variants.length === 0) {
+      return null;
+    }
+
+    const prices = product.product_variants
+      .map(v => v.price ? parseFloat(v.price.toString()) : null)
+      .filter((p): p is number => p !== null && p !== undefined);
+
+    if (prices.length === 0) return null;
+
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (minPrice === maxPrice) {
+      return formatPrice(minPrice);
+    }
+
+    return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
   };
 
   const formatPrice = (price: number | null | undefined) => {
-    if (price == null) return 'ติดต่อร้านค้า';
+    if (price == null || price === 0) return 'ติดต่อร้านค้า';
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: 'THB',
     }).format(price);
   };
 
-  const getImageUrl = (product: Product) => {
-    const imageUrl = product.image || product.product_images?.[0]?.image_url;
+  const getImageUrl = (imageUrl: string) => {
     if (!imageUrl) return null;
     if (imageUrl.startsWith('http')) return imageUrl;
     return `${API_URL}${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
   };
 
+  // จัดกลุ่ม options
+  const groupedOptions = product?.product_variants?.reduce((acc, variant) => {
+    variant.variant_options.forEach(opt => {
+      if (!acc[opt.option_name]) {
+        acc[opt.option_name] = new Set();
+      }
+      acc[opt.option_name].add(opt.value);
+    });
+    return acc;
+  }, {} as Record<string, Set<string>>) || {};
+
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">ไม่พบสินค้า</h2>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          >
+            กลับหน้าแรก
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bgpage">
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        {/* Results Header & Sort */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        {/* Breadcrumb */}
+        <nav className="text-sm text-textmuted mb-6">
+          <Link href="/" className="hover:text-primary">หน้าหลัก</Link>
+          {product.category_name && (
+            <>
+              <span className="mx-2">/</span>
+              <Link href={`/category/${product.category_name}`} className="hover:text-primary">
+                {product.category_name}
+              </Link>
+            </>
+          )}
+          <span className="mx-2">/</span>
+          <span className="text-textmain">สินค้า</span>
+        </nav>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          {/* Image Gallery */}
           <div>
-            <h1 className="text-2xl font-bold text-textmain">
-              ผลการค้นหา {query && (
-                <>
-                  สำหรับ &ldquo;<span className="text-primary">{query}</span>&rdquo;
-                </>
-              )}
-            </h1>
-            <p className="text-textmuted mt-2">
-              {loading ? 'กำลังค้นหา...' : `พบ ${products.length} รายการ`}
-            </p>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-card shadow-card overflow-hidden mb-4"
+            >
+              <div className="aspect-square relative">
+                {selectedImage ? (
+                  <Image
+                    src={selectedImage}
+                    alt={product.product_name}
+                    fill
+                    className="object-contain p-4"
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package size={96} className="text-gray-300" />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Thumbnails */}
+            {product.product_images && product.product_images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {product.product_images.map((img) => {
+                  let imageUrl = img.image_url;
+                  if (!imageUrl.startsWith('http')) {
+                    imageUrl = `${API_URL}${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+                  }
+                  return (
+                    <button
+                      key={img.id}
+                      onClick={() => setSelectedImage(imageUrl)}
+                      className={`aspect-square relative bg-white rounded-lg overflow-hidden border-2 transition ${
+                        selectedImage === imageUrl
+                          ? 'border-primary'
+                          : 'border-transparent hover:border-gray-300'
+                      }`}
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt={`${product.product_name} thumbnail`}
+                        fill
+                        className="object-contain p-2"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Sort Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-textmuted">เรียงตาม:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'relevant' | 'price-asc' | 'price-desc')}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-2 outline-none focus:border-primary transition"
-            >
-              <option value="relevant">เกี่ยวข้อง</option>
-              <option value="price-asc">ราคา: ต่ำ → สูง</option>
-              <option value="price-desc">ราคา: สูง → ต่ำ</option>
-            </select>
+          {/* Product Info */}
+          <div>
+            <h1 className="text-3xl font-bold text-textmain mb-4">{product.product_name}</h1>
+            
+            <div className="text-4xl font-bold text-primary mb-6">
+              {(() => {
+                const currentPrice = getCurrentPrice();
+                // ถ้าเลือกแล้ว ให้แสดงราคาของ variant
+                if (currentPrice !== null && currentPrice > 0) {
+                  return formatPrice(currentPrice);
+                }
+                // ถ้ามี variants แต่ยังไม่ได้เลือก แสดงช่วงราคา
+                const priceRange = getPriceRange();
+                if (priceRange) {
+                  return priceRange;
+                }
+                // ถ้าหาราคาไม่ได้ ให้แสดง null
+                return 'ติดต่อร้านค้า';
+              })()}
+            </div>
+
+            {/* Options */}
+            {Object.entries(groupedOptions).map(([optionName, values]) => (
+              <div key={optionName} className="mb-6">
+                <h3 className="text-sm font-medium text-textmain mb-3">{optionName}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(values).map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => setSelectedOptions({ ...selectedOptions, [optionName]: value })}
+                      className={`px-6 py-2 rounded-lg border-2 transition ${
+                        selectedOptions[optionName] === value
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-gray-300 bg-white hover:border-primary'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Quantity */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-textmain mb-3">จำนวน</h3>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+                >
+                  -
+                </button>
+                <span className="text-lg font-medium w-12 text-center">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 mb-8">
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 py-3 bg-secondary text-textmain font-semibold rounded-lg hover:bg-secondary/90 transition shadow-md"
+              >
+                เพิ่มลงตะกร้า
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="flex-1 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition shadow-md"
+              >
+                ซื้อตอนนี้
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex gap-6 border-b border-gray-200 mb-4">
+                <button
+                  onClick={() => setActiveTab('description')}
+                  className={`pb-2 font-medium transition ${
+                    activeTab === 'description'
+                      ? 'text-primary border-b-2 border-primary'
+                      : 'text-textmuted hover:text-textmain'
+                  }`}
+                >
+                  รายละเอียด
+                </button>
+                <button
+                  onClick={() => setActiveTab('specs')}
+                  className={`pb-2 font-medium transition ${
+                    activeTab === 'specs'
+                      ? 'text-primary border-b-2 border-primary'
+                      : 'text-textmuted hover:text-textmain'
+                  }`}
+                >
+                  คุณลักษณะ
+                </button>
+              </div>
+
+              {activeTab === 'description' && (
+                <div className="text-textmuted leading-relaxed">
+                  {product.product_description || 'Detailed description of the product goes here in a few paragraphs for layout.'}
+                </div>
+              )}
+
+              {activeTab === 'specs' && (
+                <div className="text-textmuted">
+                  <ul className="space-y-2">
+                    <li><strong>รหัสสินค้า:</strong> {product.product_id}</li>
+                    {product.category_name && (
+                      <li><strong>ประเภทสินค้า:</strong> {product.category_name}</li>
+                    )}
+                    {product.product_variants && product.product_variants.length > 0 && (
+                      <li><strong>ตัวเลือก:</strong> {product.product_variants.length} ตัวเลือกย่อย</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
-          </div>
-        )}
-
-        {/* Results Grid */}
-        {!loading && sortedProducts.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {sortedProducts.map((product) => {
-              const imageUrl = getImageUrl(product);
-
-              const getProductPrice = () => {
-                // ถ้ามี product.price และไม่เป็น null ให้ใช้
-                if (product.price) {
-                  return parseFloat(product.price.toString());
-                }
-                // ถ้าไม่มี ให้หาราคาจาก variants
-                if (product.product_variants && product.product_variants.length > 0) {
-                  const prices = product.product_variants
-                    .map(v => v.price ? parseFloat(v.price.toString()) : null)
-                    .filter((p): p is number => p !== null && p !== undefined);
-                  if (prices.length > 0) {
-                    return Math.min(...prices); // ดึงราคาต่ำสุด
+        {/* Related Products Section */}
+        <section className="mt-16">
+          <h2 className="text-2xl font-bold mb-6">สินค้าแนะนำ</h2>
+          {relatedProducts.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.map((relatedProduct) => {
+                const productImage = (relatedProduct as Product & { image?: string }).image || relatedProduct.product_images?.[0]?.image_url;
+                const imageUrl = productImage ? getImageUrl(productImage) : null;
+                
+                // ดึงราคาจาก product.price หรือ variant ถ้า product.price เป็น null
+                const getRelatedProductPrice = () => {
+                  // ถ้ามี product.price และไม่เป็น null ให้ใช้
+                  if (relatedProduct.price) {
+                    return parseFloat(relatedProduct.price.toString());
                   }
-                }
-                return null;
-              };
-              
-              return (
-                <button
-                  key={product.product_id}
-                  onClick={() => router.push(`/product/${product.product_id}`)}
-                  className="bg-white rounded-card shadow-card overflow-hidden hover:shadow-lg transition group"
-                >
-                  <div className="aspect-square relative bg-gray-50">
-                    {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt={product.product_name}
-                        fill
-                        className="object-contain p-4 group-hover:scale-105 transition"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-16 h-16 text-gray-300" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-sm font-medium text-textmain line-clamp-2 mb-2">
-                      {product.product_name}
-                    </h3>
-                    {product.category_name && (
-                      <p className="text-xs text-textmuted mb-2">
-                        {product.category_name}
+                  
+                  // ถ้าไม่มี ให้หาราคาจาก variants
+                  if (relatedProduct.product_variants && relatedProduct.product_variants.length > 0) {
+                    const prices = relatedProduct.product_variants
+                      .map(v => v.price ? parseFloat(v.price.toString()) : null)
+                      .filter((p): p is number => p !== null && p !== undefined);
+                    
+                    if (prices.length > 0) {
+                      return Math.min(...prices); // ดึงราคาต่ำสุด
+                    }
+                  }
+                  
+                  return null;
+                };
+                
+                return (
+                  <button
+                    key={relatedProduct.product_id}
+                    onClick={() => router.push(`/product/${relatedProduct.product_id}`)}
+                    className="bg-white rounded-card shadow-card overflow-hidden hover:shadow-lg transition group"
+                  >
+                    <div className="aspect-square relative bg-gray-50">
+                      {imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt={relatedProduct.product_name}
+                          fill
+                          className="object-contain p-4 group-hover:scale-105 transition"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package size={64} className="text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <p className="text-sm font-medium text-textmain line-clamp-2 mb-2">
+                        {relatedProduct.product_name}
                       </p>
-                    )}
-                    <p className="text-primary font-bold">
-                      {formatPrice(getProductPrice())}
-                    </p>
+                      <p className="text-primary font-bold">
+                        {formatPrice(getRelatedProductPrice())}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-card shadow-card p-4 text-center text-textmuted">
+                  <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                    <AlertCircle size={40} className="text-gray-300" />
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && products.length === 0 && query && (
-          <div className="text-center py-20">
-            <div className="flex justify-center mb-4">
-              <Search className="w-16 h-16 text-gray-300" />
+                  <p>ไม่มีสินค้าแนะนำ</p>
+                </div>
+              ))}
             </div>
-            <h3 className="text-xl font-semibold text-textmain mb-2">
-              ไม่พบสินค้าที่ค้นหา
-            </h3>
-            <p className="text-textmuted mb-6">
-              ไม่พบสินค้าที่มีคำว่า &ldquo;{query}&rdquo; ลองค้นหาด้วยคำอื่นดูนะ
-            </p>
-            <button
-              onClick={() => router.push('/')}
-              className="px-6 py-3 bg-primary text-white rounded-pill hover:bg-primary/90 transition"
-            >
-              กลับหน้าแรก
-            </button>
-          </div>
-        )}
-
-        {/* No Query State */}
-        {!loading && !query && (
-          <div className="text-center py-20">
-            <div className="flex justify-center mb-4">
-              <Search className="w-16 h-16 text-gray-300" />
-            </div>
-            <h3 className="text-xl font-semibold text-textmain mb-2">
-              พิมพ์คำค้นหาเพื่อเริ่มต้น
-            </h3>
-            <p className="text-textmuted">
-              ค้นหาสินค้าที่คุณต้องการด้านบน
-            </p>
-          </div>
-        )}
+          )}
+        </section>
       </main>
 
       <Footer />
     </div>
-  );
-}
-
-export default function SearchPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
-      </div>
-    }>
-      <SearchResults />
-    </Suspense>
   );
 }
