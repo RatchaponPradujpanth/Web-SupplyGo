@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: supplygo-backend
+    env: node
+    rootDir: web-back
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
