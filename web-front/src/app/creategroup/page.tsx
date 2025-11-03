@@ -10,12 +10,12 @@ export default function CreateGroupPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const [required_members, setRequiredMembers] = useState<number>(1);
-  const [total_items, setTotalItems] = useState<number>(1);
-  const [items_per_member, setItemsPerMember] = useState<number>(1); // เพิ่มตรงนี้
+  const [required_members, setRequiredMembers] = useState<number | string>(1);
+  const [total_items, setTotalItems] = useState<number | string>(1);
+  const [items_per_member, setItemsPerMember] = useState<number | string>(1); // เพิ่มตรงนี้
   const [status, setStatus] = useState<string>("open");
-  const [points_per_group, setPointsPerGroup] = useState<number>(0);
-  const [points_per_member, setPointsPerMember] = useState<number>(0);
+  const [points_per_group, setPointsPerGroup] = useState<number | string>(0);
+  const [points_per_member, setPointsPerMember] = useState<number | string>(0);
   const [group_name, setGroupName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expire_at, setExpireAt] = useState<string>("");
@@ -44,12 +44,12 @@ export default function CreateGroupPage() {
     const payload: CreateGroupRequest = {
       product_id: selectedProductId,
       variant_id: selectedVariantId,
-      required_members,
-      total_items,
-      items_per_member,
+      required_members: Number(required_members) || 1,
+      total_items: Number(total_items) || 1,
+      items_per_member: Number(items_per_member) || 1,
       status,
-      points_per_group,
-      points_per_member,
+      points_per_group: Number(points_per_group) || 0,
+      points_per_member: Number(points_per_member) || 0,
       group_name,
       description,
       expire_at

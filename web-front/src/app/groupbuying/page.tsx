@@ -31,7 +31,7 @@ export default function GroupBuyingPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState<number>(0);
+  const [topUpAmount, setTopUpAmount] = useState<number | string>(0);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [nowTime, setNowTime] = useState(Date.now());
   const router = useRouter();
@@ -171,8 +171,9 @@ export default function GroupBuyingPage() {
 
   const handlePaymentSuccess = () => {
     // เมื่อชำระเงินสำเร็จ ให้เพิ่ม Point
-    setPoints(prev => (prev ?? 0) + topUpAmount);
-    showToast(`เติม Point สำเร็จ! +${topUpAmount.toLocaleString()} Point`, 'success');
+    const amount = Number(topUpAmount) || 0;
+    setPoints(prev => (prev ?? 0) + amount);
+    showToast(`เติม Point สำเร็จ! +${amount.toLocaleString()} Point`, 'success');
     setShowPaymentModal(false);
     setTopUpAmount(0);
     fetchData(); // Reload data

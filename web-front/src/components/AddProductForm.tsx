@@ -44,7 +44,7 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
   const [useVariants, setUseVariants] = useState(false);
   const [options, setOptions] = useState<{ name: string; values: string[] }[]>([{ name: "", values: [""] }]);
   const [variants, setVariants] = useState<
-    { sku: string; price: number; stock_quantity: number; option_values: string[] }[]
+    { sku: string; price: number | string; stock_quantity: number | string; option_values: string[] }[]
   >([]);
   const [batches, setBatches] = useState<
     { batch_number: string; manufactured_date: string; expiry_date: string; quantity: string }[][]
@@ -95,20 +95,20 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
     }
 
     const combos = cartesian(filteredValues);
-    const newVariants = combos.map((combo) => ({ sku: "", price: 0, stock_quantity: 0, option_values: combo }));
+    const newVariants = combos.map((combo) => ({ sku: "", price: "" as any, stock_quantity: "" as any, option_values: combo }));
 
     setVariants(newVariants);
     setBatches(combos.map(() => [{ batch_number: "", manufactured_date: "", expiry_date: "", quantity: "" }]));
     toast.success(`✅ สร้าง ${newVariants.length} ตัวเลือกสำเร็จ!`);
   };
 
-  const handleVariantChange = (index: number, field: "sku" | "price" | "stock_quantity", value: string) => {
+  const handleVariantChange = (index: number, field: "sku" | "price" | "stock_quantity", value: string | number) => {
     const newVariants = [...variants];
     if (field === "price" || field === "stock_quantity") {
-      const numValue = Number(value);
-      newVariants[index][field] = isNaN(numValue) ? 0 : numValue;
+      // ยอมรับ empty string เพื่อให้ placeholder แสดงได้
+      newVariants[index][field] = value === "" ? "" : Number(value);
     } else {
-      newVariants[index][field] = value;
+      newVariants[index][field] = value as string;
     }
     setVariants(newVariants);
   };
@@ -138,6 +138,13 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
       const token = localStorage.getItem("token") || "";
       const batchesToSend = useVariants ? batches : [simpleBatches];
 
+      // Convert string to number for variants before submitting
+      const normalizedVariants = variants.map(v => ({
+        ...v,
+        price: Number(v.price) || 0,
+        stock_quantity: Number(v.stock_quantity) || 0
+      }));
+
       await addproduct(
         token,
         productName,
@@ -146,7 +153,7 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
         Number(categoryId),
         imageFiles,
         useVariants ? options : [],
-        useVariants ? variants : [],
+        useVariants ? normalizedVariants : [],
         batchesToSend
       );
 
@@ -346,19 +353,19 @@ export default function AddProductForm({ onSuccess, onCancel }: AddProductFormPr
                         onChange={(e) => handleVariantChange(i, "sku", e.target.value)}
                         className="border rounded px-3 py-2"
                       />
-                      <input
-                        type="number"
+                      <NumericInput
                         placeholder="ราคา"
+                        min={0}
                         value={v.price}
-                        onChange={(e) => handleVariantChange(i, "price", e.target.value)}
-                        className="border rounded px-3 py-2"
+                        onChange={(val) => handleVariantChange(i, "price", String(val))}
+                        inputClassName="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       />
-                      <input
-                        type="number"
+                      <NumericInput
                         placeholder="จำนวนคงเหลือ"
+                        min={0}
                         value={v.stock_quantity}
-                        onChange={(e) => handleVariantChange(i, "stock_quantity", e.target.value)}
-                        className="border rounded px-3 py-2"
+                        onChange={(val) => handleVariantChange(i, "stock_quantity", String(val))}
+                        inputClassName="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       />
                     </div>
                   </div>

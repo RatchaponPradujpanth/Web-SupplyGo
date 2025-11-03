@@ -4,8 +4,8 @@ import React from 'react';
 import NumericInput from '@/components/ui/NumericInput';
 
 type Props = {
-  amount: number;
-  setAmount: (n: number) => void;
+  amount: number | string;
+  setAmount: (n: number | string) => void;
   onCancel: () => void;
   onProceed: () => void;
 };
@@ -27,7 +27,7 @@ export default function TopUpAmountModal({ amount, setAmount, onCancel, onProcee
             label="จำนวน Point"
             min={0}
             value={amount}
-            onChange={(val) => setAmount(Number(val))}
+            onChange={(val) => setAmount(val)}
             placeholder="เช่น 100"
             labelClassName="block text-sm font-semibold mb-2"
             inputClassName="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:outline-none text-lg"
@@ -43,9 +43,9 @@ export default function TopUpAmountModal({ amount, setAmount, onCancel, onProcee
             <button
               onClick={onProceed}
               className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                amount > 0 ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                Number(amount) > 0 ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
-              disabled={amount <= 0}
+              disabled={Number(amount) <= 0}
             >
               ✓ ดำเนินการต่อ
             </button>

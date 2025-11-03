@@ -212,7 +212,7 @@ export default function AddressManager() {
             exit={{ opacity: 0, height: 0 }}
             className="border-2 border-gray-200 rounded-xl p-6 mt-4 bg-gray-50 shadow-sm"
           >
-            <h4 className="text-lg font-semibold mb-4">{editingAddress ? 'แก้ไขที่อยู่' : 'เพิ่มที่อยู่ใหม่'}</h4>
+            <h4 className="text-lg font-semibold mb-4">{editingAddress ? 'แก้ไขที่อยู่' : 'กรอกรายละเอียดที่อยู่'}</h4>
 
             <form onSubmit={handleAddressSubmit} className="space-y-4">
               {/* Grid: firstname / lastname */}

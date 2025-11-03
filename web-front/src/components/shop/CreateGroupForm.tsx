@@ -25,10 +25,10 @@ export default function CreateGroupForm() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const [required_members, setRequiredMembers] = useState<number>(1);
-  const [items_per_member, setItemsPerMember] = useState<number>(1);
+  const [required_members, setRequiredMembers] = useState<number | string>(1);
+  const [items_per_member, setItemsPerMember] = useState<number | string>(1);
   const [status, setStatus] = useState<string>("open");
-  const [points_per_group, setPointsPerGroup] = useState<number>(0);
+  const [points_per_group, setPointsPerGroup] = useState<number | string>(0);
   const [group_name, setGroupName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expire_at, setExpireAt] = useState<string>("");
@@ -39,8 +39,8 @@ export default function CreateGroupForm() {
   const hasVariants = selectedProduct?.product_variants && selectedProduct.product_variants.length > 0;
 
   // 🎯 Auto calculate
-  const total_items = required_members * items_per_member;
-  const points_per_member = required_members > 0 ? Math.floor(points_per_group / required_members) : 0;
+  const total_items = Number(required_members) * Number(items_per_member);
+  const points_per_member = Number(required_members) > 0 ? Math.floor(Number(points_per_group) / Number(required_members)) : 0;
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -79,11 +79,11 @@ export default function CreateGroupForm() {
     const payload: CreateGroupRequest = {
       product_id: selectedProductId,
       variant_id: hasVariants ? selectedVariantId : null,
-      required_members,
+      required_members: Number(required_members) || 1,
       total_items,
-      items_per_member,
+      items_per_member: Number(items_per_member) || 1,
       status,
-      points_per_group,
+      points_per_group: Number(points_per_group) || 0,
       points_per_member,
       group_name,
       description,
@@ -100,9 +100,9 @@ export default function CreateGroupForm() {
       setGroupName('');
       setDescription('');
       setExpireAt('');
-      setRequiredMembers(1);
-      setItemsPerMember(1);
-      setPointsPerGroup(0);
+      setRequiredMembers('');
+      setItemsPerMember('');
+      setPointsPerGroup('');
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างกลุ่ม';
       showToast(msg, 'error');
@@ -183,8 +183,8 @@ export default function CreateGroupForm() {
         {/* Group 3: Group Parameters & Points */}
         <InputGroup title="3. การตั้งค่ากลุ่ม">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <NumericInput label="สมาชิก (คน)" min={1} value={required_members} onChange={(val) => setRequiredMembers(Number(val))} icon={<Users className="w-4 h-4" />} />
-            <NumericInput label="สินค้าต่อสมาชิก (ชิ้น)" min={1} value={items_per_member} onChange={(val) => setItemsPerMember(Number(val))} icon={<Package className="w-4 h-4" />} />
+            <NumericInput label="สมาชิก (คน)" min={1} value={required_members} onChange={(val) => setRequiredMembers(val)} icon={<Users className="w-4 h-4" />} />
+            <NumericInput label="สินค้าต่อสมาชิก (ชิ้น)" min={1} value={items_per_member} onChange={(val) => setItemsPerMember(val)} icon={<Package className="w-4 h-4" />} />
             <NumericInput label="สินค้าต่อกลุ่ม (ชิ้น)" min={1} value={total_items} onChange={() => {}} icon={<Package className="w-4 h-4" />} disabled={true} />
           </div>
 
@@ -195,7 +195,7 @@ export default function CreateGroupForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <NumericInput label="แต้มต่อกลุ่ม (Points)" min={0} value={points_per_group} onChange={(val) => setPointsPerGroup(Number(val))} icon={<Gift className="w-4 h-4" />} />
+            <NumericInput label="แต้มต่อกลุ่ม (Points)" min={0} value={points_per_group} onChange={(val) => setPointsPerGroup(val)} icon={<Gift className="w-4 h-4" />} />
             <NumericInput label="แต้มต่อสมาชิก (Points)" min={0} value={points_per_member} onChange={() => {}} icon={<Gift className="w-4 h-4" />} disabled={true} />
           </div>
         </InputGroup>

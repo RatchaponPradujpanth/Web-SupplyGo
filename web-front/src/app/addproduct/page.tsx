@@ -324,25 +324,21 @@ export default function AddProductPage() {
                     <div className="grid grid-cols-2 gap-2">
   <div className="col-span-1">
     <NumericInput
-      label="ราคา"
       placeholder="ราคา"
       min={0}
       value={variant.price}
       onChange={(val) => handleVariantChange(vi, 'price', String(val))}
-      labelClassName="block text-sm font-medium text-gray-700 mb-1"
-      inputClassName="w-full border rounded px-2 py-1"
+      inputClassName="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition"
     />
   </div>
 
   <div className="col-span-1">
     <NumericInput
-      label="จำนวนคงเหลือ"
       placeholder="จำนวนคงเหลือ"
       min={0}
       value={variant.stock_quantity}
       onChange={(val) => handleVariantChange(vi, 'stock_quantity', String(val))}
-      labelClassName="block text-sm font-medium text-gray-700 mb-1"
-      inputClassName="w-full border rounded px-2 py-1"
+      inputClassName="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition"
     />
   </div>
 </div>
